@@ -1,5 +1,4 @@
  package com.meta.wearable.dat.externalsampleapps.cameraaccess.ui
- import android.R
  import androidx.compose.ui.graphics.Color
  import androidx.compose.foundation.background
  import androidx.compose.foundation.border
@@ -22,12 +21,17 @@
  import androidx.compose.ui.unit.dp
  import androidx.compose.runtime.getValue
  import androidx.compose.runtime.setValue
+ import androidx.compose.ui.text.font.FontWeight
+ import androidx.compose.ui.unit.sp
  import okhttp3.OkHttpClient
  import okhttp3.Request
  import okio.IOException
  import org.json.JSONObject
  import okhttp3.MediaType.Companion.toMediaType
  import okhttp3.RequestBody.Companion.toRequestBody
+ import androidx.compose.runtime.rememberCoroutineScope
+ import kotlinx.coroutines.launch
+
 
 
  @Preview(showBackground = true)
@@ -38,6 +42,7 @@
  ){
   var email by remember { mutableStateOf("") }
   var pass by remember {mutableStateOf("")}
+  val scope = rememberCoroutineScope()
   //Screen Flexbox
   Column(
    modifier = Modifier.fillMaxSize().background(Color.White),
@@ -45,21 +50,32 @@
    horizontalAlignment = Alignment.CenterHorizontally
 
   ) {
-   Text("MIRA AI")
-   Text("Where we ... [slogan]")
+   Text("MIRA AI",
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+
+   )
+   Text("Where we ... [slogan]",
+        fontSize = 20.sp)
     Card( modifier = Modifier.background(Color.White).padding(horizontal = 35.dp, vertical =35.dp).border(2.dp, Color.Gray,
      RoundedCornerShape(8.dp)), ){
      Column(verticalArrangement = Arrangement.spacedBy(32.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 20.dp)) {
-      Text("Login", modifier= Modifier.padding(5.dp))
+      Text("Login", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier= Modifier.padding(5.dp))
       TextField(value = email, placeholder = {Text("email@email.com")} ,onValueChange = {newValue -> email = newValue}, modifier = Modifier.padding(horizontal = 55.dp))
       TextField(value = pass, placeholder = {Text("Password")},onValueChange = {newValue -> pass = newValue}, modifier = Modifier.padding(horizontal = 55.dp))
-      Button(onClick = {}) {
+      Button(onClick = {
+       scope.launch{
+        val result = loginUser(email, pass)
+       }
+      }) {
        Text("Login")
       }
      }
     }
    Text("New users register here")
-   Button(onClick = {}){
+   Button(onClick = {
+    //Navigate to register
+   }){
     Text("Sign up")
    }
 
@@ -75,6 +91,7 @@
   client.newCall(req).execute().use(){ response ->
    if(response.isSuccessful){
     return "User logged in"
+    //Navigate to home page
    }
    else{
     //Throw error and show error message
