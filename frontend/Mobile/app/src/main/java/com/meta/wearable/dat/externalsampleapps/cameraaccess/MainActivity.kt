@@ -31,6 +31,8 @@ import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.ui.CameraAccessScaffold
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.ui.LoginScreen
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.ui.RegisterScreen
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.wearables.WearablesViewModel
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
@@ -81,10 +83,13 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
+      RegisterScreen()
+      //LoginScreen()
+      /* Commented out for login screen testing
       CameraAccessScaffold(
           viewModel = viewModel,
           onRequestWearablesPermission = ::requestWearablesPermission,
-      )
+      )*/
     }
   }
 

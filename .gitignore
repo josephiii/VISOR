@@ -6,5 +6,5 @@ backend/venv/
 frontend/mobile/.gradle/
 frontend/mobile/build/
 frontend/mobile/local.properties
-backend/__pycache__/
-backend/*.pyc
+
+backend/**/__pycache__/
