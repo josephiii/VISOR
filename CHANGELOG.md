@@ -135,3 +135,10 @@ Changes by:Jaurelus
 * Added `branches-ignore` to the workflow file to ignore pushes to the `main` branch.
 
 Changes by:Jaurelus
+## July 04, 2026
+* Refactored the `register` method in `AuthService` to directly use the Supabase client for user registration, removing the need for manual password hashing and database interactions. The method now takes in `username`, `email`, and `password` as separate parameters.
+* Refactored the `login` method in `AuthService` to use the Supabase client for user authentication, removing the need for manual password verification and database interactions. The method now takes in `email` and `password` as separate parameters.
+* Removed the use of `bcrypt` for password hashing and verification, as well as the `RegisterSchema` and `LoginSchema` from the `schemas.AuthSchema` module.
+* Removed TODO comments related to checking for existing users, adding password requirements, and returning a user object with a JWT, as these are now handled by the Supabase client.
+
+Changes by:josephiii
