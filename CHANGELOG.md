@@ -79,3 +79,13 @@ Changes by:AMDev80
 * Modified the GitHub workflow file `summarizer.yaml` to ignore pushes to the `main` branch by adding `branches-ignore` with the value `- main`.
 
 Changes by:Jaurelus
+## July 05, 2026
+* Updated `requirements.txt` to include the `torch` library, in addition to existing dependencies such as `uvicorn`, `python-dotenv`, `bcrypt`, `pyjwt`, and `pydantic[email]`.
+* Added a new image file `images.jpg` to the `vision-language-models` directory.
+* Removed the `manager.py` file from the `vision-language-models` directory.
+* Created a new `model_class.py` file, defining a `VLModel` class with methods for loading, unloading, and describing images.
+* Created a new `model_manager.py` file, although it currently contains only an import statement and no functional code.
+* Created a new `model_qwen2-vl.py` file, implementing a `Qwen2_VL` class that inherits from `VLModel` and utilizes the `Qwen2VLForConditionalGeneration` model and `AutoProcessor` from the `transformers` library to describe images.
+* Implemented the `load_model` method to load the `Qwen2VLForConditionalGeneration` model and `AutoProcessor`, and the `describe_image` method to generate a description of an image using the loaded model and processor.
+
+Changes by:LucSal6868
