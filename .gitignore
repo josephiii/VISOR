@@ -1,10 +1,14 @@
-#Backend/Python
+# Backend/Python
 backend/.env
 backend/venv/
+backend/__pycache__/
+backend/*.pyc
 
-#Mobile/Kotlin
+# Mobile/Kotlin
 frontend/mobile/.gradle/
 frontend/mobile/build/
 frontend/mobile/local.properties
-backend/__pycache__/
-backend/*.pyc
+
+# Obsidian
+**/.obsidian/
+**/*.sync-conflict-*
