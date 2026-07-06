@@ -9,25 +9,23 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 # pip install qwen-vl-utils
 # pip install pillow
 
-MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
-image_path = "images.jpg"
-
 class Qwen2_VL(VLModel):
+
     def __init__(self):
-        pass
+        self.MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
 
     def load_model(self):
-        model = Qwen2VLForConditionalGeneration.from_pretrained(
-            MODEL_ID,
+        self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+            self.MODEL_ID,
             device_map="auto",
             torch_dtype=torch.bfloat16
         )
 
-        processor = AutoProcessor.from_pretrained(MODEL_ID)
+        self.processor = AutoProcessor.from_pretrained(self.MODEL_ID)
 
-        return model, processor
+       #return self.model, self.processor
 
-    def describe_image(self, model, processor, image_path, prompt="Describe this image to me in 2 sentences"):
+    def describe_image(self, image_path, prompt="Describe this image to me in 2 sentences"):
         messages = [
             {
                 "role": "user",
@@ -38,13 +36,23 @@ class Qwen2_VL(VLModel):
             }
         ]
 
-        inputs = processor.apply_chat_template(
+        inputs = self.processor.apply_chat_template(
             messages,
             add_generation_prompt=True,
             tokenize=True,
             return_dict=True,
             return_tensors="pt"
-        ).to(model.device)
+        ).to(self.model.device)
 
-        output = model.generate(**inputs, max_new_tokens=100)
-        return output
+        generated_ids = self.model.generate(**inputs, max_new_tokens=100)
+
+        generated_ids_trimmed = [
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+
+        output_text = self.processor.batch_decode(
+            generated_ids_trimmed,
+            skip_special_tokens=True,
+            clean_up_tokenization_spaces=False
+        )
+        return output_text
