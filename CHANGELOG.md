@@ -129,12 +129,23 @@ Changes by:AMDev80
 * Modified the GitHub workflow file `summarizer.yaml` to ignore pushes to the `main` branch by adding `branches-ignore` with the value `- main`.
 
 Changes by:Jaurelus
-## July 02, 2026
-* Updated the `.gitignore` file to ignore `backend/**/__pycache__/` instead of `backend/__pycache__/` to handle nested directories.
-* Added new files to the `documentation/research` directory: `depth-model-research.md` and `server-hosting-research`.
-* The `server-hosting-research` file outlines the research and decision-making process for choosing a server hosting platform for the VISOR project, including the selection of AWS EC2 as the hosting platform, and the evaluation of different instance types (G, P, TRN, DL, and INF) to determine the best fit for the project's needs, with a focus on balancing performance, cost, and energy consumption.
-* The research also considers factors such as memory requirements, latency, and pricing for the selected instance types, including the G4, G5, and G6 instances, and their respective NVIDIA chips (T4, A10G, and L4).
-* The conclusion of the research suggests that the g6e.xlarge and g6.xlarge instances are the most suitable production options for running the project, taking into account the need for a larger LLM and the importance of balancing performance and cost. 
-* [No code changed, but a commit was made]
+## July 01, 2026
+* Modified the `.github/workflows/summarizer.yaml` file to include `fetch-depth: 2` in the `Get Repo` step to increase the git fetch depth.
+* Updated the `Get diff from repo` step to use `git diff $(git hash-object -t tree /dev/null) HEAD` instead of `git diff --root HEAD` to get the diff from the initial commit when `HEAD~1` is not available.
+* Added `branches-ignore` to the workflow file to ignore pushes to the `main` branch.
 
 Changes by:Jaurelus
+## July 04, 2026
+* Refactored the `register` method in `AuthService` to directly use the Supabase client for user registration, removing the need for manual password hashing and database interactions. The method now takes in `username`, `email`, and `password` as separate parameters.
+* Refactored the `login` method in `AuthService` to use the Supabase client for user authentication, removing the need for manual password verification and database interactions. The method now takes in `email` and `password` as separate parameters.
+* Removed the use of `bcrypt` for password hashing and verification, as well as the `RegisterSchema` and `LoginSchema` from the `schemas.AuthSchema` module.
+* Removed TODO comments related to checking for existing users, adding password requirements, and returning a user object with a JWT, as these are now handled by the Supabase client.
+
+Changes by:josephiii
+## July 08, 2026
+* Added `backend/**/__pycache__/` to `.gitignore` to prevent caching issues with Python files
+* Updated `README.md` to reflect the new project name "VISOR" and added getting started instructions
+* Added new files `documentation/research/depth-model-research.md` and `documentation/research/server-hosting-research` to document research on depth modeling and server hosting
+* Updated `documentation/research/server-hosting-research` to outline the overview, problem, and solution for server hosting, including the decision to use AWS and EC2, instance types, memory, latency, and pricing considerations.
+
+Changes by:josephiii
