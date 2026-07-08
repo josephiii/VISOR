@@ -1,0 +1,49 @@
+## Overview
+
+The VISOR project will require the use of multimodal instances in order to deliver its intended features to its audience. These features include OCR and text recognition, obstacle identification and hazard detection, depth estimation, audio and haptic feedback, and scene description. With a large scope of features to implement, the best way to tackle each feature is to have an AI model trained to handle it.
+
+## Problem
+
+The effectiveness of an AI model is determined by its software but also its physical dependencies. Things like computer hardware (GPU), energy consumption, and memory are all important considerations that make up the physical dependencies. Considering that our product will lean on multiple models, the effectiveness of our product is positively correlated with how well our server hosting the AI models performs. That leads to an important question : What are the nitty gritty details for deciding the machine and platform for hosting our product?
+
+## AWS
+
+We decided to use AWS as our hosting platform. After some review with our sponsor we agreed upon using AWS services. For one, AWS easily allows for scalability if this project expands much further than its current reach. AWS is also industry standard so working with it is good professional practice. Furthermore, AWS has certain deals allowing students to take advantage of certain services with specific limitations
+
+### EC2
+
+Of all the AWS services, the one that best solves our problem is EC2 (Elastic Compute Cloud). EC2 is AWS'S virtual server service where in simple terms, they have a super computer that uses software to split the computer into different servers that can be rented out. When you rent out an instance, you're basically renting the server that gives you access to the super computer's hardware. By using EC2. we have the potential to host our product on hardware strong enough to effectively run our models.
+
+#### Instance Types
+
+The instance type of EC2 represents the hardware profile of the server you're renting. AWS has naming conventions to help you decode the instance types and determine which is best used for your case. Instance types that start with one of the following letters have GPUs or some kind of custom AI Silicon attached : [G,P,INF,TRN,DL]
+
+From these five instance types its important that the chosen one also isn't overkill for what we need. In our case, we will be using the model for inference and won't really change much. if anything about the training process. Instance Types starting with "P" , "TRN" , and "DL" are built for or geared towards training so those can be ruled out. Our models run perfectly fine on regular GPUs and wont require any kind of "translation" like what INF instance types do, so that can be ruled out as well.
+
+Therefore Type G best fits what we need, all the others are overkill and would have too high energy consumption levels.
+
+##### Memory
+
+Each model needs a certain amount of virtual RAM to run as intended. The amount of RAM needed depends on the parameters for model and the level of quantization. When models have been researched more, and there's a better idea of these requirements, we can better gauge how much memory each model will need. From there we will need to explore different compression algorithms to cater the model to our needs and requirements. Additionally, there needs to be some extra virtual RAM (~20% of total) for the context require for the model to make its inference. The memory we need will the be equal to the total size of all our compressed models plus space for context.
+
+##### Latency
+
+Real-time processing is so important to MIRA, and our server must reflect that. For real-time feedback the desired instance should have a lower inference latency. The G4 instance has a NVIDIA T4 chip. This chip okay for lightweight dev testing but not for actual production because latency issues interfere with real time feedback (built for cost efficiency not speed). The G5 instance has a NVIDIA A10G chip. This chip is not optimized for compute bound models but is strong for memory bound models. That makes it good for the scene description feature but not the rest. The G6 instance has a NVIDIA L4 chip. This is strong for compute based models but not as strong for the LLM. G6e uses the NVIDIA L40S chip which has similar computational power as the NVIDIA L4 chip but with more VRAM.
+
+##### Size
+
+AWS offers fractional space so you don't have to rent out a full GPU if you don't need it. Due to the intensive AI nature, thats not something to consider for this project.
+
+## Pricing
+
+You are charged by the second every time you use an instance with a minimum session length of 1 minute for every instance. So you pay at least for one minute every time you run the instance plus the second fee. Make sure to turn off the instance whenever it isn't in use to save money.
+
+### Other EC2 Considerations & Settings
+
+- OS will be Ubuntu because most ML model repos, setup guides, and community support assume Ubuntu
+- AMI will be a DLAMI so drivers and CUDA are set but not frameworks
+-
+
+## Conclusion
+
+All things considered thats leaves us between g6e.xlarge (More vRAM for a larger LLM), g6.xlarge(smaller LLM) as our actual production options for running the project.
