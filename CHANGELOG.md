@@ -180,3 +180,17 @@ Changes by:josephiii
 * Updated `documentation/research/server-hosting-research` to outline the overview, problem, and solution for server hosting, including the decision to use AWS and EC2, instance types, memory, latency, and pricing considerations.
 
 Changes by:josephiii
+## July 08, 2026
+* Added `backend/**/__pycache__/` to `.gitignore` to prevent caching issues with Python files
+* Updated `README.md` to reflect the new project name "VISOR" and added getting started instructions
+* Refactored the `register` and `login` methods in `AuthService` to directly use the Supabase client for user registration and authentication
+* Updated `AuthRoutes` to handle registration and login with the new `AuthService` methods
+* Added new files `documentation/research/depth-model-research.md` and `documentation/research/server-hosting-research` to document research on depth modeling and server hosting
+* Created `Database.py` to handle database interactions with Supabase
+* Updated `main.py` to include the new `Database.py` file
+* Updated `requirements.txt` to include the Supabase library and remove unnecessary dependencies
+* Added `LoginScreen` and `RegisterScreen` to the mobile app to handle user authentication
+* Updated the mobile app's `build.gradle.kts` file to include new dependencies for Compose Tooling and Preview Support
+* Updated the `gradle/libs.versions.toml` file to include new versions for Compose UI Tooling and Preview libraries
+
+Changes by:LucSal6868
