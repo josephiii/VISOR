@@ -1,4 +1,4 @@
-from model_class import VLModel
+from services.vision_language_models.model_class import VLModel
 
 import torch
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
@@ -17,7 +17,7 @@ class Qwen2_VL(VLModel):
     def load_model(self):
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(
             self.MODEL_ID,
-            device_map="auto",
+            device_map= "cpu", #"auto",
             torch_dtype=torch.bfloat16
         )
 

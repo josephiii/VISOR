@@ -3,12 +3,11 @@ from fastapi import APIRouter
 from services.AuthService import AuthService
 from schemas.AuthSchema import RegisterSchema, LoginSchema
 
-router = APIRouter()
-
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 service = AuthService()
 
 ## MAKE SURE TO ADD PROPER ERROR RESPONSES FOR LOGIN AND RESGISTER!!
-@router.post("/register")
+@auth_router.post("/register")
 async def register(userData: RegisterSchema):
     response = service.register(userData)
 
@@ -16,7 +15,7 @@ async def register(userData: RegisterSchema):
         return "Error" # <---- HERE
     return response
 
-@router.post("/login")
+@auth_router.post("/login")
 async def login(userData: LoginSchema):
     
     response = service.login(userData)
