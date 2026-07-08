@@ -3,13 +3,13 @@ from fastapi import APIRouter, HTTPException
 from services.AuthService import AuthService
 from schemas.AuthSchema import RegisterSchema, LoginSchema
 
-router = APIRouter()
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 service = AuthService()
 
-@router.post("/register")
-def register(userData: RegisterSchema):
-    try:
-        response = service.register(userData.username, userData.email, userData.password)
+## MAKE SURE TO ADD PROPER ERROR RESPONSES FOR LOGIN AND RESGISTER!!
+@auth_router.post("/register")
+async def register(userData: RegisterSchema):
+    response = service.register(userData)
 
     except Exception as error:
         raise HTTPException(status_code=400, detail=error)

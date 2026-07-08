@@ -3,3 +3,4 @@ uvicorn
 python-dotenv
 pydantic[email]
 supabase
+torch
