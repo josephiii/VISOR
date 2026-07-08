@@ -97,3 +97,16 @@ Changes by:LucSal6868
 * [No code changed, but a commit was made]
 
 Changes by:LucSal6868
+### July 08, 2026
+* The title of the FastAPI application has been updated from "MIRA" to "VISIOR" in `backend/main.py`.
+* Routes for authentication have been updated in `backend/main.py` and `backend/routes/AuthRoutes.py`, with new route prefixes and tags for organization.
+* New routes for Vision Language Model (VLM) functionality have been added in `backend/routes/VLMRoutes.py`, including image prompt analysis.
+* The structure of the project has been updated, including the addition of `services/VLMService.py` for VLM logic and `schemas/VLMSchema.py` for defining schema.
+* The `AuthService` and `VLMService` classes have been created to encapsulate authentication and VLM logic, respectively.
+* New models have been added, including `Qwen2_VL`, which utilizes the Qwen2VLForConditionalGeneration model and processor.
+* Various changes have been made to `model_qwen2_vl.py`, including the update of the device map to use CPU instead of auto.
+* Binary files and cache files have been updated, including `__pycache__` files for Python compiled code. 
+* A new Vision Language Model service has been implemented to handle image analysis with the help of the Qwen2 VL model. 
+* Added a route for posting an image prompt in `backend/routes/VLMRoutes.py`.
+
+Changes by:LucSal6868
