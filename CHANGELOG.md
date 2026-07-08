@@ -142,3 +142,10 @@ Changes by:Jaurelus
 * Removed TODO comments related to checking for existing users, adding password requirements, and returning a user object with a JWT, as these are now handled by the Supabase client.
 
 Changes by:josephiii
+## July 08, 2026
+* Added `backend/**/__pycache__/` to `.gitignore` to prevent caching issues with Python files
+* Updated `README.md` to reflect the new project name "VISOR" and added getting started instructions
+* Added new files `documentation/research/depth-model-research.md` and `documentation/research/server-hosting-research` to document research on depth modeling and server hosting
+* Updated `documentation/research/server-hosting-research` to outline the overview, problem, and solution for server hosting, including the decision to use AWS and EC2, instance types, memory, latency, and pricing considerations.
+
+Changes by:josephiii
