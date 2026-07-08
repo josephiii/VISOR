@@ -12,3 +12,5 @@ backend/*.pyc[cod]
 frontend/mobile/.gradle/
 frontend/mobile/build/
 frontend/mobile/local.properties
+
+backend/**/__pycache__/
