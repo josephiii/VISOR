@@ -4,3 +4,9 @@ python-dotenv
 pydantic[email]
 supabase
 torch
+numpy
+transformers
+accelerate
+pillow
+torchvision
+python-multipart
