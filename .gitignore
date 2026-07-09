@@ -7,6 +7,8 @@ backend/schemas/__pycache__/
 backend/services/__pycache__/
 backend/*.pyc
 backend/*.pyc[cod]
+__pycache__/
+*.py[cod]
 
 # Mobile/Kotlin
 frontend/mobile/.gradle/
