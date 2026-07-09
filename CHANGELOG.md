@@ -194,3 +194,10 @@ Changes by:josephiii
 * Updated the `gradle/libs.versions.toml` file to include new versions for Compose UI Tooling and Preview libraries
 
 Changes by:LucSal6868
+## July 09, 2026
+* Added error handling to the `register` method in `AuthService` to catch any exceptions that may occur during the sign-up process and raise an `HTTPException` with a 400 status code and a "Registration Failed" detail.
+* Added error handling to the `login` method in `AuthService` to catch any exceptions that may occur during the sign-in process and raise an `HTTPException` with a 401 status code and an "Invalid email or password" detail.
+* Created a new method `delete_account` in `AuthService` that takes a token as input, retrieves the user associated with the token, and deletes the user's account using the `admin.delete_user` method from the Supabase client. The method also includes error handling to catch any exceptions that may occur during the deletion process and raises an `HTTPException` with a 401 status code and an "Invalid or expired user token" detail if the token is invalid or expired.
+* Removed the `email` and `password` parameters from the `delete_account` method as they are not needed, and instead use the provided `token` to authenticate the user.
+
+Changes by:josephiii
