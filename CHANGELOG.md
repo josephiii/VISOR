@@ -164,3 +164,13 @@ Changes by:LucSal6868
 * Removed the `email` and `password` parameters from the `delete_account` method as they are not needed, and instead use the provided `token` to authenticate the user.
 
 Changes by:josephiii
+## July 09, 2026
+* Modified the `.gitignore` file to include `__pycache__/` and `*.py[cod]` to ignore Python bytecode files
+* Updated the `settings.json` file in the `.vscode` directory to set the default Python environment manager to `ms-python.python:system`
+* Added error handling to the `register` method in `AuthService` to catch any exceptions that may occur during the sign-up process and raise an `HTTPException` with a 400 status code and a "Registration Failed" detail
+* Added error handling to the `login` method in `AuthService` to catch any exceptions that may occur during the sign-in process and raise an `HTTPException` with a 401 status code and an "Invalid email or password" detail
+* Created a new method `delete_account` in `AuthService` that takes a token as input, retrieves the user associated with the token, and deletes the user's account using the `admin.delete_user` method from the Supabase client
+* Updated the `AuthRoutes` to include a new endpoint `/deleteAccount` that calls the `delete_account` method from `AuthService`
+* Added new dependencies to the `requirements.txt` file, including `numpy`, `transformers`, `accelerate`, `pillow`, `torchvision`, and `python-multipart`
+
+Changes by:josephiii
