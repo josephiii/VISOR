@@ -156,3 +156,12 @@ Changes by:Jaurelus
   + `returnAudio()`: currently empty, intended to return audio.
 
 Changes by:Jaurelus
+## July 09, 2026
+* Refactored the `Depth` class to include a `chooseDevice` method that determines the device type to run the model in, either GPU (cuda), Apple Silicon (mps), or CPU.
+* Added an `__init__` method to the `Depth` class that loads the pre-trained model and image processor once, improving efficiency.
+* Modified the `runModel` method to use the pre-loaded model and image processor, and to run the inference part of the model on the chosen device.
+* Changed the `compressImage` method to be an instance method, but the implementation remains the same.
+* Removed unnecessary code and improved error handling in the `runModel` method.
+* Updated the model and image processor to use the `torch_dtype` and `device` attributes for more efficient processing.
+
+Changes by:Jaurelus
