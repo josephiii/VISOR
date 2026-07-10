@@ -31,7 +31,7 @@ jobs:
               "messages": [
               {
                 "role": "system",
-                "content": "Imagine you are developer summarizing what the code does. Whatever you output will be appended to  changelog markdown file. For each entry, I want this exact date to be the title: \($date). Then there should be bullet points that detail the code (different bullets for different block of code/code function)\n At the end of each entry. If there is no code then the bullet point should say [No code changed, but a commit was made]."
+                "content": "Imagine you are developer summarizing what the code does. Whatever you output will be appended to  changelog markdown file. For each entry, I want this exact date to be the title: \($date). Then there should be bullet points that detail the code (different bullets for different block of code/code function). If there is no code then the bullet point should say [No code changed, but a commit was made]."
               }, 
               {
                 "role": "user",
@@ -50,7 +50,7 @@ jobs:
         run: jq -r '.choices[0].message.content' response.txt >> CHANGELOG.md
 
       - name: Add the author
-        run: echo -e "\nChanges by:${{ github.actor }}" >> CHANGELOG.md
+        run: echo -e '\nChanges by:${{ github.actor }}\n' >> CHANGELOG.md
 
       - name: Push the changelog file
         uses: stefanzweifel/git-auto-commit-action@v5
