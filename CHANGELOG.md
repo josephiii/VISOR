@@ -170,3 +170,10 @@ Changes by:josephiii
 - Added new dependencies to the `requirements.txt` file, including `numpy`, `transformers`, `accelerate`, `pillow`, `torchvision`, and `python-multipart`
 
 Changes by:josephiii
+## July 10, 2026
+* Updated the `.github/workflows/summarizer.yaml` file to modify the prompt for the AI model, removing the phrase "At the end of each entry" to improve the clarity of the instructions.
+* Modified the `Add the author` step in the workflow file to add a newline character after the author's name.
+* No other code changes were made, but the workflow file was updated to reflect the changes in the instructions.
+
+Changes by:josephiii
+
