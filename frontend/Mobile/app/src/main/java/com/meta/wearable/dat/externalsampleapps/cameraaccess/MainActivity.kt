@@ -39,6 +39,9 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+// OCR AND TTS IMPORTS
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.ocr.TextReaderOCR
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.tts.Speaker
 
 class MainActivity : ComponentActivity() {
   companion object {
@@ -47,7 +50,8 @@ class MainActivity : ComponentActivity() {
   }
 
   val viewModel: WearablesViewModel by viewModels()
-
+  private lateinit var textReaderOCR: TextReaderOCR
+  private lateinit var speaker: Speaker
   private val permissionCheckLauncher =
       registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
         viewModel.onPermissionsResult(permissionsResult) {
@@ -91,11 +95,19 @@ class MainActivity : ComponentActivity() {
           onRequestWearablesPermission = ::requestWearablesPermission,
       )*/
     }
+    textReaderOCR = TextReaderOCR()
+    speaker = Speaker(this)
   }
 
   override fun onStart() {
     super.onStart()
     // First, ensure the app has necessary Android permissions
     permissionCheckLauncher.launch(PERMISSIONS)
+  }
+
+  fun onDestory(){
+    super.onDestroy()
+    textReaderOCR.close()
+    speaker.shutdown()
   }
 }
