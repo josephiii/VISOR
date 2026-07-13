@@ -4,7 +4,9 @@ class VLModel:
     def __init__(self):
         self.model = None
         self.processor = None
+
         self.MODEL_ID : str
+        self.MODEL_REVISION
 
     def load_model(self):
         pass

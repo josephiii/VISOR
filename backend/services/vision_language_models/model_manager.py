@@ -1,7 +1,8 @@
-from model_qwen2_vl import Qwen2_VL
+from model_qwen import QwenVL
+from model_moondream import Moondream
 
 def main():
-    model = Qwen2_VL()
+    model = Moondream()
     model.load_model()
     text : str = model.describe_image("images.jpg", "Describe this image")
     print(text)
