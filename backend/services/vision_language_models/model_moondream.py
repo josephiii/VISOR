@@ -3,10 +3,7 @@ from services.vision_language_models.model_class import VLModel
 import torch
 from PIL import Image
 
-from transformers import (
-    AutoModelForCausalLM,
-    AutoProcessor
-)
+from transformers import AutoModelForCausalLM
 
 
 class Moondream(VLModel):
@@ -24,11 +21,6 @@ class Moondream(VLModel):
             device_map="cpu"
         )
 
-        self.processor = AutoProcessor.from_pretrained(
-            self.MODEL_ID,
-            trust_remote_code=True
-        )
-
 
     def describe_image(
         self,
@@ -39,25 +31,12 @@ class Moondream(VLModel):
         image = Image.open(image_path).convert("RGB")
 
 
-        inputs = self.processor(
-            images=image,
-            text=prompt,
-            return_tensors="pt"
-        )
-
-
-        inputs = inputs.to(self.model.device)
-
-
         with torch.inference_mode():
 
-            output_ids = self.model.generate(
-                **inputs,
-                max_new_tokens=128
+            answer = self.model.query(
+                image,
+                prompt
             )
 
 
-        return self.processor.decode(
-            output_ids[0],
-            skip_special_tokens=True
-        )
+        return answer
