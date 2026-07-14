@@ -186,3 +186,14 @@ Changes by:josephiii
 
 Changes by:josephiii
 
+## July 14, 2026
+* Modified the `.gitignore` file to include new ignore rules for Python, virtual environments, and cache directories, and removed some unnecessary ignores.
+* Updated the `backend/requirements.txt` file to add new dependencies, including `torch`, `torchvision`, `transformers`, `accelerate`, `pillow`, `qwen-vl-utils`, and `einops`.
+* Introduced a new class `Gemma` in `backend/services/vision_language_models/model_gemma.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
+* Introduced a new class `Moondream` in `backend/services/vision_language_models/model_moondream.py`, which inherits from the `VLModel` class and uses the `AutoModelForCausalLM` model from the `transformers` library.
+* Introduced a new class `QwenVL` in `backend/services/vision_language_models/model_qwen.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
+* Modified the `model_manager.py` file to import and use the new `Gemma` model instead of the old `Qwen2_VL` model.
+* Removed the `model_qwen2_vl.py` file as it is no longer needed.
+
+Changes by:josephiii
+
