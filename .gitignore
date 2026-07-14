@@ -1,22 +1,21 @@
-# Backend/Python
-backend/.env
-backend/venv/
-backend/__pycache__/
-backend/routes/__pycache__/
-backend/schemas/__pycache__/
-backend/services/__pycache__/
-backend/*.pyc
-backend/*.pyc[cod]
-__pycache__/
-*.py[cod]
+# ENVIORMENT
+**/.env*
 
-# Mobile/Kotlin
+# Python
+**/__pycache__/
+*.py[cod]
+*.pyc
+
+# Python virtual environments
+**/venv/
+
+# Cache directories
+**/.cache/
+
+# Kotlin/Android
 frontend/mobile/.gradle/
 frontend/mobile/build/
 frontend/mobile/local.properties
-
-backend/**/__pycache__/
-
 
 # Obsidian
 **/.obsidian/

@@ -18,7 +18,7 @@ class Moondream(VLModel):
             self.MODEL_ID,
             trust_remote_code=True,
             dtype=torch.bfloat16,
-            device_map="cpu"
+            device_map="auto"
         )
 
 
@@ -39,4 +39,4 @@ class Moondream(VLModel):
             )
 
 
-        return answer
+        return answer#["reasoning"]["text"] test later

@@ -7,21 +7,23 @@ from transformers import (
 )
 
 
-class QwenVL(VLModel):
+class Gemma(VLModel):
 
     def __init__(self):
-        self.MODEL_ID = "Qwen/Qwen3-VL-2B-Instruct" # can swap to 2, 4, and 8
+        super().__init__()
+        self.MODEL_ID = "google/gemma-4-E2B-it"  # can swap to google/gemma-4-E2B-it or 8 think as well
 
     def load_model(self):
 
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.MODEL_ID,
-            device_map="auto",
+            device_map="cpu",
             dtype=torch.bfloat16
         )
 
         self.processor = AutoProcessor.from_pretrained(
-            self.MODEL_ID
+            self.MODEL_ID,
+            padding_side="left"
         )
 
 

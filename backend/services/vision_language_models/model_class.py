@@ -6,7 +6,9 @@ class VLModel:
         self.processor = None
 
         self.MODEL_ID : str
-        self.MODEL_REVISION
+        self.MODEL_REVISION : str
+
+        #self.device_map : str = "cpu" #"auto"# didnt wokr
 
     def load_model(self):
         pass
