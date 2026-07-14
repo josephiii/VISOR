@@ -177,3 +177,12 @@ Changes by:josephiii
 
 Changes by:josephiii
 
+## July 14, 2026
+* Added the Google ML Kit Text Recognition library to the project by including `com.google.mlkit:text-recognition:16.0.1` in the `build.gradle.kts` file.
+* Created a new class `TextReaderOCR` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.ocr` package, which provides a method `readText` to recognize text from a bitmap image using the Google ML Kit Text Recognition library.
+* Added a new class `Speaker` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.tts` package, which provides methods to speak text using the Android Text-to-Speech (TTS) API.
+* Modified the `MainActivity` class to include instances of `TextReaderOCR` and `Speaker`, and to initialize and shut down the `Speaker` instance in the `onStart` and `onDestroy` methods respectively.
+* Implemented the `onDestroy` method in `MainActivity` to close the `TextReaderOCR` instance and shut down the `Speaker` instance when the activity is destroyed.
+
+Changes by:josephiii
+
