@@ -197,3 +197,14 @@ Changes by:josephiii
 
 Changes by:josephiii
 
+## July 14, 2026
+* Added a new implementation for the ProfileCreationScreen, which guides the user through a series of questions to help them set up their profile.
+* Implemented a new ProfileFlowHost composable function, which hosts the profile creation wizard and persists the result.
+* Added a new ProfileStore class, which handles local, on-device profile storage.
+* Implemented a new SettingsScreen, which allows users to modify their profile settings.
+* Added a new UserProfile data model, which represents the user's profile data.
+* Introduced a new VisorPalette class, which defines accessibility-first color palettes for the app. 
+* Added new dependencies to the build.gradle.kts file, including androidx.compose.ui:ui-tooling-preview and androidx.compose.ui:ui-tooling.
+
+Changes by:AMDev80
+
