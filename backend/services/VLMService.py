@@ -3,11 +3,11 @@ import tempfile
 import os
 
 from services.vision_language_models.model_class import VLModel
-from services.vision_language_models.model_qwen2_vl import Qwen2_VL
+from services.vision_language_models.model_qwen import QwenVL
 
 class VLMService:
     def __init__(self):
-        self.vlm: VLModel = Qwen2_VL()  # SELECT DESIRED MODEL # ALSO ADD A SETTINGS FILE TO SELECT FROM THERE
+        self.vlm: VLModel = QwenVL()  # SELECT DESIRED MODEL # ALSO ADD A SETTINGS FILE TO SELECT FROM THERE
         self.vlm.load_model()
 
     def answer_question(self, prompt: str, image_bytes: bytes):

@@ -6,7 +6,7 @@ from model_moondream import Moondream
 from model_gemma import Gemma
 
 def main():
-    model = Gemma()
+    model = QwenVL()
     model.load_model()
     text : str = model.describe_image("images.jpg", "Describe this image")
     print(text)

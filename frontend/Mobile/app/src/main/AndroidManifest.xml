@@ -21,7 +21,9 @@
         android:icon="@mipmap/ic_launcher"
         android:label="CameraAccess"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CameraAccess">
+        android:theme="@style/Theme.CameraAccess"
+        android:usesCleartextTraffic="true"><!--REMOVE LINE LATER ONLY FOR HTTP REQUST -->
+
 
         <!-- Meta Wearables Device Access Toolkit Setup -->
         <!-- Without Developer Mode, these values need to be set with credentials from the app registered in Wearables Developer Center -->
@@ -60,5 +62,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+
+
     </application>
 </manifest>
