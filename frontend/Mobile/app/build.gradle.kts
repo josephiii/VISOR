@@ -84,6 +84,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3)
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.mwdat.core)
     implementation(libs.mwdat.camera)
