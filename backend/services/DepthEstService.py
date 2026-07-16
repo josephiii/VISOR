@@ -1,6 +1,8 @@
 import torch
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 from PIL import Image
+import numpy as np
+
 
 class Depth:
     def chooseDevice(self):
@@ -23,16 +25,20 @@ class Depth:
         else:
             self.dtype = torch.float32
 
-        self.model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Metric-Indoor-Small-hf", torch_dtype=self.dtype ).to(self.device).eval()
+        self.model = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Metric-Indoor-Small-hf", dtype=self.dtype ).to(self.device).eval()
         self.image_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Metric-Indoor-Small-hf")
     
     
-    def compressImage(self):
+    def compressImage(self, Image):
+        """
+        This function downsizes the image by making the shorter side 518 pixels and resizing the image proportionally.
+        """
         try:
-            x=0
+            shortSide = 518
         except Exception as error:
             print(error)
-        return x
+        return error
+    
     def runModel(self ,image):
         """
         This functions runs the pre trained model. For the EC2 instance items from model should be on Cuda to use the GPU 
@@ -52,3 +58,15 @@ class Depth:
         except Exception as error:
             print(error)
             return error
+        
+if __name__ == "__main__":
+    print("Starting download/cache of the model...")
+    depth = Depth()                       # This downloads and caches the model files
+    print("Model successfully loaded and cached on your computer!")
+    img = Image.open("./capturedImages/room.jpg").convert("RGB")  # <- any image path
+    depth_map = depth.runModel(img)
+
+    print(depth_map.shape, depth_map.min(), depth_map.max())
+    norm = ((depth_map - depth_map.min()) / (depth_map.max() - depth_map.min()) * 255).astype(np.uint8)
+    Image.fromarray(norm).save("depth_out.png")
+
