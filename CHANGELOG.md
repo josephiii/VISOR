@@ -208,3 +208,15 @@ Changes by:josephiii
 
 Changes by:AMDev80
 
+## July 17, 2026
+* Changed the model implementation in `VLMService.py` from `Qwen2_VL` to `QwenVL` to utilize a potentially more accurate vision language model.
+* Updated the model selection in `model_manager.py` to use `QwenVL` for testing purposes.
+* Modified the device map in `model_qwen.py` to utilize the CPU instead of automatic device mapping for the `QwenVL` model, potentially improving inference performance.
+* Added a new documentation file `VLM.md` to provide an overview of the vision language model, its components, and testing procedures.
+* Updated `AndroidManifest.xml` to allow cleartext traffic, which may be necessary for certain API requests, but should be removed in production.
+* Modified `MainActivity.kt` to comment out the `CameraAccessScaffold` and uncomment the `RegisterScreen`, potentially changing the default startup screen.
+* Changed the image compression format and quality in `SharePhotoDialog.kt` from JPEG with 80% quality to JPEG with 90% quality, potentially improving image quality.
+* Updated the API request in `SharePhotoDialog.kt` to use a multipart body with a JPEG image and a prompt, potentially simplifying the request process and improving performance.
+
+Changes by:LucSal6868
+
