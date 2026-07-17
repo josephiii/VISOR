@@ -42,6 +42,7 @@ import kotlinx.coroutines.sync.withLock
 // OCR AND TTS IMPORTS
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.ocr.TextReaderOCR
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.tts.Speaker
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.ui.HomeScreen
 
 class MainActivity : ComponentActivity() {
   companion object {
@@ -87,13 +88,14 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
+
       RegisterScreen()
       //LoginScreen()
-      /* Commented out for login screen testing
-      CameraAccessScaffold(
-          viewModel = viewModel,
-          onRequestWearablesPermission = ::requestWearablesPermission,
-      )*/
+      //Commented out for login screen testing
+//      CameraAccessScaffold(
+//          viewModel = viewModel,
+//          onRequestWearablesPermission = ::requestWearablesPermission,
+//      )
     }
     textReaderOCR = TextReaderOCR()
     speaker = Speaker(this)
