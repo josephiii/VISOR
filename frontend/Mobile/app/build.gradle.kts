@@ -1,19 +1,12 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
 import java.util.Properties
 import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.compose)
 }
+
 
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
@@ -23,13 +16,14 @@ val localProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.meta.wearable.dat.externalsampleapps.cameraaccess"
+    namespace = "ucf.visor"
     compileSdk = 35
 
     buildFeatures { buildConfig = true }
 
+
     defaultConfig {
-        applicationId = "com.meta.wearable.dat.externalsampleapps.cameraaccess"
+        applicationId = "ucf.visor"
         minSdk = 31
         targetSdk = 34
         versionCode = 1
@@ -43,17 +37,12 @@ android {
         // in Wearables Developer Center
         manifestPlaceholders["mwdat_application_id"] = ""
         manifestPlaceholders["mwdat_client_token"] = ""
-
-        buildConfigField(
-            "String",
-            "GEMINI_API_KEY",
-            "\"${localProperties.getProperty("GEMINI_API_KEY", "")}\""
-        )
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -85,18 +74,23 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3)
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation(libs.androidx.material3)
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation(libs.kotlinx.collections.immutable)
-    implementation(libs.mwdat.core)
-    implementation(libs.mwdat.camera)
-    implementation(libs.mwdat.mockdevice)
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.uiautomator)
     androidTestImplementation(libs.androidx.test.rules)
+
     // Compose Tooling & Preview Support (for dev purposes)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
+
+    // MWDAT
+    implementation(libs.mwdat.core)
+    implementation(libs.mwdat.camera)
+    implementation(libs.mwdat.display)
+    implementation(libs.mwdat.mockdevice)
 }

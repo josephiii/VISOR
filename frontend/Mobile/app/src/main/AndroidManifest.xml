@@ -1,29 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
--->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required permissions for MWDAT -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- For MWDAT mock device testing -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="CameraAccess"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CameraAccess"
-        android:usesCleartextTraffic="true"><!--REMOVE LINE LATER ONLY FOR HTTP REQUST -->
-
+        android:theme="@style/Theme.VISOR">
 
         <!-- Meta Wearables Device Access Toolkit Setup -->
         <!-- Without Developer Mode, these values need to be set with credentials from the app registered in Wearables Developer Center -->
@@ -36,20 +32,26 @@
             android:value="${mwdat_client_token}"
             />
 
+        <!-- Enable the Device Access Toolkit App Model (DAM) -->
+        <meta-data
+            android:name="com.meta.wearable.mwdat.DAM_ENABLED"
+            android:value="true"
+            />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.CameraAccess">
+            android:theme="@style/Theme.VISOR"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter>
+            <intent-filter> <!-- Callback scheme Meta AI uses to return to the app  -->
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="cameraaccess" />
+                <data android:scheme="visor" />
             </intent-filter>
         </activity>
 
@@ -62,8 +64,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-
-
     </application>
+
 </manifest>
