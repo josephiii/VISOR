@@ -9,6 +9,7 @@
 package ucf.visor.ui
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,9 @@ import java.io.ByteArrayOutputStream
 import java.util.Base64
 
 import ucf.visor.BuildConfig
+
+import okhttp3.MultipartBody
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun SharePhotoDialog(photo: Bitmap, onDismiss: () -> Unit, onShare: (Bitmap) -> Unit) {
@@ -103,67 +107,51 @@ private suspend fun describeImageWithGemini(
 
         // PREP IMAGE
         val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-        val base64Image = Base64.getEncoder().encodeToString(outputStream.toByteArray())
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+        val imageBytes = outputStream.toByteArray()
 
-        // PREP JSON
-        val requestJson =
-            JSONObject().apply {
-                put(
-                    "contents",
-                    JSONArray().put(
-                        JSONObject().apply {
-                            put(
-                                "parts",
-                                JSONArray().apply {
-                                    put(JSONObject().put("text", prompt))
-                                    put(
-                                        JSONObject().apply {
-                                            put(
-                                                "inline_data",
-                                                JSONObject().apply {
-                                                    put("mime_type", "image/jpeg")
-                                                    put("data", base64Image)
-                                                },
-                                            )
-                                        },
-                                    )
-                                },
-                            )
-                        },
-                    ),
-                )
-            }
+        val imageBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
 
-        //
-        val body =
-            requestJson
-                .toString()
-                .toRequestBody("application/json; charset=utf-8".toMediaType())
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "prompt",
+                "Describe this image to a blind person in two sentences"
+            )
+            .addFormDataPart(
+                "image",
+                "photo.jpg",
+                imageBody
+            )
+            .build()
 
-        // REQUEST
-        val request =
-            Request.Builder()
-                .url(
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
-                .addHeader("x-goog-api-key", "") // FIXME: GEMINI API KEY WAS REMOVED
-                .post(body)
-                .build()
+        val request = Request.Builder()
+            // uvicorn main:app --host 0.0.0.0 --port 8000
+            // use this to start server on actual port not localhost
+            .url("http://10.0.2.2:8000/vlm/image_prompt") // PC IP FOR NOW
+            .post(requestBody)
+            .build()
 
-        val client = OkHttpClient() //
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(300, TimeUnit.SECONDS)   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+
 
         try {
             val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: "{}"
+            val responseText = response.body?.string() ?: ""
 
-            JSONObject(responseBody)
-                .getJSONArray("candidates")
-                .getJSONObject(0)
-                .getJSONObject("content")
-                .getJSONArray("parts")
-                .getJSONObject(0)
-                .getString("text")
+
+
+            Log.d("VLM", responseText)
+
+            val json = JSONObject(responseText)
+            json.getString("answer") // RETURN
+
         } catch (e: Exception) {
+            Log.e("VLM", "Request failed", e)
             "Error: ${e.message}"
         }
     }
