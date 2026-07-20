@@ -5,12 +5,12 @@ from enum import Enum
 class VisionType(str, Enum):
     CENTRAL_LOSS = "central_loss"
     PERIPHERAL_LOSS = "peripheral_loss" 
-    BLUR_LOW_ACUITY = "blur_low_activity" 
+    BLUR_LOW_ACUITY = "blur_low_acuity" 
     CONTRAST_LIGHT = "contrast_light"
     NOT_SURE = "not_sure"
 
 class Severity(str, Enum):
-    MILD = "mild",
+    MILD = "mild"
     MODERATE = "moderate"
     SEVERE = "severe"
 

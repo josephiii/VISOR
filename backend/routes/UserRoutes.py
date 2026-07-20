@@ -1,14 +1,15 @@
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from services.UserService import UserService
+from dependencies import get_current_user
 from schemas.UserSchema import SettingsSchema
 
-user_router = APIRouter(prefix="/user", tags=["user"])
+user_router = APIRouter(prefix="/user", tags=["user"], dependencies=[Depends(get_current_user)])
 service = UserService()
 
 
 @user_router.get("/settings")
-def get_settings(userId: str):
+def get_settings(userId: str = Depends(get_current_user)):
     try:
         response = service.get_settings(userId)
 
@@ -23,12 +24,9 @@ def get_settings(userId: str):
     return response
 
 @user_router.put("/settings")
-def update_settings(userId: str, settingsData: SettingsSchema):
+def update_settings(settingsData: SettingsSchema, userId: str = Depends(get_current_user)):
     try:
-        response = service.update_settings(
-            userId, settingsData.username, settingsData.visionType, settingsData.visionDescription, 
-            settingsData.severity, settingsData.speechRate, settingsData.verbosity, settingsData.appHighContrast
-        )
+        response = service.update_settings(userId, settingsData)
     
     except HTTPException:
         raise
