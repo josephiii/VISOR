@@ -1,7 +1,7 @@
 name: Code Summarizer
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 permissions:
   contents: write
@@ -50,7 +50,7 @@ jobs:
         run: jq -r '.choices[0].message.content' response.txt >> CHANGELOG.md
 
       - name: Add the author
-        run: echo -e "\nChanges by:${{ github.actor }}" >> CHANGELOG.md
+        run: echo -e '\nChanges by:${{ github.actor }}\n' >> CHANGELOG.md
 
       - name: Push the changelog file
         uses: stefanzweifel/git-auto-commit-action@v5

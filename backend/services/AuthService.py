@@ -1,47 +1,50 @@
 
-import bcrypt
-from schemas.AuthSchema import RegisterSchema, LoginSchema
+from Database import supabase_client
+from fastapi import HTTPException
+
 
 class AuthService:
 
-    def register(self, userData: RegisterSchema):
+    def register(self, username: str, email: str, password: str):
+        database = supabase_client()
+
+        try:
+            response = database.auth.sign_up({
+                "email": email,
+                "password": password,
+                "options": {"data": {"username": username}}
+            })
+        except Exception:
+            raise HTTPException(status_code=400, detail="Registration Failed")
         
-        #TODO check db for existing user
-        userExists = None # <-- this should be a lookup that searches for user, if found returns true and user cannot register
-        if userExists:
-            return "User already exists change email/username"
+        return response
+
+
+    def login(self, email: str, password: str):
+        database = supabase_client()
+
+        try:
+            response = database.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         
-        #TODO add pwd requirements here
-
-        hashedPwd = bcrypt.hashpw(
-            userData.password.encode("utf-8"),
-            bcrypt.gensalt()
-        )
-
-        newUser = {
-            "username": userData.username,
-            "email": userData.email,
-            "password": hashedPwd.decode("utf-8")
-        }
-
-        #TODO add newUser to db
-
-        return "User Added" # <-- improve
-
-
-    def login(self, userData: LoginSchema):
+        return response
+    
+    
+    def delete_account(self, token: str):
+        database = supabase_client()
         
-        user = None # <-- this should be a look up that pulls the users info from db
+        try:
+            user = database.auth.get_user(token)
+        except Exception:
+            raise HTTPException(status_code=401, detail="Invalid or expired user token")
+        
+        if user is None or user.user is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired user token")
+        
+        database.auth.admin.delete_user(user.user.id)
 
-        if not user:
-            return "Username or pwd incorrect"
         
-        validPwd = bcrypt.checkpw(
-            userData.password.encode("utf-8"),
-            user["password"].encode("utf-8")
-        )
-        
-        if not validPwd:
-            return "Username or pwd incorrect"
-        
-        #TODO return user object with jwt

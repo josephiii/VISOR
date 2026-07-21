@@ -1,0 +1,46 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+package ucf.visor.ui.components
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun SwitchButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDestructive: Boolean = false,
+    enabled: Boolean = true,
+) {
+    Button(
+        modifier = modifier
+            .height(56.dp)
+            .fillMaxWidth(),
+        onClick = onClick,
+        enabled = enabled,
+    ) {
+        Text(label)
+    }
+}
+
+@Preview
+@Composable
+fun TestPreview() {
+    SwitchButton(
+        onClick = {},
+        label = "test"
+    )
+}
