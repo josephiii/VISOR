@@ -8,7 +8,11 @@ from model_gemma import Gemma
 def main():
     model = QwenVL()
     model.load_model()
-    text : str = model.describe_image("images.jpg", "Describe this image")
+    text : str = model.describe_image("images/puppy.png", "Describe this image")
+    print(text)
+    text: str = model.describe_image("images/house.jpg", "Describe this image")
+    print(text)
+    text: str = model.describe_image("images/manhole.jpg", "Describe this image")
     print(text)
     model.unload_model()
 
