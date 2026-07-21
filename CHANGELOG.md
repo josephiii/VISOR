@@ -220,3 +220,28 @@ Changes by:AMDev80
 
 Changes by:LucSal6868
 
+## July 21, 2026
+* Added user authentication to the `answer_question` method in `VLMService.py` using Supabase client, which checks if a user exists and raises an HTTP exception if the token is invalid or expired.
+* Modified the `answer_question` method to accept a token, prompt, and image bytes, and to use a temporary file for the image.
+* Updated the `model_manager.py` file to test the `describe_image` method with different images and prompts.
+* Added new images to the `vision_language_models/images` directory for testing purposes.
+* Created a new file `VLM tests.md` in the `documentation/testing` directory to document simple VLM tests, including descriptions of images and expected model outputs.
+* Added images to the `documentation/testing/images` directory to support the VLM tests documentation. 
+* [No code changed, but a commit was made] for the following files: 
+  - backend/services/vision_language_models/images/dangerous.jpg
+  - backend/services/vision_language_models/images/dog.jpg
+  - backend/services/vision_language_models/images/edge.jpg
+  - backend/services/vision_language_models/images/fire.jpg
+  - backend/services/vision_language_models/images/house.jpg
+  - backend/services/vision_language_models/images/manhole.jpg
+  - backend/services/vision_language_models/images/messy.jpg
+  - backend/services/vision_language_models/images/night.jpg
+  - backend/services/vision_language_models/images/playground.jpg
+  - backend/services/vision_language_models/images/puppy.png
+  - backend/services/vision_language_models/images/street.jpg
+  - documentation/testing/images/Pasted image 20260721123005.png
+  - documentation/testing/images/Pasted image 20260721123103.png
+  - documentation/testing/images/Pasted image 20260721123112.png
+
+Changes by:Jaurelus
+
