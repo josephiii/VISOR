@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
         permissionCheckLauncher.launch(PERMISSIONS)
     }
 
-    // make sure these are actaully destroyed
+    // make sure these are actually destroyed
     fun onDestory() {
         super.onDestroy()
         textReaderOCR.close()

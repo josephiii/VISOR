@@ -1,27 +1,3 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-// CameraAccessScaffold - DAT Application Navigation Orchestrator
-//
-// This scaffold demonstrates a typical DAT application navigation pattern based on device
-// registration and streaming states from the DAT API.
-//
-// DAT State-Based Navigation:
-// - HomeScreen: When NOT registered (uiState.isRegistered = false) Shows initial registration UI
-//   calling Wearables.startRegistration()
-// - NonStreamScreen: When registered (uiState.isRegistered = true) but not streaming Shows device
-//   selection, permission checking, and pre-streaming setup
-// - StreamScreen: When actively streaming (uiState.isStreaming = true) Shows live video from
-//   Stream.videoStream and photo capture UI
-//
-// The scaffold also provides a debug menu (in DEBUG builds) that gives access to
-// MockDeviceKitScreen for testing DAT functionality without physical devices.
-
 package ucf.visor.ui
 
 import androidx.compose.foundation.layout.Box
@@ -54,8 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+
 import ucf.visor.BuildConfig
 import ucf.visor.ui.screens.HomeScreen
 import ucf.visor.ui.screens.MockDeviceKitScreen
@@ -70,11 +48,16 @@ fun CameraAccessScaffold(
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     modifier: Modifier = Modifier,
 ) {
+    // For more details on the uiState, see the data class wearables/WearablesUiState.kt
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Used to display errors. Pass errors strings through uiState.recentError to be displayed through the snackbar.
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // DEBUG TOOL: Mock Device Kit Debug button
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Observe recent errors and show snackbar
+    // Observe recent errors and show snackbar.
     LaunchedEffect(uiState.recentError) {
         uiState.recentError?.let { errorMessage ->
             snackbarHostState.showSnackbar(errorMessage)
@@ -85,6 +68,28 @@ fun CameraAccessScaffold(
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(modifier = Modifier.fillMaxSize()) {
             when {
+
+                // Will route to VerifyScreen() and EnterCodeScreen().
+//                uiState.isSigningUp ->
+//                    CreateAccountScreen(
+//                        wearablesViewModel = viewModel,
+//                    )
+//
+//                uiState.isLoggingIn ->
+//                    CreateAccountScreen(
+//                        wearablesViewModel = viewModel,
+//                    )
+//
+//                uiState.hasForgotPassword ->
+//                    CreateAccountScreen(
+//                        wearablesViewModel = viewModel,
+//                    )
+//
+//                uiState.isNewUser ->
+//                    CreateAccountScreen(
+//                        wearablesViewModel = viewModel,
+//                    )
+
                 uiState.isStreaming ->
                     StreamScreen(
                         wearablesViewModel = viewModel,
@@ -96,12 +101,14 @@ fun CameraAccessScaffold(
                         onRequestWearablesPermission = onRequestWearablesPermission,
                     )
 
+                // HomeScreen, the "root" screen for VISOR users.
                 else ->
                     HomeScreen(
                         viewModel = viewModel,
                     )
             }
 
+            // Error logging snackbar.
             SnackbarHost(
                 hostState = snackbarHostState,
                 modifier =
@@ -128,6 +135,7 @@ fun CameraAccessScaffold(
                 },
             )
 
+            // DEBUG TOOL: debugging button tools -> Mock Device Toolkit
             if (BuildConfig.DEBUG) {
                 FloatingActionButton(
                     onClick = { viewModel.showDebugMenu() },
