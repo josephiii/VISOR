@@ -35,7 +35,7 @@ import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 
 import ucf.visor.BuildConfig
-import ucf.visor.ui.screens.HomeScreen
+import ucf.visor.ui.screens.LoginScreen
 import ucf.visor.ui.screens.MockDeviceKitScreen
 import ucf.visor.ui.screens.NonStreamScreen
 import ucf.visor.ui.screens.StreamScreen
@@ -43,7 +43,7 @@ import ucf.visor.wearables.WearablesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraAccessScaffold(
+fun VisorLayout(
     viewModel: WearablesViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     modifier: Modifier = Modifier,
@@ -71,22 +71,17 @@ fun CameraAccessScaffold(
 
                 // Will route to VerifyScreen() and EnterCodeScreen().
 //                uiState.isSigningUp ->
-//                    CreateAccountScreen(
+//                    SignUpScreen(
 //                        wearablesViewModel = viewModel,
 //                    )
 //
-//                uiState.isLoggingIn ->
-//                    CreateAccountScreen(
-//                        wearablesViewModel = viewModel,
-//                    )
+                uiState.isLoggingIn ->
+                    LoginScreen(
+                        viewModel = viewModel
+                    )
 //
 //                uiState.hasForgotPassword ->
-//                    CreateAccountScreen(
-//                        wearablesViewModel = viewModel,
-//                    )
-//
-//                uiState.isNewUser ->
-//                    CreateAccountScreen(
+//                    ForgotPasswordScreen(
 //                        wearablesViewModel = viewModel,
 //                    )
 
@@ -103,9 +98,12 @@ fun CameraAccessScaffold(
 
                 // HomeScreen, the "root" screen for VISOR users.
                 else ->
-                    HomeScreen(
+                    LoginScreen(
                         viewModel = viewModel,
                     )
+//                    HomeScreen(
+//                        viewModel = viewModel,
+//                    )
             }
 
             // Error logging snackbar.

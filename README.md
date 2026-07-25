@@ -37,33 +37,15 @@ github_token=randomdomstringoftokencharactersnumsn_s
 **That's it!** 
 
 After you let your Gradle sync in Android Studio, you may connect an android device (with developer mode enabled) or use the android device emulator to run, debug, and test VISOR. 
+ > You can change the build variant type from `debug (default)` to `release`  from **Build** > **Select Build Variant...** if needed.
 
-In essence, this is the developer guide in setting up the frontend for VISOR. See below for other developer guides.
+In essence, this is the developer guide in setting up the VISOR application for development and testing. See below for other developer guides.
 
-More on how we setup the Meta Wearables Device Access Toolkit:
+More on how we setup and use the Meta Wearables Device Access Toolkit:
 > See [Meta Wearables Device Access Toolkit for Android](https://github.com/facebook/meta-wearables-dat-android) GitHub Repository. This also includes guides to getting any AI-Assisted Development started.
 > See [Meta DAT Integration Documentation](https://wearables.developer.meta.com/docs/develop/dat/build-integration-android) for the Kotlin documentation.
 
-### Kotlin Best Practices
-- Composable functions can be previewed using the `@Preview` notation (right above `@Composable`), so long that they do not take in any parameters. If the composable function has parameters, create a second composable function (a wrapper) to eliminate that parameter. Below is the example provided through [Androids Compose Tutorial](https://developer.android.com/develop/ui/compose/tutorial):  
-```kotlin
-// ... make sure to import this ↓
-**import androidx.compose.ui.tooling.preview.Preview**
+### Developer Guides:
 
-// The Non-"Previewable" compose function. 
-@Composable
-fun MessageCard(name: String) {
-    Text(text = "Hello $name!")
-}
-
-// Solution:
-**@Preview
-@Composable
-fun PreviewMessageCard() {
-    MessageCard("Android")
-}**
-```
-
-### Other Developer Guides:
-
-See our [VLM](./documentation/developer/VLM.md) overview.
+- Get started on frontend development with our [frontend-jumpstart](./documentation/developer/frontend-jumpstart.md).
+- See our [VLM](./documentation/developer/VLM.md) overview.

@@ -2,6 +2,27 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2" project="VISOR">
 
     <string name="app_name">VISOR</string>
+    <string name="visor_acronym" description="VISOR Acronym and Meaning">Vision Intelligence System for Ocular Rehabilitation</string>
+
+    <!-- Login Screen -->
+    <string name="login_title" description="The Login Title">Login</string>
+    <string name="example_email_input" description="Placeholder email for the user to overwrite">email@mail.com</string> <!--also, ForgotPasswordScreen() -->
+
+    <!-- Sign Up Screen -->
+    <string name="email_placeholder" description="Placeholder, 'Email' text">Email</string>
+    <string name="password_input" description="Placeholder email for the user to enter the password they are using for sign in">Password</string>
+    <string name="sign_up_button_title" description="Allows a user to confirm their new account details and proceed.">Sign Up</string>
+    <string name="confirm_password_input" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
+    <string name="already_have_account" description="Text for users to see and to prompt them to login">Have an account?</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="forgot_password" description="Placeholder, 'Email' text">Email</string>
+    <string name="password" description="Placeholder email for the user to enter the password they are using for sign in">Password</string>
+    <string name="send_button" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
+
+    <!-- Enter Code Screen -->
+    <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
+
     <!-- Home Screen -->
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
@@ -32,8 +53,8 @@
 
     <!-- SharePhotoDialog -->
     <string name="photo_captured" description="Photo Captured">Photo Captured</string>
-    <string name ="captured_photo" description="Captured Photo">Captured Photo</string>
-    <string name ="capture_photo" description="Capture Photo">Capture Photo</string>
+    <string name="captured_photo" description="Captured Photo">Captured Photo</string>
+    <string name="capture_photo" description="Capture Photo">Capture Photo</string>
     <string name="share" description="Share">Share</string>
 
     <!-- Mock Device Kit Screen -->

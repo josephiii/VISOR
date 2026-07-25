@@ -40,8 +40,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.meta.wearable.dat.camera.types.StreamState
 import ucf.visor.R
 import ucf.visor.stream.StreamViewModel
-import ucf.visor.ui.CaptureButton
-import ucf.visor.ui.SharePhotoDialog
+import ucf.visor.ui.components.CaptureButton
+import ucf.visor.ui.components.SharePhotoDialog
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.wearables.WearablesViewModel
 
@@ -81,9 +81,11 @@ fun StreamScreen(
             )
         }
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(all = 24.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(all = 24.dp)
+        ) {
             Row(
                 modifier =
                     Modifier

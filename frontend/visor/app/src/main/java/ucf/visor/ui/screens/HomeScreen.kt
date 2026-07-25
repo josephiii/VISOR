@@ -30,10 +30,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.tooling.preview.Preview
+
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
+import ucf.visor.ui.components.TipItem
 import ucf.visor.wearables.WearablesViewModel
 
+// This screen will prompt the user to
 @Composable
 fun HomeScreen(
     viewModel: WearablesViewModel,
@@ -108,35 +112,6 @@ fun HomeScreen(
                             .show()
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun TipItem(
-    iconResId: Int,
-    title: String,
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier = modifier.fillMaxWidth()) {
-        Icon(
-            painter = painterResource(id = iconResId),
-            contentDescription = "Tip icon",
-            modifier = Modifier
-                .padding(start = 4.dp, top = 4.dp)
-                .width(24.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(text = text, color = Color.Gray)
         }
     }
 }

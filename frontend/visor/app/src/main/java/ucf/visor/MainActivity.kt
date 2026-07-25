@@ -6,35 +6,28 @@ import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.Surface
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import kotlin.coroutines.resume
+import androidx.compose.ui.tooling.preview.Preview
+import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
-// MWDAT
-import com.meta.wearable.dat.core.Wearables
-import com.meta.wearable.dat.core.types.Permission
-import com.meta.wearable.dat.core.types.PermissionStatus
-
-// VISOR
-import ucf.visor.ui.CameraAccessScaffold
-import ucf.visor.wearables.WearablesViewModel
 import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.tts.Speaker
+import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.theme.VisorTheme
-
-// For Debug Testing
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import kotlin.getValue
+import ucf.visor.wearables.WearablesViewModel
+import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
 
@@ -89,10 +82,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             VisorTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    //RegisterScreen()
-                    //LoginScreen()
-                    //Commented out for login screen testing
-                    CameraAccessScaffold(
+                    VisorLayout(
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission
                     )
@@ -112,7 +102,7 @@ class MainActivity : ComponentActivity() {
         permissionCheckLauncher.launch(PERMISSIONS)
     }
 
-    // make sure these are actually destroyed
+    // Make sure these are actually destroyed
     fun onDestory() {
         super.onDestroy()
         textReaderOCR.close()
