@@ -5,8 +5,12 @@
     <string name="visor_acronym" description="VISOR Acronym and Meaning">Vision Intelligence System for Ocular Rehabilitation</string>
 
     <!-- Login Screen -->
-    <string name="login_title" description="The Login Title">Login</string>
-    <string name="example_email_input" description="Placeholder email for the user to overwrite">email@mail.com</string> <!--also, ForgotPasswordScreen() -->
+    <string name="login_title" description="The login title">Login</string>.
+    <string name="username_label" description="The username label">Username</string>.
+    <string name="password_label" description="The password label">Password</string>.
+    <string name="example_email_input" description="Placeholder email for the user to overwrite">email@email.com</string> <!--also, ForgotPasswordScreen() -->
+    <string name="example_password_input" descripion="Placeholder password">password</string>
+    <string name="sign_up_title" descripion="The sign up title">Sign Up</string>
 
     <!-- Sign Up Screen -->
     <string name="email_placeholder" description="Placeholder, 'Email' text">Email</string>

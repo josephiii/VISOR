@@ -1,8 +1,9 @@
-package ucf.visor.ui.profile
+package ucf.visor.ui.screens.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import ucf.visor.ui.profile.ProfileStore
 
 /**
  * VISOR-124 — hosts the profile creation wizard and persists the result.

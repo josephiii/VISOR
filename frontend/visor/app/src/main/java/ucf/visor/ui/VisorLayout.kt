@@ -1,5 +1,7 @@
 package ucf.visor.ui
 
+// MWDAT
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,17 +32,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
-
 import ucf.visor.BuildConfig
-import ucf.visor.ui.screens.LoginScreen
+import ucf.visor.ui.screens.HomeScreen
 import ucf.visor.ui.screens.MockDeviceKitScreen
 import ucf.visor.ui.screens.NonStreamScreen
 import ucf.visor.ui.screens.StreamScreen
+import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.wearables.WearablesViewModel
 
+// VisorLayout() will control the application screen state. It calls the separate screen functions
+// based on the current viewModel state (uiState) and is where we keep our debugging tools.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -65,8 +68,14 @@ fun VisorLayout(
         }
     }
 
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             when {
 
                 // Will route to VerifyScreen() and EnterCodeScreen().
@@ -77,7 +86,9 @@ fun VisorLayout(
 //
                 uiState.isLoggingIn ->
                     LoginScreen(
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        onLoginClick = { tempEmail, tempPassword -> {} },
+                        onSignUpClick = {}
                     )
 //
 //                uiState.hasForgotPassword ->
@@ -98,12 +109,9 @@ fun VisorLayout(
 
                 // HomeScreen, the "root" screen for VISOR users.
                 else ->
-                    LoginScreen(
+                    HomeScreen(
                         viewModel = viewModel,
                     )
-//                    HomeScreen(
-//                        viewModel = viewModel,
-//                    )
             }
 
             // Error logging snackbar.

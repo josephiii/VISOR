@@ -1,4 +1,4 @@
-package ucf.visor.ui.screens
+package ucf.visor.ui.screens.auth
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background

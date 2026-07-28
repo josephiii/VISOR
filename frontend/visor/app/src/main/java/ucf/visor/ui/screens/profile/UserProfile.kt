@@ -1,4 +1,4 @@
-package ucf.visor.ui.profile
+package ucf.visor.ui.screens.profile
 
 /**
  * VISOR-123 — User profile data model.

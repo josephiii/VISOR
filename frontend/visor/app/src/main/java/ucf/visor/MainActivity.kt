@@ -15,18 +15,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+
+// MWDAT
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+
 import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.screens.auth.PreviewLoginScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.wearables.WearablesViewModel
+
 import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
@@ -71,8 +77,9 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    ///////////////////////////////////////////////////////////////////////////
 
+    ///////////////////////////////////////////////////////////////////////////
+    // MAIN
     private lateinit var textReaderOCR: TextReaderOCR
     private lateinit var speaker: Speaker
 
@@ -102,7 +109,7 @@ class MainActivity : ComponentActivity() {
         permissionCheckLauncher.launch(PERMISSIONS)
     }
 
-    // Make sure these are actually destroyed
+    // Make sure these are actually destroyed.
     fun onDestory() {
         super.onDestroy()
         textReaderOCR.close()
@@ -112,14 +119,14 @@ class MainActivity : ComponentActivity() {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Insert the component here to view it with Visor Themes applied.
-// This will also work for components with parameters, just assign a dummy param to get it to work.
 @Preview
 @Composable
 fun PreviewWithTheme() {
     VisorTheme {
-        Surface {
+        Surface(modifier = Modifier.fillMaxSize()) {
             // Place component here.
             //...
+            PreviewLoginScreen()
         }
     }
 }

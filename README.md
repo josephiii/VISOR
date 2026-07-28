@@ -37,9 +37,9 @@ github_token=randomdomstringoftokencharactersnumsn_s
 **That's it!** 
 
 After you let your Gradle sync in Android Studio, you may connect an android device (with developer mode enabled) or use the android device emulator to run, debug, and test VISOR. 
- > You can change the build variant type from `debug (default)` to `release`  from **Build** > **Select Build Variant...** if needed.
+ > You can change the build variant type from `debug (default)` to `release`  from **Build** > **Select Build Variant...** if needed. This may require **Build > Clean Project** and **Build > Assemble 'app' Run Configuration** to prevent errors.
 
-In essence, this is the developer guide in setting up the VISOR application for development and testing. See below for other developer guides.
+In essence, this is the developer guide in setting up the VISOR application for development and testing. We highly recommend becoming familiar with the **Kotlin** language and **Jetpack Compose** (its UI toolkit). See below for other developer guides.
 
 More on how we setup and use the Meta Wearables Device Access Toolkit:
 > See [Meta Wearables Device Access Toolkit for Android](https://github.com/facebook/meta-wearables-dat-android) GitHub Repository. This also includes guides to getting any AI-Assisted Development started.

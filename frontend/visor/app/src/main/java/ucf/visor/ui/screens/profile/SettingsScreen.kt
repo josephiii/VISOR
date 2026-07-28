@@ -1,6 +1,5 @@
 package ucf.visor.ui.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +28,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ucf.visor.ui.screens.profile.SpeechRate
+import ucf.visor.ui.screens.profile.UserProfile
+import ucf.visor.ui.screens.profile.Verbosity
+
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
  * (Ticket TBD — the "Profile Settings" page from Aidan's VISOR-155 page list.)

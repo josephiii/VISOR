@@ -1,4 +1,4 @@
-package ucf.visor.ui.profile
+package ucf.visor.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
