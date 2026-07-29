@@ -11,7 +11,7 @@
 // This screen allows developers to simulate wearable devices and test DAT functionality without
 // hardware.
 
-package ucf.visor.ui.screens
+package ucf.visor.ui.screens.debug
 
 import android.Manifest
 import android.content.Intent
@@ -138,6 +138,36 @@ fun MockDeviceKitScreen(
                         enabled = uiState.pairedDevices.size < 3,
                     )
                 }
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.debug_screen_view_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.debug_screen_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                HorizontalDivider()
+
+                // FIXME
+
             }
         }
 

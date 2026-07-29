@@ -36,10 +36,10 @@ import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.BuildConfig
 import ucf.visor.ui.screens.HomeScreen
-import ucf.visor.ui.screens.MockDeviceKitScreen
 import ucf.visor.ui.screens.NonStreamScreen
 import ucf.visor.ui.screens.StreamScreen
 import ucf.visor.ui.screens.auth.LoginScreen
+import ucf.visor.ui.screens.debug.MockDeviceKitScreen
 import ucf.visor.wearables.WearablesViewModel
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions

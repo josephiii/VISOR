@@ -37,7 +37,22 @@ data class MockDeviceInfo(
     val isUnfolded: Boolean = false,
 )
 
+enum class ScreenView {
+    HOME,
+    LOGIN,
+    SIGN_UP,
+    FORGOT_PASSWORD,
+    ENTER_CODE,
+    VERIFY_ACCT,
+    SESSION,
+    USER_SETTINGS,
+    HARDWARE
+}
+
 data class MockDeviceKitUiState(
     val isEnabled: Boolean = false,
     val pairedDevices: List<MockDeviceInfo> = emptyList(),
+    val screen: ScreenView = ScreenView.HOME
 )
+
+

@@ -128,17 +128,17 @@ private suspend fun registerUser(
     email: String,
     password: String,
     username: String,
-    confPW: String
+    confirmedPassword: String
 ): String {
-    //Confirm email is valid email and unique
+    // Confirm email is valid email and unique
     val emailRegex = Regex("""^\w+@\w+\.\w+$""")
     if (!(emailRegex.matches(email))) {
         return "Invalid email"
     }
-    //Unique check requires db
+    // Unique check requires db
 
-    //Check that password and confirm pw match
-    if (password != confPW) {
+    // Check that password and confirm pw match
+    if (password != confirmedPassword) {
         return "The passwords do not match"
     }
     val apiBase = "http://127.0.0.1:8000"
