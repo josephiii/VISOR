@@ -49,10 +49,8 @@ enum class ScreenView {
     HARDWARE
 }
 
-data class MockDeviceKitUiState(
+data class DebugUiState(
     val isEnabled: Boolean = false,
     val pairedDevices: List<MockDeviceInfo> = emptyList(),
     val screen: ScreenView = ScreenView.HOME
 )
-
-

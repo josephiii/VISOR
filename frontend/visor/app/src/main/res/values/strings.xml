@@ -96,6 +96,11 @@
     <!-- DEBUG -->
     <string name="debug_screen_view_title" description="Title for the debug screen viewer">DEBUG: Screen Viewer</string>
     <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
+    <string name="home_screen" description="home screen debug option">HOME SCREEN</string>
+    <string name="login_screen" description="login screen debug option">LOGIN SCREEN</string>
+    <string name="sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
+    <string name="forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
+
 
     <!-- Camera Permission Alert -->
     <string name="camera_permission_alert_title" description="Camera permission alert title">Camera Access Required</string>

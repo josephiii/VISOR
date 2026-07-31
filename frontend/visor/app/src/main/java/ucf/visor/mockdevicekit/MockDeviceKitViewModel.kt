@@ -36,8 +36,8 @@ class MockDeviceKitViewModel(application: Application) : AndroidViewModel(applic
 
     private val mockDeviceKit = MockDeviceKit.getInstance(application.applicationContext)
 
-    private val _uiState = MutableStateFlow(MockDeviceKitUiState())
-    val uiState: StateFlow<MockDeviceKitUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(DebugUiState())
+    val uiState: StateFlow<DebugUiState> = _uiState.asStateFlow()
 
     fun enable() {
         mockDeviceKit.enable()

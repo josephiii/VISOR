@@ -1,7 +1,5 @@
 package ucf.visor.ui
 
-// MWDAT
-
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -39,7 +37,7 @@ import ucf.visor.ui.screens.HomeScreen
 import ucf.visor.ui.screens.NonStreamScreen
 import ucf.visor.ui.screens.StreamScreen
 import ucf.visor.ui.screens.auth.LoginScreen
-import ucf.visor.ui.screens.debug.MockDeviceKitScreen
+import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.wearables.WearablesViewModel
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions
@@ -156,7 +154,7 @@ fun VisorLayout(
                         sheetState = bottomSheetState,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        MockDeviceKitScreen(modifier = Modifier.fillMaxSize())
+                        DebugScreen(modifier = Modifier.fillMaxSize())
                     }
                 }
             }

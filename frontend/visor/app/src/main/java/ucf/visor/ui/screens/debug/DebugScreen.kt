@@ -68,9 +68,11 @@ import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import ucf.visor.R
 import ucf.visor.mockdevicekit.MockDeviceInfo
 import ucf.visor.mockdevicekit.MockDeviceKitViewModel
+import ucf.visor.ui.screens.auth.LoginScreen
+import ucf.visor.ui.screens.auth.PreviewLoginScreen
 
 @Composable
-fun MockDeviceKitScreen(
+fun DebugScreen(
     modifier: Modifier = Modifier,
     viewModel: MockDeviceKitViewModel = viewModel(LocalActivity.current as ComponentActivity),
 ) {
@@ -166,7 +168,16 @@ fun MockDeviceKitScreen(
                 )
                 HorizontalDivider()
 
-                // FIXME
+                // Screen Selection
+//                ActionButton(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    text = stringResource(R.string.pair_rayban_meta),
+//                    onClick = { PreviewLoginScreen()
+//                        LoginScreen(
+//                            viewModel =null,
+//                            )
+//                    }
+//                )
 
             }
         }
