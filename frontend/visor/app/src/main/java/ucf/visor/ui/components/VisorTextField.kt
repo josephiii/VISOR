@@ -1,10 +1,12 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -13,7 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 // Can be used for usernames and passwords.
 @Composable
 fun VisorTextField(
-    value: String,
+    value: String = "",
     onValueChange: (String) -> Unit,
     label: String,
     isPassword: Boolean = false,
@@ -23,7 +25,17 @@ fun VisorTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+        visualTransformation =
+            if (isPassword)
+                PasswordVisualTransformation()
+            else
+                VisualTransformation.None,
+        keyboardOptions =
+            if (isPassword)
+                KeyboardOptions(keyboardType = KeyboardType.Password)
+            else
+                KeyboardOptions(keyboardType = KeyboardType.Email),
+        singleLine = true,
         modifier = modifier.fillMaxWidth(fraction = 0.9f)
     )
 }

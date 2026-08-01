@@ -181,6 +181,14 @@ fun DebugScreen(
                     }
                 )
 
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.forgot_password_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("forgot_password")
+                    }
+                )
 
             }
         }

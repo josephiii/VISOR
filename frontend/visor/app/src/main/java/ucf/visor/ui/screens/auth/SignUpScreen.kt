@@ -18,10 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -35,7 +33,9 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
 fun SignUpScreen(
-    viewModel: VisorViewModel? = null,
+    viewModel: VisorViewModel,
+    onSignUpClick: () -> Unit,
+    onLoginClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -77,29 +77,23 @@ fun SignUpScreen(
                 )
 
                 VisorTextField(
-                    value = stringResource(R.string.example_username_input),
                     onValueChange = { typedUsername -> username = typedUsername }, // user input
                     label = stringResource(R.string.username_label)
                 )
 
                 VisorTextField(
-                    value = stringResource(R.string.example_email_input),
                     onValueChange = { typedAddress -> email = typedAddress }, // user input
                     label = stringResource(R.string.email_label)
                 )
 
                 VisorTextField(
-                    value = stringResource(R.string.example_password_input),
                     onValueChange = { typedPassword -> password = typedPassword }, // user input
                     label = stringResource(R.string.password_label),
                     isPassword = true
                 )
 
                 VisorTextField(
-                    value = stringResource(R.string.example_password_input),
-                    onValueChange = { typedPassword ->
-                        confirmedPassword = typedPassword
-                    }, // user input
+                    onValueChange = { confirmedPassword = it },
                     label = stringResource(R.string.confirm_password_label),
                     isPassword = true
                 )
@@ -107,9 +101,10 @@ fun SignUpScreen(
                 VisorButton(
                     text = stringResource(R.string.sign_up_title),
                     onClick = {
-                        scope.launch {
-                            val result = registerUser(email, password, username, confirmedPassword)
-                        }
+                        onSignUpClick()
+//                        scope.launch {
+//                            val result = registerUser(email, password, username, confirmedPassword)
+//                        }
                     }
                 )
 
@@ -159,10 +154,4 @@ private suspend fun registerUser(
             return "Error registering user" //+ errorMessage
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewSignUpScreen() {
-    SignUpScreen()
 }

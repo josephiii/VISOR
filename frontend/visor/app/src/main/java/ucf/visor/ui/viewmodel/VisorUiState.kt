@@ -34,7 +34,15 @@ data class VisorUiState(
 
     // Screen States.
     val isLoggingIn: Boolean = false,
-) {
+    val isSigningUp: Boolean = false,
+    val hasForgottenPassword: Boolean = false,
+    val isEnteringCode: Boolean = false,
+    val isVerifyingAccount: Boolean = false,
+    val isOnboarding: Boolean = false,
+    val atHome: Boolean = false,
+    val onHardwareConnection: Boolean = false,
+
+    ) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||
                 registrationState == RegistrationState.UNREGISTERING
@@ -42,4 +50,6 @@ data class VisorUiState(
     val isRegistering: Boolean = registrationState == RegistrationState.REGISTERING
 
     val canStartRegistration: Boolean = canRegister && !isRegistering
+
+    val finishedOnboarding: Boolean = atHome
 }

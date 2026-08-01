@@ -3,8 +3,6 @@ package ucf.visor.ui.screens.auth
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.Card
@@ -28,30 +26,25 @@ import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
-fun LoginScreen(
+fun ForgotPasswordScreen(
     viewModel: VisorViewModel,
-    onLoginClick: () -> Unit,
-    onForgotPasswordClick: () -> Unit,
-    onSignUpClick: () -> Unit,
+    onSendCodeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(24.dp)
-
+        modifier = Modifier.padding(vertical = 24.dp)
     ) {
 
         VisorHeader()
-        Spacer(modifier = modifier.height(20.dp))
 
         Card(
             modifier = Modifier
                 .padding(
-                    horizontal = 10.dp,
-                    vertical = 35.dp
+                    horizontal = 35.dp,
+                    vertical = 20.dp
                 )
                 .border(
                     width = 2.dp,
@@ -66,49 +59,33 @@ fun LoginScreen(
             ) {
 
                 Text(
-                    text = stringResource(R.string.login_title),
+                    text = stringResource(R.string.forgot_password_title),
                     fontSize = 30.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = stringResource(R.string.forgot_password_description),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Normal
                 )
 
                 VisorTextField(
-                    label = stringResource(R.string.email_username_label),
-                    onValueChange = { email = it }, // user input
-                )
-
-                VisorTextField(
-                    label = stringResource(R.string.password_label),
-                    onValueChange = { password = it }, // user input
-                    isPassword = true
+                    value = stringResource(R.string.example_email_input),
+                    onValueChange = { typedAddress -> email = typedAddress }, // user input
+                    label = stringResource(R.string.email_label)
                 )
 
                 VisorButton(
-                    text = stringResource(R.string.login_title),
+                    text = stringResource(R.string.send_code_button_text),
+                    width = 0.5f,
                     onClick = {
-                        onLoginClick()
+                        onSendCodeClick()
                     }
                 )
+
+
             }
         }
-
-        Spacer(modifier = modifier.height(10.dp))
-        Text("Trouble logging in?")
-        VisorButton(
-            text = stringResource(R.string.forgot_password_title),
-            width = 0.65f,
-            onClick = {
-                onForgotPasswordClick()
-            }
-        )
-
-        Spacer(modifier = modifier.height(20.dp))
-        Text("New users register here")
-        VisorButton(
-            text = stringResource(R.string.sign_up_title),
-            width = 0.4f,
-            onClick = {
-                onSignUpClick()
-            }
-        )
     }
 }

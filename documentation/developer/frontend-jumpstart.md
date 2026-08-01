@@ -2,6 +2,10 @@
 
 The purpose of this document is to provide some useful tips and tricks on getting started with development of the frontend for VISOR.
 
+### Screen Workflow
+
+Within `VisorLayout.kt`, we use an Observer pattern via `LaunchedEffects` based on the observed uiState
+
 ### VISOR App Static Resources
 
 The way Android projects are set up, we can store all of our application's static resources within the `VISOR/frontend/visor/app/src/main/res/` directory. 

@@ -78,13 +78,35 @@ fun VisorLayout(
         }
     }
 
-    LaunchedEffect(uiState.isLoggingIn) {
-        if (uiState.isLoggingIn) {
-            navController.navigate("login")
+    // Observe SignUpScreen
+    LaunchedEffect(uiState.isSigningUp) {
+        if (uiState.isSigningUp) {
+            navController.navigate("sign_up")
         }
     }
 
-    // This is the Screen Layout!
+    // Observe ForgotPasswordScreen
+    LaunchedEffect(uiState.hasForgottenPassword) {
+        if (uiState.hasForgottenPassword) {
+            navController.navigate("forgot_password")
+        }
+    }
+
+    // Observe EnterCodeScreen
+    LaunchedEffect(uiState.isEnteringCode) {
+        if (uiState.isEnteringCode) {
+            navController.navigate("enter_code")
+        }
+    }
+
+    // Observe VerifyAccountScreen
+    LaunchedEffect(uiState.isVerifyingAccount) {
+        if (uiState.isSigningUp) {
+            navController.navigate("verify_account")
+        }
+    }
+
+    // This is the Active Screen Surface!
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -131,7 +153,7 @@ fun VisorLayout(
             if (BuildConfig.DEBUG) {
                 FloatingActionButton(
                     onClick = { viewModel.showDebugMenu() },
-                    modifier = Modifier.align(Alignment.CenterEnd),
+                    modifier = Modifier.align(Alignment.TopEnd),
                 ) {
                     Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")
                 }
@@ -157,6 +179,7 @@ fun VisorLayout(
 
 ///////////////////////////////////////////////////////////////////////////////
 // Insert the component here to view it with Visor Themes applied.
+// VisorThemes are applied at the top level in MainActivity.kt
 @Preview
 @Composable
 fun PreviewWithTheme() {

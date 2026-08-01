@@ -37,9 +37,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
+    // Static Variables
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // VISOR
     private val _uiState = MutableStateFlow(VisorUiState())
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // MWDAT
     // AutoDeviceSelector automatically selects the first available wearable device.
     val deviceSelector: DeviceSelector by lazy { AutoDeviceSelector() }
     private var deviceSelectorJob: Job? = null
@@ -48,6 +53,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val deviceMonitoringJobs = mutableMapOf<DeviceIdentifier, Job>()
     private val deviceCompatibility = mutableMapOf<DeviceIdentifier, DeviceCompatibility>()
 
+    // Methods
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // MWDAT
     private fun startMonitoring() {
         if (monitoringStarted) {
             return
@@ -163,8 +171,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun navigateToDeviceSelection() {
-        _uiState.update { it.copy(isStreaming = false) }
+    // UI Updates
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // VISOR
+    internal fun setRecentError(error: String) {
+        _uiState.update { it.copy(recentError = error) }
+    }
+
+    fun clearRecentError() {
+        _uiState.update { it.copy(recentError = null) }
     }
 
     fun showDebugMenu() {
@@ -175,16 +190,51 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isDebugMenuVisible = false) }
     }
 
-    fun clearRecentError() {
-        _uiState.update { it.copy(recentError = null) }
+    fun login() {
+        _uiState.update { it.copy(isLoggingIn = true) }
     }
 
-    internal fun setRecentError(error: String) {
-        _uiState.update { it.copy(recentError = error) }
+    fun signUp() {
+        _uiState.update { it.copy(isLoggingIn = false) }
+        _uiState.update { it.copy(isSigningUp = true) }
     }
+
+    fun forgotPassword() {
+        _uiState.update { it.copy(isLoggingIn = false) }
+        _uiState.update { it.copy(hasForgottenPassword = true) }
+    }
+
+    fun enterCode() {
+        _uiState.update { it.copy(isEnteringCode = true) }
+    }
+
+    fun verifyAccount() {
+        _uiState.update { it.copy(isLoggingIn = false) }
+        _uiState.update { it.copy(isVerifyingAccount = true) }
+    }
+
+    fun onboard() {
+        _uiState.update { it.copy(isOnboarding = true) }
+    }
+
+    fun home() {
+        _uiState.update { it.copy(atHome = true) }
+    }
+
+    fun hardwareConnection() {
+        _uiState.update { it.copy(onHardwareConnection = true) }
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // MWDAT
 
     internal fun setDatAppUpdateRequired(required: Boolean) {
         _uiState.update { it.copy(isDatAppUpdateRequired = required) }
+    }
+
+    fun navigateToDeviceSelection() {
+        _uiState.update { it.copy(isStreaming = false) }
     }
 
     fun onPermissionsResult(permissionsResult: Map<String, Boolean>, onAllGranted: () -> Unit) {
@@ -200,14 +250,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun showGettingStartedSheet() {
-        _uiState.update { it.copy(isGettingStartedSheetVisible = true) }
-    }
-
-    fun hideGettingStartedSheet() {
-        _uiState.update { it.copy(isGettingStartedSheetVisible = false) }
-    }
-
     override fun onCleared() {
         super.onCleared()
         // Cancel all device monitoring jobs when ViewModel is cleared
@@ -221,4 +263,13 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             deviceCompatibility.values.any { it == DeviceCompatibility.DEVICE_UPDATE_REQUIRED }
         _uiState.update { it.copy(isFirmwareUpdateRequired = isRequired) }
     }
+
+    fun showGettingStartedSheet() {
+        _uiState.update { it.copy(isGettingStartedSheetVisible = true) }
+    }
+
+    fun hideGettingStartedSheet() {
+        _uiState.update { it.copy(isGettingStartedSheetVisible = false) }
+    }
+
 }

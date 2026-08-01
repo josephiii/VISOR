@@ -1,9 +1,12 @@
 package ucf.visor.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.home.HomeScreen
@@ -15,6 +18,8 @@ fun VisorNavHost(
     viewModel: VisorViewModel
 
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     // Each VISOR screen corresponds with a composable and a respective route string.
     NavHost(
         navController = navController,
@@ -23,18 +28,27 @@ fun VisorNavHost(
 
         composable("login") {
             LoginScreen(
-                onLoginClick = { _, _ -> navController.navigate("home") },
-                onSignUpClick = { navController.navigate("sign_up") }
+                viewModel = viewModel,
+                onLoginClick = { viewModel.verifyAccount() },
+                onForgotPasswordClick = { viewModel.forgotPassword() },
+                onSignUpClick = { viewModel.signUp() }
             )
         }
 
         composable("sign_up") {
-            SignUpScreen()
+            SignUpScreen(
+                viewModel = viewModel,
+                onSignUpClick = { viewModel.verifyAccount() },
+                onLoginClick = { viewModel.login() }
+            )
         }
 
-//        composable("forgot_password") {
-//            ForgotPasswordScreen()
-//        }
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                viewModel = viewModel,
+                onSendCodeClick = { viewModel.enterCode() },
+            )
+        }
 
 //        composable("enter_code") {
 //            EnterCodeScreen()
