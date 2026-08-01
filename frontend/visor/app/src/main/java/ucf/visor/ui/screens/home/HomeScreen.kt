@@ -1,17 +1,15 @@
-package ucf.visor.ui.screens
+package ucf.visor.ui.screens.home
 
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -25,22 +23,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.tooling.preview.Preview
-
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 // This screen will prompt the user to
 @Composable
 fun HomeScreen(
-    viewModel: WearablesViewModel,
+    viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()

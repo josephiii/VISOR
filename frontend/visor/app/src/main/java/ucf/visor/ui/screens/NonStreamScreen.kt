@@ -65,12 +65,12 @@ import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NonStreamScreen(
-    viewModel: WearablesViewModel,
+    viewModel: VisorViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     modifier: Modifier = Modifier,
 ) {

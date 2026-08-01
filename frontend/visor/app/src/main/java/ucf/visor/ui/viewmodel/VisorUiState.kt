@@ -10,17 +10,17 @@
 //
 // This data class aggregates DAT API state for the UI layer
 
-package ucf.visor.wearables
+package ucf.visor.ui.viewmodel
 
 import com.meta.wearable.dat.core.types.DeviceIdentifier
 import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
-data class WearablesUiState(
+data class VisorUiState(
     val registrationState: RegistrationState = RegistrationState.UNAVAILABLE,
     val devices: ImmutableList<DeviceIdentifier> = persistentListOf(),
-    val recentError: String? = null,
+
     val isStreaming: Boolean = false,
     val isDebugMenuVisible: Boolean = false,
     val isGettingStartedSheetVisible: Boolean = false,
@@ -28,6 +28,11 @@ data class WearablesUiState(
     val isDatAppUpdateRequired: Boolean = false,
     val hasActiveDevice: Boolean = false,
     val canRegister: Boolean = false,
+
+    // Interface Error Component.
+    val recentError: String? = null,
+
+    // Screen States.
     val isLoggingIn: Boolean = false,
 ) {
     val isRegistered: Boolean =

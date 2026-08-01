@@ -14,7 +14,7 @@
 // - Device discovery and state management
 // - Integration with MockDeviceKit for testing
 
-package ucf.visor.wearables
+package ucf.visor.ui.viewmodel
 
 import android.app.Activity
 import android.app.Application
@@ -36,9 +36,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class WearablesViewModel(application: Application) : AndroidViewModel(application) {
-    private val _uiState = MutableStateFlow(WearablesUiState())
-    val uiState: StateFlow<WearablesUiState> = _uiState.asStateFlow()
+class VisorViewModel(application: Application) : AndroidViewModel(application) {
+    private val _uiState = MutableStateFlow(VisorUiState())
+    val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
     // AutoDeviceSelector automatically selects the first available wearable device.
     val deviceSelector: DeviceSelector by lazy { AutoDeviceSelector() }

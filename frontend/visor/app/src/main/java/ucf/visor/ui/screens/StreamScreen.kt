@@ -43,18 +43,18 @@ import ucf.visor.stream.StreamViewModel
 import ucf.visor.ui.components.CaptureButton
 import ucf.visor.ui.components.SharePhotoDialog
 import ucf.visor.ui.components.SwitchButton
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
 fun StreamScreen(
-    wearablesViewModel: WearablesViewModel,
+    visorViewModel: VisorViewModel,
     modifier: Modifier = Modifier,
     streamViewModel: StreamViewModel =
         viewModel(
             factory =
                 StreamViewModel.Factory(
                     application = (LocalActivity.current as ComponentActivity).application,
-                    wearablesViewModel = wearablesViewModel,
+                    visorViewModel = visorViewModel,
                 ),
         ),
 ) {
@@ -100,7 +100,7 @@ fun StreamScreen(
                     label = stringResource(R.string.stop_stream_button_title),
                     onClick = {
                         streamViewModel.stopStream()
-                        wearablesViewModel.navigateToDeviceSelection()
+                        visorViewModel.navigateToDeviceSelection()
                     },
                     isDestructive = true,
                     modifier = Modifier.weight(1f),

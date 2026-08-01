@@ -31,7 +31,7 @@ import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.screens.auth.PreviewLoginScreen
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 import kotlin.coroutines.resume
 
@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         val PERMISSIONS: Array<String> = arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET)
     }
 
-    val viewModel: WearablesViewModel by viewModels()
+    val viewModel: VisorViewModel by viewModels()
 
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
@@ -114,19 +114,5 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         textReaderOCR.close()
         speaker.shutdown()
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Insert the component here to view it with Visor Themes applied.
-@Preview
-@Composable
-fun PreviewWithTheme() {
-    VisorTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            // Place component here.
-            //...
-            PreviewLoginScreen()
-        }
     }
 }

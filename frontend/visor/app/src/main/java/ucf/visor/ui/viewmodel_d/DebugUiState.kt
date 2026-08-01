@@ -20,7 +20,8 @@
 // - hasCapturedImage: Whether mock photo content has been configured
 // - cameraSource: Which phone camera is being used as the source, if any
 
-package ucf.visor.mockdevicekit
+package ucf.visor.ui.viewmodel_d
+
 
 import com.meta.wearable.dat.mockdevice.api.MockRaybanMeta
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
@@ -37,20 +38,8 @@ data class MockDeviceInfo(
     val isUnfolded: Boolean = false,
 )
 
-enum class ScreenView {
-    HOME,
-    LOGIN,
-    SIGN_UP,
-    FORGOT_PASSWORD,
-    ENTER_CODE,
-    VERIFY_ACCT,
-    SESSION,
-    USER_SETTINGS,
-    HARDWARE
-}
-
 data class DebugUiState(
     val isEnabled: Boolean = false,
     val pairedDevices: List<MockDeviceInfo> = emptyList(),
-    val screen: ScreenView = ScreenView.HOME
 )
+

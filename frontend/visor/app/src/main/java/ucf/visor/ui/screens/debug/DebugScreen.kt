@@ -1,11 +1,4 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
+// MWDAT
 // MockDeviceKitScreen - DAT Testing Interface
 //
 // This screen allows developers to simulate wearable devices and test DAT functionality without
@@ -64,17 +57,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import ucf.visor.R
-import ucf.visor.mockdevicekit.MockDeviceInfo
-import ucf.visor.mockdevicekit.MockDeviceKitViewModel
-import ucf.visor.ui.screens.auth.LoginScreen
-import ucf.visor.ui.screens.auth.PreviewLoginScreen
+import ucf.visor.ui.viewmodel_d.DebugViewModel
+import ucf.visor.ui.viewmodel_d.MockDeviceInfo
 
 @Composable
 fun DebugScreen(
-    modifier: Modifier = Modifier,
-    viewModel: MockDeviceKitViewModel = viewModel(LocalActivity.current as ComponentActivity),
+    viewModel: DebugViewModel = viewModel(LocalActivity.current as ComponentActivity),
+    navController: NavHostController,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -169,15 +163,24 @@ fun DebugScreen(
                 HorizontalDivider()
 
                 // Screen Selection
-//                ActionButton(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    text = stringResource(R.string.pair_rayban_meta),
-//                    onClick = { PreviewLoginScreen()
-//                        LoginScreen(
-//                            viewModel =null,
-//                            )
-//                    }
-//                )
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.login_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("login")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.sign_up_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("sign_up")
+                    }
+                )
+
 
             }
         }
@@ -209,7 +212,7 @@ private fun ActionButton(
 @Composable
 private fun MockDeviceCard(
     deviceInfo: MockDeviceInfo,
-    viewModel: MockDeviceKitViewModel,
+    viewModel: DebugViewModel,
 ) {
     val videoPickerLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?

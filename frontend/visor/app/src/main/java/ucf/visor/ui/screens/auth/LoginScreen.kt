@@ -27,22 +27,19 @@ import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
 fun LoginScreen(
-    viewModel: WearablesViewModel?,
+    viewModel: VisorViewModel? = null,
     onLoginClick: (email: String, password: String) -> Unit,
     onSignUpClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scope = rememberCoroutineScope()
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     Column(
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(24.dp)
 
@@ -55,10 +52,11 @@ fun LoginScreen(
             modifier = Modifier
                 .padding(
                     horizontal = 10.dp,
-                    vertical = 35.dp)
+                    vertical = 35.dp
+                )
                 .border(
                     width = 2.dp,
-                    color =MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     shape = CutCornerShape(8.dp)
                 ),
         ) {
@@ -112,8 +110,7 @@ fun LoginScreen(
 @Composable
 fun PreviewLoginScreen() {
     LoginScreen(
-        viewModel = null,
-        onLoginClick = { tempEmail, tempPassword -> {} },
+        onLoginClick = { _, _ -> {} },
         onSignUpClick = {}
     )
 }

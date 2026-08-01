@@ -11,7 +11,7 @@
 // This ViewModel demonstrates the MockDeviceKit testing framework provided by the DAT SDK.
 // MockDeviceKit allows developers to test DAT applications without physical wearable devices.
 
-package ucf.visor.mockdevicekit
+package ucf.visor.ui.viewmodel_d
 
 import android.app.Application
 import android.net.Uri
@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class MockDeviceKitViewModel(application: Application) : AndroidViewModel(application) {
+class DebugViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "MockDeviceKitViewModel"
@@ -47,12 +47,6 @@ class MockDeviceKitViewModel(application: Application) : AndroidViewModel(applic
     fun disable() {
         mockDeviceKit.disable()
         _uiState.update { it.copy(isEnabled = false, pairedDevices = emptyList()) }
-    }
-
-    fun SwitchScreen(
-        screenSwitch: ScreenView = ScreenView.HOME
-    ) {
-        _uiState.update { it.copy(screen = screenSwitch) }
     }
 
     // Create a simulated Ray-Ban Meta glasses device

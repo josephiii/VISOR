@@ -30,9 +30,9 @@ fun SwitchButton(
 
 @Preview
 @Composable
-fun TestPreview() {
+fun SwitchButtonPreview() {
     SwitchButton(
         onClick = {},
-        label = "test"
+        label = "Test Label"
     )
 }

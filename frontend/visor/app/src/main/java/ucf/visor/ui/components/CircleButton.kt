@@ -37,7 +37,6 @@ fun CircleButton(
     )
 }
 
-
 @Composable
 fun CaptureButton(onClick: () -> Unit) {
     CircleButton(onClick = onClick) {

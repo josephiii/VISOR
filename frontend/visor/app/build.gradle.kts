@@ -79,6 +79,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.navigation.runtime.ktx)
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation(libs.kotlinx.collections.immutable)
     androidTestImplementation(libs.androidx.ui.test.junit4)

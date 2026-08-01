@@ -31,9 +31,11 @@ import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
 fun SignUpScreen(
+    viewModel: VisorViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -45,7 +47,7 @@ fun SignUpScreen(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 20.dp)
+        modifier = Modifier.padding(vertical = 24.dp)
     ) {
 
         VisorHeader()
@@ -54,7 +56,7 @@ fun SignUpScreen(
             modifier = Modifier
                 .padding(
                     horizontal = 35.dp,
-                    vertical = 35.dp
+                    vertical = 20.dp
                 )
                 .border(
                     width = 2.dp,

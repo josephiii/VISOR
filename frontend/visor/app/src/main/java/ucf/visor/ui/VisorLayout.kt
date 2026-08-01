@@ -28,36 +28,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.BuildConfig
-import ucf.visor.ui.screens.HomeScreen
-import ucf.visor.ui.screens.NonStreamScreen
-import ucf.visor.ui.screens.StreamScreen
-import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.debug.DebugScreen
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.theme.VisorTheme
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions
 // based on the current viewModel state (uiState) and is where we keep our debugging tools.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
-    viewModel: WearablesViewModel,
+    viewModel: VisorViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     modifier: Modifier = Modifier,
 ) {
-    // For more details on the uiState, see the data class wearables/WearablesUiState.kt
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Used to display errors. Pass errors strings through uiState.recentError to be displayed through the snackbar.
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState =
+        remember { SnackbarHostState() }
 
     // DEBUG TOOL: Mock Device Kit Debug button
-    val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val bottomSheetState =
+        rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // Controls screen state (see VisorNavHost)
+    val navController = rememberNavController()
+
+    // OBSERVERS: will watch for changes in uiState.
     // Observe recent errors and show snackbar.
     LaunchedEffect(uiState.recentError) {
         uiState.recentError?.let { errorMessage ->
@@ -66,6 +71,20 @@ fun VisorLayout(
         }
     }
 
+    // Observe LoginScreen
+    LaunchedEffect(uiState.isLoggingIn) {
+        if (uiState.isLoggingIn) {
+            navController.navigate("login")
+        }
+    }
+
+    LaunchedEffect(uiState.isLoggingIn) {
+        if (uiState.isLoggingIn) {
+            navController.navigate("login")
+        }
+    }
+
+    // This is the Screen Layout!
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -74,43 +93,12 @@ fun VisorLayout(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            when {
 
-                // Will route to VerifyScreen() and EnterCodeScreen().
-//                uiState.isSigningUp ->
-//                    SignUpScreen(
-//                        wearablesViewModel = viewModel,
-//                    )
-//
-                uiState.isLoggingIn ->
-                    LoginScreen(
-                        viewModel = viewModel,
-                        onLoginClick = { tempEmail, tempPassword -> {} },
-                        onSignUpClick = {}
-                    )
-//
-//                uiState.hasForgotPassword ->
-//                    ForgotPasswordScreen(
-//                        wearablesViewModel = viewModel,
-//                    )
-
-                uiState.isStreaming ->
-                    StreamScreen(
-                        wearablesViewModel = viewModel,
-                    )
-
-                uiState.isRegistered ->
-                    NonStreamScreen(
-                        viewModel = viewModel,
-                        onRequestWearablesPermission = onRequestWearablesPermission,
-                    )
-
-                // HomeScreen, the "root" screen for VISOR users.
-                else ->
-                    HomeScreen(
-                        viewModel = viewModel,
-                    )
-            }
+            // Sets the routes for the screens and is where the observers direct their uiState traffic
+            VisorNavHost(
+                navController = navController,
+                viewModel = viewModel,
+            )
 
             // Error logging snackbar.
             SnackbarHost(
@@ -139,7 +127,7 @@ fun VisorLayout(
                 },
             )
 
-            // DEBUG TOOL: debugging button tools -> Mock Device Toolkit
+            // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
             if (BuildConfig.DEBUG) {
                 FloatingActionButton(
                     onClick = { viewModel.showDebugMenu() },
@@ -154,10 +142,28 @@ fun VisorLayout(
                         sheetState = bottomSheetState,
                         modifier = Modifier.fillMaxSize(),
                     ) {
-                        DebugScreen(modifier = Modifier.fillMaxSize())
+                        DebugScreen(
+                            navController = navController,
+                            onDismiss = { viewModel.hideDebugMenu() },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Insert the component here to view it with Visor Themes applied.
+@Preview
+@Composable
+fun PreviewWithTheme() {
+    VisorTheme {
+        Surface(modifier = Modifier.fillMaxSize()) {
+            // Place Preview-Composable functions here.
+            //...
         }
     }
 }
