@@ -88,8 +88,8 @@ fun VisorNavHost(
             )
         }
 
-//        composable("hardware_connection") {
-//            HardwareConnectionScreen();
+//        composable("hardware_pairing") {
+//            HardwarePairingScreen();
 //        }
 
     }

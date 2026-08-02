@@ -32,7 +32,6 @@
     <string name="new_password_text" description="Text title for user to input their new password">New Password</string>
     <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save Password</string>
 
-
     <!-- Verify Account Screen -->
     <string name="verify_account_title" description="The title for the Verify Account screen">Verify Your Account</string>
     <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
@@ -41,8 +40,14 @@
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
     <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
 
+    <!-- User Profile Screen -->
+    <string name="user_profile_navbar_title" description="The title for navigating to the user profile screen">Profile</string>
+
+    <!-- Hardware Pairing Screen -->
+    <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
 
     <!-- Home Screen -->
+    <string name="home_screen_title" description="Title for the Home Screen">Home</string>
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>

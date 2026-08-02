@@ -1,26 +1,35 @@
 package ucf.visor.ui
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,6 +45,7 @@ import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.BuildConfig
+import ucf.visor.R
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -61,6 +72,8 @@ fun VisorLayout(
 
     // Controls screen state (see VisorNavHost)
     val navController = rememberNavController()
+
+    val currentRoute = navController.currentBackStackEntry?.destination?.route
 
     // OBSERVERS: will watch for changes in uiState.
     // Observe recent errors and show snackbar.
@@ -118,71 +131,121 @@ fun VisorLayout(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-
-            // Sets the routes for the screens and is where the observers direct their uiState traffic
-            VisorNavHost(
-                navController = navController,
-                viewModel = viewModel,
-            )
-
-            // Error logging snackbar.
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 32.dp),
-                snackbar = { data ->
-                    Snackbar(
-                        shape = RoundedCornerShape(24.dp),
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        Scaffold(
+            modifier = modifier,
+            snackbarHost = {
+                // Error logging snackbar.
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier =
+                        Modifier
+                            .navigationBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 32.dp),
+                    snackbar = { data ->
+                        Snackbar(
+                            shape = RoundedCornerShape(24.dp),
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = "Camera Access error",
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(data.visuals.message)
+                            }
+                        }
+                    },
+                )
+            },
+            floatingActionButton = {
+                // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
+                if (BuildConfig.DEBUG) {
+                    FloatingActionButton(
+                        onClick = { viewModel.showDebugMenu() },
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = "Camera Access error",
-                                tint = MaterialTheme.colorScheme.error,
+                        Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")
+                    }
+
+                    if (uiState.isDebugMenuVisible) {
+                        ModalBottomSheet(
+                            onDismissRequest = { viewModel.hideDebugMenu() },
+                            sheetState = bottomSheetState,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            DebugScreen(
+                                navController = navController,
+                                onDismiss = { viewModel.hideDebugMenu() },
+                                modifier = Modifier.fillMaxSize()
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(data.visuals.message)
                         }
                     }
-                },
-            )
-
-            // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
-            if (BuildConfig.DEBUG) {
-                FloatingActionButton(
-                    onClick = { viewModel.showDebugMenu() },
-                    modifier = Modifier.align(Alignment.TopEnd),
-                ) {
-                    Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")
                 }
+            },
+            content = { innerPadding ->
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()
+                ) {
+                    // Sets the routes for the screens and is where the observers direct their uiState traffic
+                    VisorNavHost(
+                        navController = navController,
+                        viewModel = viewModel,
+                    )
 
-                if (uiState.isDebugMenuVisible) {
-                    ModalBottomSheet(
-                        onDismissRequest = { viewModel.hideDebugMenu() },
-                        sheetState = bottomSheetState,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        DebugScreen(
-                            navController = navController,
-                            onDismiss = { viewModel.hideDebugMenu() },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    // Once the user is fully logged in and directed home.
+                    if (uiState.authComplete) {
+                        // Bottom Navigation Bar
+                        NavigationBar(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentColor = MaterialTheme.colorScheme.contentColorFor(
+                                NavigationBarDefaults.containerColor
+                            )
+                        ) {
+                            NavigationBarItem(
+                                selected = currentRoute == "home",
+                                onClick = { viewModel.home() },
+                                icon = {
+                                    Icon(
+                                        Icons.Default.Home,
+                                        contentDescription = "Home"
+                                    )
+                                },
+                                label = { Text(stringResource(R.string.home_screen_title)) }
+
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "profile",
+                                onClick = { }, // TODO
+                                icon = {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = "Profile"
+                                    )
+                                },
+                                label = { Text(stringResource(R.string.user_profile_navbar_title)) }
+                            )
+                            NavigationBarItem(
+                                selected = currentRoute == "hardware_pairing",
+                                onClick = { }, // TODO
+                                icon = {
+                                    Icon(
+                                        Icons.Default.Bluetooth,
+                                        contentDescription = "Hardware"
+                                    )
+                                },
+                                label = { Text(stringResource(R.string.hardware_pairing_navbar_title)) }
+                            )
+                        }
                     }
                 }
             }
-        }
+        )
     }
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Insert the component here to view it with Visor Themes applied.

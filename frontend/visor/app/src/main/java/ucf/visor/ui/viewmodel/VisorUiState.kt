@@ -42,8 +42,8 @@ data class VisorUiState(
     val isOnboarding: Boolean = false,
     val atHome: Boolean = false,
     val onHardwareConnection: Boolean = false,
-
-    ) {
+    val authComplete: Boolean = false,
+) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||
                 registrationState == RegistrationState.UNREGISTERING

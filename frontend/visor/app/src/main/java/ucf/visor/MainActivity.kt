@@ -83,13 +83,11 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
                         viewModel = viewModel,
-                        onRequestWearablesPermission = ::requestWearablesPermission
+                        onRequestWearablesPermission = ::requestWearablesPermission,
                     )
                 }
 
             }
-
-
         }
         textReaderOCR = TextReaderOCR()
         speaker = Speaker(this)
