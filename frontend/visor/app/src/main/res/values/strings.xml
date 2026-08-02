@@ -26,6 +26,7 @@
 
     <!-- Enter Code Screen -->
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
+    <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
 
     <!-- Home Screen -->
     <string name="register_button_title" description="Connect App">Connect my glasses</string>

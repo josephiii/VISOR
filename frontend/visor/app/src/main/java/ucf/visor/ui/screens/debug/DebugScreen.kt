@@ -190,6 +190,15 @@ fun DebugScreen(
                     }
                 )
 
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.enter_code_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("enter_code")
+                    }
+                )
+
             }
         }
 

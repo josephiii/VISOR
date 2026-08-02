@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ucf.visor.ui.screens.auth.EnterCodeScreen
 import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
@@ -50,9 +51,17 @@ fun VisorNavHost(
             )
         }
 
-//        composable("enter_code") {
-//            EnterCodeScreen()
-//        }
+        composable("enter_code") {
+            EnterCodeScreen(
+                viewModel = viewModel,
+                onCodeComplete = {
+                    viewModel.home()
+                },
+                onResendCodeClick = {
+                    // RESEND CODE
+                }
+            )
+        }
 
 //        composable("verify_account") {
 //            VerifyAccountScreen()

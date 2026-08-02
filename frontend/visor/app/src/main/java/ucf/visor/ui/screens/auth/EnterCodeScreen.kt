@@ -22,16 +22,16 @@ import androidx.compose.ui.unit.sp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
-import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
-fun ForgotPasswordScreen(
+fun EnterCodeScreen(
     viewModel: VisorViewModel,
-    onSendCodeClick: () -> Unit,
+    onCodeComplete: () -> Unit,
+    onResendCodeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var email by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -59,28 +59,21 @@ fun ForgotPasswordScreen(
             ) {
 
                 Text(
-                    text = stringResource(R.string.forgot_password_title),
+                    text = stringResource(R.string.enter_code_title),
                     fontSize = 30.sp,
                     fontWeight = FontWeight.SemiBold
                 )
 
-                Text(
-                    text = stringResource(R.string.forgot_password_description),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Normal
-                )
-
-                VisorTextField(
-                    value = stringResource(R.string.example_email_input),
-                    onValueChange = { email = it }, // user input
-                    label = stringResource(R.string.email_label)
+                AuthCodeInput(
+                    onCodeComplete = { _ -> // DO STUFF WITH CODE
+                        onCodeComplete()
+                    }
                 )
 
                 VisorButton(
-                    text = stringResource(R.string.send_code_button_text),
-                    width = 0.5f,
+                    text = stringResource(R.string.resend_code_button_text),
                     onClick = {
-                        onSendCodeClick()
+                        onResendCodeClick()
                     }
                 )
 

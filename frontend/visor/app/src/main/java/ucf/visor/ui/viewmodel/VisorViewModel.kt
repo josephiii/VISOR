@@ -205,6 +205,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun enterCode() {
+        _uiState.update { it.copy(hasForgottenPassword = false) }
+        _uiState.update { it.copy(isVerifyingAccount = false) }
         _uiState.update { it.copy(isEnteringCode = true) }
     }
 
