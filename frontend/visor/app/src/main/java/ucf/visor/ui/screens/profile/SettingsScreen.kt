@@ -1,4 +1,4 @@
-package ucf.visor.ui.profile
+package ucf.visor.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -25,12 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ucf.visor.ui.screens.profile.SpeechRate
-import ucf.visor.ui.screens.profile.UserProfile
-import ucf.visor.ui.screens.profile.Verbosity
+import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.UserProfile
+import ucf.visor.ui.profile.Verbosity
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
@@ -47,12 +47,14 @@ import ucf.visor.ui.screens.profile.Verbosity
  */
 @Composable
 fun SettingsScreen(
-    profile: UserProfile,
-    onProfileChange: (UserProfile) -> Unit,
+    viewModel: VisorViewModel,
     speak: (String) -> Unit = {},
+    onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
 ) {
+    var profile by remember { mutableStateOf (viewModel.userProfile)}
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -128,7 +130,7 @@ private fun ChoiceChip(
     OutlinedButton(
         onClick = onClick,
         modifier = modifier.heightIn(min = 64.dp),
-        shape = RoundedCornerShape(14.dp),
+        shape = CutCornerShape(14.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
         colors = ButtonDefaults.outlinedButtonColors(
         ),
@@ -141,11 +143,4 @@ private fun ChoiceChip(
             softWrap = false,
         )
     }
-}
-
-@Preview(showBackground = true, heightDp = 800)
-@Composable
-private fun SettingsPreview() {
-    var profile by remember { mutableStateOf(UserProfile()) }
-    SettingsScreen(profile = profile, onProfileChange = { profile = it })
 }

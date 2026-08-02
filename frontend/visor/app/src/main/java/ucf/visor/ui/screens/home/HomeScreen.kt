@@ -28,14 +28,13 @@ fun HomeScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

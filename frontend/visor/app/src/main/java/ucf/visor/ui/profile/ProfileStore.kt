@@ -1,8 +1,6 @@
 package ucf.visor.ui.profile
 
 import android.content.Context
-import ucf.visor.ui.screens.profile.UserProfile
-import ucf.visor.ui.screens.profile.VisionType
 
 /**
  * VISOR-124 — local, on-device profile storage.

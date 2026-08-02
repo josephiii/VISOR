@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ucf.visor.ui.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
 import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
@@ -14,6 +15,7 @@ import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.auth.VerifyAccountScreen
 import ucf.visor.ui.screens.home.HardwarePairingScreen
 import ucf.visor.ui.screens.home.HomeScreen
+import ucf.visor.ui.screens.profile.SettingsScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -34,7 +36,7 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 onLoginClick = { viewModel.verifyAccount() },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
-                onSignUpClick = { viewModel.home() }
+                onSignUpClick = { viewModel.signUp() }
             )
         }
 
@@ -71,7 +73,13 @@ fun VisorNavHost(
         composable("enter_code") {
             EnterCodeScreen(
                 viewModel = viewModel,
-                onCodeComplete = { viewModel.home() },
+                onCodeComplete = {
+                    val lastRoute = navController.previousBackStackEntry?.destination?.route
+                    if (lastRoute == "forgot_password")
+                        viewModel.home()
+                    else // == "verify_account"
+                        viewModel.onboard()
+                },
                 onResendCodeClick = {
                     // TODO: RESEND CODE LOGIC
                 }
@@ -89,6 +97,28 @@ fun VisorNavHost(
         composable("hardware_pairing") {
             HardwarePairingScreen(
                 viewModel = viewModel
+            );
+        }
+
+        composable("settings") {
+            SettingsScreen(
+                viewModel = viewModel
+                // other necessary function parameters
+            );
+        }
+
+        composable("onboarding") {
+            ProfileFlowHost( // TODO: Add speak function parameter
+                viewModel = viewModel,
+                onSetupComplete = { viewModel.home() }
+            );
+        }
+
+        // DEBUG
+        composable("onboarding") {
+            ProfileFlowHost( // TODO: Add speak function parameter
+                viewModel = viewModel,
+                onSetupComplete = { viewModel.home() }
             );
         }
 

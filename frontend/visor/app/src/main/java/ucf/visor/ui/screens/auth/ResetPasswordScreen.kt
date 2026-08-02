@@ -4,7 +4,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,7 +43,9 @@ fun ResetPasswordScreen(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 24.dp)
+        modifier = Modifier
+            .padding(vertical = 24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
 
         VisorHeader()
@@ -71,12 +75,14 @@ fun ResetPasswordScreen(
                 )
 
                 VisorTextField(
+                    value = password,
                     label = stringResource(R.string.old_password_text),
                     onValueChange = { typedPassword -> password = typedPassword }, // user input
                     isPassword = true
                 )
 
                 VisorTextField(
+                    value = confirmedPassword,
                     label = stringResource(R.string.new_password_text),
                     onValueChange = { confirmedPassword = it },
                     isPassword = true

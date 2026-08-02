@@ -4,7 +4,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,7 +38,9 @@ fun EnterCodeScreen(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 24.dp)
+        modifier = Modifier
+            .padding(vertical = 24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
 
         VisorHeader()
@@ -56,7 +60,8 @@ fun EnterCodeScreen(
             Column(
                 verticalArrangement = Arrangement.spacedBy(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(vertical = 20.dp)
+                modifier = Modifier
+                    .padding(vertical = 20.dp)
             ) {
 
                 Text(

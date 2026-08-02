@@ -37,7 +37,6 @@ fun HardwarePairingScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val context = LocalContext.current
@@ -46,7 +45,7 @@ fun HardwarePairingScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

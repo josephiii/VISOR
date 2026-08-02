@@ -4,7 +4,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,7 +49,9 @@ fun SignUpScreen(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 24.dp)
+        modifier = Modifier
+            .padding(vertical = 24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
 
         VisorHeader()
@@ -77,22 +81,26 @@ fun SignUpScreen(
                 )
 
                 VisorTextField(
+                    value = username,
                     label = stringResource(R.string.username_label),
                     onValueChange = { username = it },
                 )
 
                 VisorTextField(
+                    value = email,
                     label = stringResource(R.string.email_label),
                     onValueChange = { email = it },
                 )
 
                 VisorTextField(
+                    value = password,
                     label = stringResource(R.string.password_label),
                     onValueChange = { password = it },
                     isPassword = true
                 )
 
                 VisorTextField(
+                    value = confirmedPassword,
                     label = stringResource(R.string.confirm_password_label),
                     onValueChange = { confirmedPassword = it },
                     isPassword = true

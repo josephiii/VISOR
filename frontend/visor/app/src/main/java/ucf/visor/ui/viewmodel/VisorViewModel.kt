@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucf.visor.ui.profile.UserProfile
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
     // Static Variables
@@ -42,6 +43,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     // VISOR
     private val _uiState = MutableStateFlow(VisorUiState())
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
+    val userProfile: UserProfile = UserProfile()
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
@@ -191,6 +193,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun login() {
+        _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isLoggingIn = true) }
     }
 
@@ -221,29 +224,30 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isResettingPassword = true) }
     }
 
-    fun onboard() {
-        _uiState.update { it.copy(isOnboarding = true) }
-    }
-
     fun home() {
         _uiState.update { it.copy(isPairingHardware = false) }
-        _uiState.update { it.copy(atProfile = false) }
+        _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(isAuthComplete = true) }
         _uiState.update { it.copy(goingHome = true) }
     }
 
     fun hardwarePairing() {
         _uiState.update { it.copy(goingHome = false) }
-        _uiState.update { it.copy(atProfile = false) }
+        _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(isPairingHardware = true) }
 
     }
 
-    fun profile() {
+    fun settings() {
         _uiState.update { it.copy(goingHome = false) }
-        _uiState.update { it.copy(isPairingHardware = true) }
-        _uiState.update { it.copy(atProfile = true) }
+        _uiState.update { it.copy(isPairingHardware = false) }
+        _uiState.update { it.copy(atSettings = true) }
+    }
 
+    fun onboard() {
+        _uiState.update { it.copy(isEnteringCode = false) }
+        _uiState.update { it.copy(isSigningUp = false) }
+        _uiState.update { it.copy(isOnboarding = true) }
     }
 
     fun toggleSession() {
@@ -252,6 +256,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(isSessionActive = false)
             else
                 it.copy(isSessionActive = true)
+        }
+    }
+
+    fun toggleNavigationBar() {
+        _uiState.update {
+            if (it.isAuthComplete)
+                it.copy(isAuthComplete = false)
+            else
+                it.copy(isAuthComplete = true)
         }
     }
 

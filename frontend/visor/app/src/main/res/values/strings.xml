@@ -76,7 +76,38 @@
     <string name="debug_enter_code_screen" description="enter code screen debug option">ENTER CODE SCREEN</string>
     <string name="debug_reset_password_screen" description="reset password screen debug option">RESET PASSWORD SCREEN</string>
     <string name="debug_hardware_pairing_screen" description="hardware pairing screen debug option">HARDWARE PAIRING SCREEN</string>
+    <string name="debug_onboarding" description="view the onboarding process debug option">ONBOARDING PROCESS</string>
+    <string name="debug_settings_screen" description="settings screen debug option">SETTINGS SCREEN</string>
+    <string name="debug_enable_navbar" description="enable navigation bar option">TOGGLE NAVIGATION BAR</string>
 
+    <!-- VISOR Onboarding Steps -->
+    <!-- NAME Step -->
+    <string name="step_name_title">What should VISOR call you?</string>
+    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
+
+    <!-- VISION Step -->
+    <string name="step_vision_title">Which of these describe what you experience?</string>
+    <string name="step_vision_spoken_prompt">Which of these describe what you experience? You can pick more than one. Say: center loss, side loss, blurry, light sensitivity, or not sure.</string>
+
+    <!-- DESCRIBE Step -->
+    <string name="step_describe_title">Tell me about your vision, in your own words</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or tap Skip.</string>
+
+    <!-- SEVERITY Step -->
+    <string name="step_severity_title">How much does it affect daily life?</string>
+    <string name="step_severity_spoken_prompt">How much does your vision affect daily life? Say: a little, a moderate amount, or a lot.</string>
+
+    <!-- SPEECH_RATE Step -->
+    <string name="step_speech_rate_title">How fast should I talk?</string>
+    <string name="step_speech_rate_spoken_prompt">How fast should I talk? Say: slower, normal, or faster.</string>
+
+    <!-- VERBOSITY Step -->
+    <string name="step_verbosity_title">How much detail do you want?</string>
+    <string name="step_verbosity_spoken_prompt">When I describe things, how much detail do you want? Say: brief, standard, or detailed.</string>
+
+    <!-- DONE Step -->
+    <string name="step_done_title">You\'re all set!</string>
+    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
 
     <!-- Stream Screen -->
     <string name="live_stream" description="Live Stream">Live stream</string>

@@ -60,17 +60,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import ucf.visor.R
+import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.viewmodel_d.DebugViewModel
 import ucf.visor.ui.viewmodel_d.MockDeviceInfo
 
 @Composable
 fun DebugScreen(
-    viewModel: DebugViewModel = viewModel(LocalActivity.current as ComponentActivity),
+    debugViewModel: DebugViewModel = viewModel(LocalActivity.current as ComponentActivity),
+    visorViewModel: VisorViewModel,
     navController: NavHostController,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by debugViewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -116,13 +118,13 @@ fun DebugScreen(
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.disable_mock_device_kit),
-                        onClick = { viewModel.disable() },
+                        onClick = { debugViewModel.disable() },
                     )
                 } else {
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.enable_mock_device_kit),
-                        onClick = { viewModel.enable() },
+                        onClick = { debugViewModel.enable() },
                     )
                 }
 
@@ -130,7 +132,7 @@ fun DebugScreen(
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.pair_rayban_meta),
-                        onClick = { viewModel.pairRaybanMeta() },
+                        onClick = { debugViewModel.pairRaybanMeta() },
                         enabled = uiState.pairedDevices.size < 3,
                     )
                 }
@@ -235,12 +237,37 @@ fun DebugScreen(
                     }
                 )
 
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_onboarding),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("onboarding")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_settings_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("settings")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_enable_navbar),
+                    onClick = {
+                        visorViewModel.toggleNavigationBar()
+                    }
+                )
             }
         }
 
         if (uiState.isEnabled && uiState.pairedDevices.isNotEmpty()) {
             uiState.pairedDevices.forEach { deviceInfo ->
-                MockDeviceCard(deviceInfo = deviceInfo, viewModel = viewModel)
+                MockDeviceCard(deviceInfo = deviceInfo, viewModel = debugViewModel)
             }
         }
     }

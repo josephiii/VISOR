@@ -4,7 +4,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +30,9 @@ fun VerifyAccountScreen(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(vertical = 24.dp)
+        modifier = Modifier
+            .padding(vertical = 24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
 
         VisorHeader()
@@ -54,7 +58,9 @@ fun VerifyAccountScreen(
                 Text(
                     text = stringResource(R.string.verify_account_title),
                     fontSize = 30.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .padding(15.dp)
                 )
 
                 Text(

@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,8 +42,9 @@ fun LoginScreen(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(24.dp)
-
+        modifier = modifier
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
 
         VisorHeader()
@@ -72,11 +75,13 @@ fun LoginScreen(
                 )
 
                 VisorTextField(
+                    value = email,
                     label = stringResource(R.string.email_username_label),
                     onValueChange = { email = it }, // user input
                 )
 
                 VisorTextField(
+                    value = password,
                     label = stringResource(R.string.password_label),
                     onValueChange = { password = it }, // user input
                     isPassword = true

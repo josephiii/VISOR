@@ -42,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
@@ -74,7 +75,8 @@ fun VisorLayout(
     // Controls screen state (see VisorNavHost)
     val navController = rememberNavController()
 
-    val currentRoute = navController.currentBackStackEntry?.destination?.route
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     // OBSERVERS
     // General State Observers:
@@ -87,13 +89,6 @@ fun VisorLayout(
     }
 
     // Screen State Observers:
-    // Observe HomeScreen
-    LaunchedEffect(uiState.goingHome) {
-        if (uiState.goingHome && uiState.isAuthComplete) {
-            navController.navigate("home")
-        }
-    }
-
     // Observe LoginScreen
     LaunchedEffect(uiState.isLoggingIn) {
         if (uiState.isLoggingIn) {
@@ -138,15 +133,41 @@ fun VisorLayout(
 
     // Observe HomeScreen
     LaunchedEffect(uiState.goingHome) {
-        if (uiState.goingHome) {
-            navController.navigate("home")
+        if (uiState.goingHome && uiState.isAuthComplete) {
+            navController.navigate("home") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
         }
     }
 
     // Observe HardwarePairingScreen
     LaunchedEffect(uiState.isPairingHardware) {
         if (uiState.isPairingHardware) {
-            navController.navigate("hardware_pairing")
+            navController.navigate("hardware_pairing") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
+        }
+    }
+
+    // Observe SettingsScreen
+    LaunchedEffect(uiState.atSettings) {
+        if (uiState.atSettings) {
+            navController.navigate("settings") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
+        }
+    }
+
+    // Observe Onboarding Process
+    LaunchedEffect(uiState.isOnboarding) {
+        if (uiState.isOnboarding) {
+            navController.navigate("onboarding")
         }
     }
 
@@ -200,6 +221,7 @@ fun VisorLayout(
                             modifier = Modifier.fillMaxSize(),
                         ) {
                             DebugScreen(
+                                visorViewModel = viewModel,
                                 navController = navController,
                                 onDismiss = { viewModel.hideDebugMenu() },
                                 modifier = Modifier.fillMaxSize()
@@ -245,12 +267,12 @@ fun VisorLayout(
 
                             )
                             NavigationBarItem(
-                                selected = currentRoute == "profile",
-                                onClick = { }, // TODO
+                                selected = currentRoute == "settings",
+                                onClick = { viewModel.settings() },
                                 icon = {
                                     Icon(
                                         Icons.Default.Person,
-                                        contentDescription = "Profile"
+                                        contentDescription = "Profile Settings"
                                     )
                                 },
                                 label = { Text(stringResource(R.string.user_profile_navbar_title)) }

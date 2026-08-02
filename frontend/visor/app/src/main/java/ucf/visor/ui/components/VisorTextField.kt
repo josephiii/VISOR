@@ -15,10 +15,11 @@ import androidx.compose.ui.tooling.preview.Preview
 // Can be used for usernames and passwords.
 @Composable
 fun VisorTextField(
-    value: String = "",
+    value: String,
     onValueChange: (String) -> Unit,
     label: String,
     isPassword: Boolean = false,
+    keyboardType: KeyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -30,11 +31,7 @@ fun VisorTextField(
                 PasswordVisualTransformation()
             else
                 VisualTransformation.None,
-        keyboardOptions =
-            if (isPassword)
-                KeyboardOptions(keyboardType = KeyboardType.Password)
-            else
-                KeyboardOptions(keyboardType = KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
         modifier = modifier.fillMaxWidth(fraction = 0.9f)
     )
