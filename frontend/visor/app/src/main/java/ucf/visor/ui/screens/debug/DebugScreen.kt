@@ -226,6 +226,15 @@ fun DebugScreen(
                     }
                 )
 
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_hardware_pairing_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("hardware_pairing")
+                    }
+                )
+
             }
         }
 

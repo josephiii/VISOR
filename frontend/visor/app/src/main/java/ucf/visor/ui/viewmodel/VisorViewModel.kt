@@ -226,12 +226,24 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun home() {
+        _uiState.update { it.copy(isPairingHardware = false) }
+        _uiState.update { it.copy(atProfile = false) }
         _uiState.update { it.copy(isAuthComplete = true) }
         _uiState.update { it.copy(goingHome = true) }
     }
 
-    fun hardwareConnection() {
-        _uiState.update { it.copy(onHardwareConnection = true) }
+    fun hardwarePairing() {
+        _uiState.update { it.copy(goingHome = false) }
+        _uiState.update { it.copy(atProfile = false) }
+        _uiState.update { it.copy(isPairingHardware = true) }
+
+    }
+
+    fun profile() {
+        _uiState.update { it.copy(goingHome = false) }
+        _uiState.update { it.copy(isPairingHardware = true) }
+        _uiState.update { it.copy(atProfile = true) }
+
     }
 
     fun toggleSession() {

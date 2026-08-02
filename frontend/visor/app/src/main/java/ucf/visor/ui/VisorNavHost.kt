@@ -12,6 +12,7 @@ import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.ResetPasswordScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.auth.VerifyAccountScreen
+import ucf.visor.ui.screens.home.HardwarePairingScreen
 import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -85,9 +86,11 @@ fun VisorNavHost(
             )
         }
 
-//        composable("hardware_pairing") {
-//            HardwarePairingScreen();
-//        }
+        composable("hardware_pairing") {
+            HardwarePairingScreen(
+                viewModel = viewModel
+            );
+        }
 
     }
 }

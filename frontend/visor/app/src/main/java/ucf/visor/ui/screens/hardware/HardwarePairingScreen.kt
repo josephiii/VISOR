@@ -33,7 +33,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 
 // This screen will prompt the user to
 @Composable
-fun OldHomeScreen(
+fun HardwarePairingScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -70,18 +70,8 @@ fun OldHomeScreen(
             ) {
                 TipItem(
                     iconResId = R.drawable.smart_glasses_icon,
-                    title = stringResource(R.string.home_tip_video_title),
-                    text = stringResource(R.string.home_tip_video),
-                )
-                TipItem(
-                    iconResId = R.drawable.sound_icon,
-                    title = stringResource(R.string.home_tip_audio_title),
-                    text = stringResource(R.string.home_tip_audio),
-                )
-                TipItem(
-                    iconResId = R.drawable.walking_icon,
-                    title = stringResource(R.string.home_tip_hands_title),
-                    text = stringResource(R.string.home_tip_hands),
+                    title = stringResource(R.string.environment_capture_title),
+                    text = stringResource(R.string.environment_capture),
                 )
             }
         }

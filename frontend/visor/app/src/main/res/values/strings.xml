@@ -50,6 +50,8 @@
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
     <string name="start_session" description="start session">Start Session</string>
     <string name="end_session" description="end session">End Session</string>
+    <string name="environment_capture_title" description="Tip title about environment capture">Environment Capture</string>
+    <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
@@ -57,10 +59,8 @@
     <string name="update_dat_app_button_title" description="Open DAT app update on glasses">Update app on glasses</string>
     <string name="stream_button_title" description="Start streaming">Start streaming</string>
     <string name="stop_stream_button_title" description="Stop streaming">Stop streaming</string>
-    <string name="home_tip_video_title" description="Tip title about video capture">Video Capture</string>
     <string name="home_tip_audio_title" description="Tip title about audio">Open-Ear Audio</string>
     <string name="home_tip_hands_title" description="Tip title about hands free">Enjoy On-the-Go</string>
-    <string name="home_tip_video" description="Tip about video capture">Record videos directly from your glasses, from your point of view.</string>
     <string name="home_tip_audio" description="Tip about audio">Hear notifications while keeping your ears open to the world around you.</string>
     <string name="home_tip_hands" description="Tip about hands free">Stay hands-free while you move through your day. Move freely, stay connected.</string>
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
@@ -75,6 +75,8 @@
     <string name="debug_verify_account_screen" description="verify account screen debug option">VERIFY ACCOUNT SCREEN</string>
     <string name="debug_enter_code_screen" description="enter code screen debug option">ENTER CODE SCREEN</string>
     <string name="debug_reset_password_screen" description="reset password screen debug option">RESET PASSWORD SCREEN</string>
+    <string name="debug_hardware_pairing_screen" description="hardware pairing screen debug option">HARDWARE PAIRING SCREEN</string>
+
 
     <!-- Stream Screen -->
     <string name="live_stream" description="Live Stream">Live stream</string>

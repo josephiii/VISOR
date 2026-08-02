@@ -86,16 +86,10 @@ fun VisorLayout(
         }
     }
 
-    // Observe user auth. complete
-    LaunchedEffect(uiState.isAuthComplete) {
-        if (uiState.isAuthComplete) {
-            navController.navigate("home")
-        }
-    }
     // Screen State Observers:
     // Observe HomeScreen
     LaunchedEffect(uiState.goingHome) {
-        if (uiState.goingHome) {
+        if (uiState.goingHome && uiState.isAuthComplete) {
             navController.navigate("home")
         }
     }
@@ -146,6 +140,13 @@ fun VisorLayout(
     LaunchedEffect(uiState.goingHome) {
         if (uiState.goingHome) {
             navController.navigate("home")
+        }
+    }
+
+    // Observe HardwarePairingScreen
+    LaunchedEffect(uiState.isPairingHardware) {
+        if (uiState.isPairingHardware) {
+            navController.navigate("hardware_pairing")
         }
     }
 
@@ -256,7 +257,7 @@ fun VisorLayout(
                             )
                             NavigationBarItem(
                                 selected = currentRoute == "hardware_pairing",
-                                onClick = { }, // TODO
+                                onClick = { viewModel.hardwarePairing() },
                                 icon = {
                                     Icon(
                                         Icons.Default.Bluetooth,
