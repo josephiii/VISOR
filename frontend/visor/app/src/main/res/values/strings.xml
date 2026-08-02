@@ -17,16 +17,30 @@
     <string name="example_username_input" description="The username sample input">Scott Summers</string>
     <string name="email_label" description="The email label">Email</string>
     <string name="confirm_password_label" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
-    <string name="already_have_account" description="Text for users to see and to prompt them to login">Have an account?</string>
+    <string name="already_have_account" description="Text for users to see and to prompt them to login">Already have an account?</string>
 
     <!-- Forgot Password Screen -->
-    <string name="forgot_password_title" description="The title for this screen">Forgot Password?</string>
+    <string name="forgot_password_title" description="The title for Forgot Password screen">Forgot Password?</string>
     <string name="forgot_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
     <string name="send_code_button_text" description="Button text for the send code button for Forgot Password screen">Send Code</string>
+    <string name="reset_or" description="The word 'or'">or</string>
+
+    <!-- Reset Password Screen -->
+    <string name="reset_password_title" description="The title for Reset Password screen">Reset Password?</string>
+    <string name="reset_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
+    <string name="old_password_text" description="Text title for user to input their old password">Old Password</string>
+    <string name="new_password_text" description="Text title for user to input their new password">New Password</string>
+    <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save Password</string>
+
+
+    <!-- Verify Account Screen -->
+    <string name="verify_account_title" description="The title for the Verify Account screen">Verify Your Account</string>
+    <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
 
     <!-- Enter Code Screen -->
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
     <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
+
 
     <!-- Home Screen -->
     <string name="register_button_title" description="Connect App">Connect my glasses</string>

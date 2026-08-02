@@ -199,6 +199,24 @@ fun DebugScreen(
                     }
                 )
 
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.verify_account_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("verify_account")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.reset_password_title),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("reset_password")
+                    }
+                )
+
             }
         }
 

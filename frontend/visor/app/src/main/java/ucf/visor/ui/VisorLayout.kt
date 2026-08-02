@@ -101,8 +101,15 @@ fun VisorLayout(
 
     // Observe VerifyAccountScreen
     LaunchedEffect(uiState.isVerifyingAccount) {
-        if (uiState.isSigningUp) {
+        if (uiState.isVerifyingAccount) {
             navController.navigate("verify_account")
+        }
+    }
+
+    // Observe ResetPasswordScreen
+    LaunchedEffect(uiState.isResettingPassword) {
+        if (uiState.isResettingPassword) {
+            navController.navigate("reset_password")
         }
     }
 

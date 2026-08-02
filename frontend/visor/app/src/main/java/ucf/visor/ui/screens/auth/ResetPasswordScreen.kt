@@ -20,11 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
@@ -32,10 +27,9 @@ import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
-fun SignUpScreen(
+fun ResetPasswordScreen(
     viewModel: VisorViewModel,
-    onSignUpClick: () -> Unit,
-    onLoginClick: () -> Unit,
+    onSaveNewPassword: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -71,89 +65,31 @@ fun SignUpScreen(
             ) {
 
                 Text(
-                    text = stringResource(R.string.sign_up_title),
+                    text = stringResource(R.string.reset_password_title),
                     fontSize = 30.sp,
                     fontWeight = FontWeight.SemiBold
                 )
 
                 VisorTextField(
-                    label = stringResource(R.string.username_label),
-                    onValueChange = { username = it },
-                )
-
-                VisorTextField(
-                    label = stringResource(R.string.email_label),
-                    onValueChange = { email = it },
-                )
-
-                VisorTextField(
-                    label = stringResource(R.string.password_label),
-                    onValueChange = { password = it },
+                    label = stringResource(R.string.old_password_text),
+                    onValueChange = { typedPassword -> password = typedPassword }, // user input
                     isPassword = true
                 )
 
                 VisorTextField(
-                    label = stringResource(R.string.confirm_password_label),
+                    label = stringResource(R.string.new_password_text),
                     onValueChange = { confirmedPassword = it },
                     isPassword = true
                 )
 
                 VisorButton(
-                    text = stringResource(R.string.sign_up_title),
+                    text = stringResource(R.string.save_password_button_text),
                     onClick = {
-                        onSignUpClick()
-//                        scope.launch {
-//                            val result = registerUser(email, password, username, confirmedPassword)
-//                        }
+                        // DO EXTRA STUFF
+                        onSaveNewPassword()
                     }
                 )
-
-
             }
-        }
-        Text(stringResource(R.string.already_have_account))
-
-        VisorButton(
-            text = stringResource(R.string.login_title),
-            width = 0.5f,
-            onClick = {
-                onLoginClick()
-            }
-        )
-    }
-}
-
-private suspend fun registerUser(
-    email: String,
-    password: String,
-    username: String,
-    confirmedPassword: String
-): String {
-    // Confirm email is valid email and unique
-    val emailRegex = Regex("""^\w+@\w+\.\w+$""")
-    if (!(emailRegex.matches(email))) {
-        return "Invalid email"
-    }
-    // Unique check requires db
-
-    // Check that password and confirm pw match
-    if (password != confirmedPassword) {
-        return "The passwords do not match"
-    }
-    val apiBase = "http://127.0.0.1:8000"
-    val payload =
-        JSONObject().put("email", email).put("username", username).put("password", password)
-    val req = Request.Builder().url("$apiBase/register").post(
-        payload.toString().toRequestBody("application/json".toMediaType())
-    ).build()
-    val client = OkHttpClient()
-    client.newCall(req).execute().use() { response ->
-        if (response.isSuccessful) {
-            return "User registered"
-            //Navigate user to the login page (with information pre-filled )
-        } else {
-            //Throw error and show error message
-            return "Error registering user" //+ errorMessage
         }
     }
 }

@@ -212,7 +212,13 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     fun verifyAccount() {
         _uiState.update { it.copy(isLoggingIn = false) }
+        _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isVerifyingAccount = true) }
+    }
+
+    fun resetPassword() {
+        _uiState.update { it.copy(hasForgottenPassword = false) }
+        _uiState.update { it.copy(isResettingPassword = true) }
     }
 
     fun onboard() {

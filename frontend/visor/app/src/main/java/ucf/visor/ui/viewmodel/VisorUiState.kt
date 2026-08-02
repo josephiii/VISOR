@@ -38,6 +38,7 @@ data class VisorUiState(
     val hasForgottenPassword: Boolean = false,
     val isEnteringCode: Boolean = false,
     val isVerifyingAccount: Boolean = false,
+    val isResettingPassword: Boolean = false,
     val isOnboarding: Boolean = false,
     val atHome: Boolean = false,
     val onHardwareConnection: Boolean = false,
