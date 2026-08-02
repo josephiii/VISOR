@@ -1,5 +1,6 @@
 package ucf.visor.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -126,6 +127,13 @@ fun VisorLayout(
         }
     }
 
+    // Observe ResetPasswordScreen
+    LaunchedEffect(uiState.goingHome) {
+        if (uiState.goingHome) {
+            navController.navigate("home")
+        }
+    }
+
     // This is the Active Screen Surface!
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -188,16 +196,18 @@ fun VisorLayout(
                 Column(
                     modifier = Modifier
                         .padding(innerPadding)
-                        .fillMaxSize()
+                        .fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     // Sets the routes for the screens and is where the observers direct their uiState traffic
                     VisorNavHost(
                         navController = navController,
-                        viewModel = viewModel,
+                        viewModel = viewModel
                     )
 
                     // Once the user is fully logged in and directed home.
-                    if (uiState.authComplete) {
+                    if (uiState.isAuthComplete) {
                         // Bottom Navigation Bar
                         NavigationBar(
                             modifier = Modifier.fillMaxWidth(),

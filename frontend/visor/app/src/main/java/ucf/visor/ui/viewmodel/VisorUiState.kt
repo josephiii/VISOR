@@ -1,11 +1,3 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
 // WearablesUiState - DAT API State Management
 //
 // This data class aggregates DAT API state for the UI layer
@@ -18,6 +10,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
 data class VisorUiState(
+    // Post-MWDAT
     val registrationState: RegistrationState = RegistrationState.UNAVAILABLE,
     val devices: ImmutableList<DeviceIdentifier> = persistentListOf(),
 
@@ -40,9 +33,12 @@ data class VisorUiState(
     val isVerifyingAccount: Boolean = false,
     val isResettingPassword: Boolean = false,
     val isOnboarding: Boolean = false,
-    val atHome: Boolean = false,
+    val goingHome: Boolean = false,
     val onHardwareConnection: Boolean = false,
-    val authComplete: Boolean = false,
+
+    // Component States.
+    val isAuthComplete: Boolean = false,
+    val isSessionActive: Boolean = false,
 ) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||
@@ -52,5 +48,5 @@ data class VisorUiState(
 
     val canStartRegistration: Boolean = canRegister && !isRegistering
 
-    val finishedOnboarding: Boolean = atHome
+    val finishedOnboarding: Boolean = goingHome
 }

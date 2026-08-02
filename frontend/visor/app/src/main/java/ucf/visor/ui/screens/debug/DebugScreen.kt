@@ -165,7 +165,7 @@ fun DebugScreen(
                 // Screen Selection
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.login_title),
+                    text = stringResource(R.string.debug_login_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("login")
@@ -174,7 +174,7 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.sign_up_title),
+                    text = stringResource(R.string.debug_sign_up_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("sign_up")
@@ -183,7 +183,7 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.forgot_password_title),
+                    text = stringResource(R.string.debug_forgot_password_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("forgot_password")
@@ -192,7 +192,7 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.enter_code_title),
+                    text = stringResource(R.string.debug_enter_code_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("enter_code")
@@ -201,7 +201,7 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.verify_account_title),
+                    text = stringResource(R.string.debug_verify_account_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("verify_account")
@@ -210,10 +210,19 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.reset_password_title),
+                    text = stringResource(R.string.debug_reset_password_screen),
                     onClick = {
                         onDismiss()
                         navController.navigate("reset_password")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_home_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("home")
                     }
                 )
 

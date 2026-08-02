@@ -226,13 +226,22 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun home() {
-        _uiState.update { it.copy(atHome = true) }
+        _uiState.update { it.copy(isAuthComplete = true) }
+        _uiState.update { it.copy(goingHome = true) }
     }
 
     fun hardwareConnection() {
         _uiState.update { it.copy(onHardwareConnection = true) }
     }
 
+    fun toggleSession() {
+        _uiState.update {
+            if (it.isSessionActive)
+                it.copy(isSessionActive = false)
+            else
+                it.copy(isSessionActive = true)
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT

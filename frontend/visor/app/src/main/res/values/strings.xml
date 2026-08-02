@@ -48,6 +48,9 @@
 
     <!-- Home Screen -->
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
+    <string name="start_session" description="start session">Start Session</string>
+    <string name="end_session" description="end session">End Session</string>
+
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>
@@ -61,6 +64,17 @@
     <string name="home_tip_audio" description="Tip about audio">Hear notifications while keeping your ears open to the world around you.</string>
     <string name="home_tip_hands" description="Tip about hands free">Stay hands-free while you move through your day. Move freely, stay connected.</string>
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
+
+    <!-- DEBUG -->
+    <string name="debug_screen_view_title" description="Title for the debug screen viewer">DEBUG: Screen Viewer</string>
+    <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
+    <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>
+    <string name="debug_login_screen" description="login screen debug option">LOGIN SCREEN</string>
+    <string name="debug_sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
+    <string name="debug_forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
+    <string name="debug_verify_account_screen" description="verify account screen debug option">VERIFY ACCOUNT SCREEN</string>
+    <string name="debug_enter_code_screen" description="enter code screen debug option">ENTER CODE SCREEN</string>
+    <string name="debug_reset_password_screen" description="reset password screen debug option">RESET PASSWORD SCREEN</string>
 
     <!-- Stream Screen -->
     <string name="live_stream" description="Live Stream">Live stream</string>
@@ -111,15 +125,6 @@
     <string name="power" description="Power toggle label">Power</string>
     <string name="donned" description="Donned toggle label">Donned</string>
     <string name="unfolded" description="Unfolded toggle label">Unfolded</string>
-
-    <!-- DEBUG -->
-    <string name="debug_screen_view_title" description="Title for the debug screen viewer">DEBUG: Screen Viewer</string>
-    <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
-    <string name="home_screen" description="home screen debug option">HOME SCREEN</string>
-    <string name="login_screen" description="login screen debug option">LOGIN SCREEN</string>
-    <string name="sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
-    <string name="forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
-
 
     <!-- Camera Permission Alert -->
     <string name="camera_permission_alert_title" description="Camera permission alert title">Camera Access Required</string>

@@ -19,7 +19,6 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 fun VisorNavHost(
     navController: NavHostController,
     viewModel: VisorViewModel
-
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -34,7 +33,7 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 onLoginClick = { viewModel.verifyAccount() },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
-                onSignUpClick = { viewModel.signUp() }
+                onSignUpClick = { viewModel.home() }
             )
         }
 
@@ -71,9 +70,7 @@ fun VisorNavHost(
         composable("enter_code") {
             EnterCodeScreen(
                 viewModel = viewModel,
-                onCodeComplete = {
-                    viewModel.home()
-                },
+                onCodeComplete = { viewModel.home() },
                 onResendCodeClick = {
                     // TODO: RESEND CODE LOGIC
                 }
