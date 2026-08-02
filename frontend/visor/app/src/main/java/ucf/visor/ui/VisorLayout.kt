@@ -1,6 +1,6 @@
 package ucf.visor.ui
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -76,12 +76,27 @@ fun VisorLayout(
 
     val currentRoute = navController.currentBackStackEntry?.destination?.route
 
-    // OBSERVERS: will watch for changes in uiState.
+    // OBSERVERS
+    // General State Observers:
     // Observe recent errors and show snackbar.
     LaunchedEffect(uiState.recentError) {
         uiState.recentError?.let { errorMessage ->
             snackbarHostState.showSnackbar(errorMessage)
             viewModel.clearRecentError()
+        }
+    }
+
+    // Observe user auth. complete
+    LaunchedEffect(uiState.isAuthComplete) {
+        if (uiState.isAuthComplete) {
+            navController.navigate("home")
+        }
+    }
+    // Screen State Observers:
+    // Observe HomeScreen
+    LaunchedEffect(uiState.goingHome) {
+        if (uiState.goingHome) {
+            navController.navigate("home")
         }
     }
 
@@ -127,7 +142,7 @@ fun VisorLayout(
         }
     }
 
-    // Observe ResetPasswordScreen
+    // Observe HomeScreen
     LaunchedEffect(uiState.goingHome) {
         if (uiState.goingHome) {
             navController.navigate("home")
@@ -198,13 +213,14 @@ fun VisorLayout(
                         .padding(innerPadding)
                         .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
                 ) {
                     // Sets the routes for the screens and is where the observers direct their uiState traffic
-                    VisorNavHost(
-                        navController = navController,
-                        viewModel = viewModel
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        VisorNavHost(
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    }
 
                     // Once the user is fully logged in and directed home.
                     if (uiState.isAuthComplete) {

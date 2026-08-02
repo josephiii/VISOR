@@ -1,6 +1,7 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
@@ -23,11 +24,12 @@ fun SessionToggleButton(
     IconButton(
         onClick = onToggle,
         modifier = modifier
+            .size(160.dp)
             .border(
                 width = 5.dp,
                 color = MaterialTheme.colorScheme.onSurface,
                 shape = CircleShape
-            ),
+            )
     ) {
         Icon(
             imageVector = if (isSessionActive) Icons.Default.Stop else Icons.Default.PlayArrow,
@@ -36,6 +38,7 @@ fun SessionToggleButton(
                     stringResource(R.string.end_session)
                 else
                     stringResource(R.string.start_session),
+            modifier = modifier.size(72.dp)
         )
     }
 }

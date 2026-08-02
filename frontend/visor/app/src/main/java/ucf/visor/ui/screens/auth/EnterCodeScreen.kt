@@ -66,7 +66,7 @@ fun EnterCodeScreen(
                 )
 
                 AuthCodeInput(
-                    onCodeComplete = { _ -> // DO STUFF WITH CODE
+                    onCodeComplete = {
                         onCodeComplete()
                     }
                 )

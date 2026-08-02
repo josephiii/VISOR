@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
@@ -41,19 +42,21 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         VisorHeader()
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(100.dp))
 
         SessionToggleButton(
             isSessionActive = uiState.isSessionActive,
             onToggle = { viewModel.toggleSession() }
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(40.dp))
         Text(
-            if (uiState.isSessionActive)
-                stringResource(R.string.end_session)
-            else
-                stringResource(R.string.start_session)
+            text =
+                if (uiState.isSessionActive)
+                    stringResource(R.string.end_session)
+                else
+                    stringResource(R.string.start_session),
+            fontSize = 25.sp
         )
     }
 }

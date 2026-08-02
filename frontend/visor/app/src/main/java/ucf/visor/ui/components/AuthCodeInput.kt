@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AuthCodeInput(
     codeLength: Int = 6,
-    onCodeComplete: (String) -> Unit
+    onCodeComplete: () -> Unit
 ) {
     var code by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
@@ -44,7 +44,7 @@ fun AuthCodeInput(
                 code = value
                 if (code.length == codeLength) {
                     keyboardController?.hide()
-                    onCodeComplete(code)
+                    onCodeComplete()
                 }
             }
         },
