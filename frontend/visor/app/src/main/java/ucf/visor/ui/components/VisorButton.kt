@@ -1,7 +1,6 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -10,31 +9,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+// Basic Button implementation.
 @Composable
-fun SwitchButton(
-    label: String,
+fun VisorButton(
+    text: String,
+    width: Float = 0.75f,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isDestructive: Boolean = false,
-    enabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     Button(
-        modifier = modifier
-            .height(56.dp)
-            .fillMaxWidth(),
         onClick = onClick,
-        enabled = enabled,
-        shape = CutCornerShape(4.dp),
+        modifier = modifier
+            .fillMaxWidth(fraction = width),
+        shape = CutCornerShape(4.dp)
     ) {
-        Text(label)
+        Text(text)
     }
 }
 
 @Preview
 @Composable
-fun SwitchButtonPreview() {
-    SwitchButton(
-        onClick = {},
-        label = "Test Label"
+fun PreviewVisorButton() {
+    VisorButton(
+        text = "Preview",
+        onClick = {}
     )
 }

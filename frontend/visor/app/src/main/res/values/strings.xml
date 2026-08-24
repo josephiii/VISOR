@@ -2,20 +2,112 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2" project="VISOR">
 
     <string name="app_name">VISOR</string>
+    <string name="visor_acronym" description="VISOR Acronym and Meaning">Vision Intelligence System for Ocular Rehabilitation</string>
+
+    <!-- Login Screen -->
+    <string name="login_title" description="The login title">LOGIN</string>.
+    <string name="email_username_label" description="The username / email label">Username / Email</string>
+    <string name="password_label" description="The password label">Password</string>.
+    <string name="example_email_input" description="Placeholder email for the user to overwrite">email@email.com</string> <!--also, ForgotPasswordScreen() -->
+    <string name="example_password_input" descripion="Placeholder password">password</string>
+    <string name="sign_up_title" descripion="The sign up title">SIGN UP</string>
+
+    <!-- Sign Up Screen -->
+    <string name="username_label" description="The username label">Username</string>.
+    <string name="example_username_input" description="The username sample input">Scott Summers</string>
+    <string name="email_label" description="The email label">Email</string>
+    <string name="confirm_password_label" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
+    <string name="already_have_account" description="Text for users to see and to prompt them to login">Already have an account?</string>
+
+    <!-- Forgot Password Screen -->
+    <string name="forgot_password_title" description="The title for Forgot Password screen">Forgot Password?</string>
+    <string name="forgot_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
+    <string name="send_code_button_text" description="Button text for the send code button for Forgot Password screen">Send Code</string>
+    <string name="reset_or" description="The word 'or'">or</string>
+
+    <!-- Reset Password Screen -->
+    <string name="reset_password_title" description="The title for Reset Password screen">Reset Password?</string>
+    <string name="reset_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
+    <string name="old_password_text" description="Text title for user to input their old password">Old Password</string>
+    <string name="new_password_text" description="Text title for user to input their new password">New Password</string>
+    <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save Password</string>
+
+    <!-- Verify Account Screen -->
+    <string name="verify_account_title" description="The title for the Verify Account screen">Verify Your Account</string>
+    <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
+
+    <!-- Enter Code Screen -->
+    <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
+    <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
+
+    <!-- User Profile Screen -->
+    <string name="user_profile_navbar_title" description="The title for navigating to the user profile screen">Profile</string>
+
+    <!-- Hardware Pairing Screen -->
+    <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
+
     <!-- Home Screen -->
+    <string name="home_screen_title" description="Title for the Home Screen">Home</string>
+    <string name="start_session" description="start session">Start Session</string>
+    <string name="end_session" description="end session">End Session</string>
+    <string name="environment_capture_title" description="Tip title about environment capture">Environment Capture</string>
+    <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
+
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>
     <string name="update_dat_app_button_title" description="Open DAT app update on glasses">Update app on glasses</string>
     <string name="stream_button_title" description="Start streaming">Start streaming</string>
     <string name="stop_stream_button_title" description="Stop streaming">Stop streaming</string>
-    <string name="home_tip_video_title" description="Tip title about video capture">Video Capture</string>
     <string name="home_tip_audio_title" description="Tip title about audio">Open-Ear Audio</string>
     <string name="home_tip_hands_title" description="Tip title about hands free">Enjoy On-the-Go</string>
-    <string name="home_tip_video" description="Tip about video capture">Record videos directly from your glasses, from your point of view.</string>
     <string name="home_tip_audio" description="Tip about audio">Hear notifications while keeping your ears open to the world around you.</string>
     <string name="home_tip_hands" description="Tip about hands free">Stay hands-free while you move through your day. Move freely, stay connected.</string>
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
+
+    <!-- DEBUG -->
+    <string name="debug_screen_view_title" description="Title for the debug screen viewer">DEBUG: Screen Viewer</string>
+    <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
+    <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>
+    <string name="debug_login_screen" description="login screen debug option">LOGIN SCREEN</string>
+    <string name="debug_sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
+    <string name="debug_forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
+    <string name="debug_verify_account_screen" description="verify account screen debug option">VERIFY ACCOUNT SCREEN</string>
+    <string name="debug_enter_code_screen" description="enter code screen debug option">ENTER CODE SCREEN</string>
+    <string name="debug_reset_password_screen" description="reset password screen debug option">RESET PASSWORD SCREEN</string>
+    <string name="debug_hardware_pairing_screen" description="hardware pairing screen debug option">HARDWARE PAIRING SCREEN</string>
+    <string name="debug_onboarding" description="view the onboarding process debug option">ONBOARDING PROCESS</string>
+    <string name="debug_settings_screen" description="settings screen debug option">SETTINGS SCREEN</string>
+    <string name="debug_enable_navbar" description="enable navigation bar option">TOGGLE NAVIGATION BAR</string>
+
+    <!-- VISOR Onboarding Steps -->
+    <!-- NAME Step -->
+    <string name="step_name_title">What should VISOR call you?</string>
+    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
+
+    <!-- VISION Step -->
+    <string name="step_vision_title">Which of these describe what you experience?</string>
+    <string name="step_vision_spoken_prompt">Which of these describe what you experience? You can pick more than one. Say: center loss, side loss, blurry, light sensitivity, or not sure.</string>
+
+    <!-- DESCRIBE Step -->
+    <string name="step_describe_title">Tell me about your vision, in your own words</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or tap Skip.</string>
+
+    <!-- SEVERITY Step -->
+    <string name="step_severity_title">How much does it affect daily life?</string>
+    <string name="step_severity_spoken_prompt">How much does your vision affect daily life? Say: a little, a moderate amount, or a lot.</string>
+
+    <!-- SPEECH_RATE Step -->
+    <string name="step_speech_rate_title">How fast should I talk?</string>
+    <string name="step_speech_rate_spoken_prompt">How fast should I talk? Say: slower, normal, or faster.</string>
+
+    <!-- VERBOSITY Step -->
+    <string name="step_verbosity_title">How much detail do you want?</string>
+    <string name="step_verbosity_spoken_prompt">When I describe things, how much detail do you want? Say: brief, standard, or detailed.</string>
+
+    <!-- DONE Step -->
+    <string name="step_done_title">You\'re all set!</string>
+    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
 
     <!-- Stream Screen -->
     <string name="live_stream" description="Live Stream">Live stream</string>
@@ -32,8 +124,8 @@
 
     <!-- SharePhotoDialog -->
     <string name="photo_captured" description="Photo Captured">Photo Captured</string>
-    <string name ="captured_photo" description="Captured Photo">Captured Photo</string>
-    <string name ="capture_photo" description="Capture Photo">Capture Photo</string>
+    <string name="captured_photo" description="Captured Photo">Captured Photo</string>
+    <string name="capture_photo" description="Capture Photo">Capture Photo</string>
     <string name="share" description="Share">Share</string>
 
     <!-- Mock Device Kit Screen -->

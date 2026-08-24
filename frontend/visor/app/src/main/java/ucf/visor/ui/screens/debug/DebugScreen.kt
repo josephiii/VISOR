@@ -1,17 +1,10 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
+// MWDAT
 // MockDeviceKitScreen - DAT Testing Interface
 //
 // This screen allows developers to simulate wearable devices and test DAT functionality without
 // hardware.
 
-package ucf.visor.ui.screens
+package ucf.visor.ui.screens.debug
 
 import android.Manifest
 import android.content.Intent
@@ -38,7 +31,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -48,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,7 +49,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,18 +57,22 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import ucf.visor.R
-import ucf.visor.mockdevicekit.MockDeviceInfo
-import ucf.visor.mockdevicekit.MockDeviceKitViewModel
+import androidx.navigation.NavHostController
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
-import ucf.visor.ui.AppColor
+import ucf.visor.R
+import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.viewmodel_d.DebugViewModel
+import ucf.visor.ui.viewmodel_d.MockDeviceInfo
 
 @Composable
-fun MockDeviceKitScreen(
-    modifier: Modifier = Modifier,
-    viewModel: MockDeviceKitViewModel = viewModel(LocalActivity.current as ComponentActivity),
+fun DebugScreen(
+    debugViewModel: DebugViewModel = viewModel(LocalActivity.current as ComponentActivity),
+    visorViewModel: VisorViewModel,
+    navController: NavHostController,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by debugViewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -90,7 +84,6 @@ fun MockDeviceKitScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
@@ -112,14 +105,12 @@ fun MockDeviceKitScreen(
                             uiState.pairedDevices.size
                         ),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = AppColor.Green,
                         textAlign = TextAlign.Center,
                     )
                 }
                 Text(
                     text = stringResource(R.string.mock_device_kit_description),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 HorizontalDivider()
 
@@ -127,15 +118,13 @@ fun MockDeviceKitScreen(
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.disable_mock_device_kit),
-                        onClick = { viewModel.disable() },
-                        containerColor = AppColor.Red,
+                        onClick = { debugViewModel.disable() },
                     )
                 } else {
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.enable_mock_device_kit),
-                        onClick = { viewModel.enable() },
-                        containerColor = AppColor.Green,
+                        onClick = { debugViewModel.enable() },
                     )
                 }
 
@@ -143,16 +132,142 @@ fun MockDeviceKitScreen(
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.pair_rayban_meta),
-                        onClick = { viewModel.pairRaybanMeta() },
+                        onClick = { debugViewModel.pairRaybanMeta() },
                         enabled = uiState.pairedDevices.size < 3,
                     )
                 }
             }
         }
 
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.debug_screen_view_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.debug_screen_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                HorizontalDivider()
+
+                // Screen Selection
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_login_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("login")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_sign_up_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("sign_up")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_forgot_password_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("forgot_password")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_enter_code_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("enter_code")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_verify_account_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("verify_account")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_reset_password_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("reset_password")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_home_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("home")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_hardware_pairing_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("hardware_pairing")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_onboarding),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("onboarding")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_settings_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("settings")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_enable_navbar),
+                    onClick = {
+                        visorViewModel.toggleNavigationBar()
+                    }
+                )
+            }
+        }
+
         if (uiState.isEnabled && uiState.pairedDevices.isNotEmpty()) {
             uiState.pairedDevices.forEach { deviceInfo ->
-                MockDeviceCard(deviceInfo = deviceInfo, viewModel = viewModel)
+                MockDeviceCard(deviceInfo = deviceInfo, viewModel = debugViewModel)
             }
         }
     }
@@ -164,16 +279,9 @@ private fun ActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = AppColor.DeepBlue,
-    contentColor: Color = Color.White,
 ) {
     Button(
         modifier = modifier,
-        colors =
-            ButtonDefaults.buttonColors(
-                containerColor = containerColor,
-                contentColor = contentColor,
-            ),
         onClick = onClick,
         enabled = enabled,
     ) {
@@ -184,7 +292,7 @@ private fun ActionButton(
 @Composable
 private fun MockDeviceCard(
     deviceInfo: MockDeviceInfo,
-    viewModel: MockDeviceKitViewModel,
+    viewModel: DebugViewModel,
 ) {
     val videoPickerLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri?
@@ -222,7 +330,6 @@ private fun MockDeviceCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -247,18 +354,12 @@ private fun MockDeviceCard(
                     Text(
                         text = deviceInfo.deviceId,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Button(
                     onClick = { viewModel.unpairDevice(deviceInfo) },
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = AppColor.Red,
-                            contentColor = Color.White,
-                        ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp),
                 ) {
@@ -273,7 +374,6 @@ private fun MockDeviceCard(
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant,
                         modifier = Modifier.padding(vertical = 4.dp),
                     )
 
@@ -298,7 +398,6 @@ private fun MockDeviceCard(
                                         deviceInfo
                                     )
                                 },
-                                colors = SwitchDefaults.colors(checkedTrackColor = AppColor.Green),
                             )
                         }
 
@@ -321,7 +420,6 @@ private fun MockDeviceCard(
                                         deviceInfo
                                     )
                                 },
-                                colors = SwitchDefaults.colors(checkedTrackColor = AppColor.Green),
                             )
                         }
 
@@ -344,7 +442,6 @@ private fun MockDeviceCard(
                                         deviceInfo
                                     )
                                 },
-                                colors = SwitchDefaults.colors(checkedTrackColor = AppColor.Green),
                             )
                         }
                     }
@@ -369,7 +466,6 @@ private fun MockDeviceCard(
                             Text(
                                 text = stringResource(R.string.has_captured_image),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = AppColor.Green,
                             )
                         }
                         ActionButton(

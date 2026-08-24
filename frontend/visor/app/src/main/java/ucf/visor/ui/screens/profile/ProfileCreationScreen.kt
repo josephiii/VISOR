@@ -1,6 +1,5 @@
-package ucf.visor.ui.profile
+package ucf.visor.ui.screens.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,9 +30,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ucf.visor.ui.profile.Severity
+import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.UserProfile
+import ucf.visor.ui.profile.Verbosity
+import ucf.visor.ui.profile.VisionType
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 
 /**
@@ -81,6 +85,7 @@ private enum class Step(val title: String, val spokenPrompt: String) {
 
 @Composable
 fun ProfileCreationScreen(
+    viewModel: VisorViewModel,
     speak: (String) -> Unit = {},
     onFinished: (UserProfile) -> Unit = {},
 ) {
@@ -116,7 +121,7 @@ fun ProfileCreationScreen(
         )
 
         when (step) {
-            Step.NAME -> BigTextField( profile.displayName, "Your name") {
+            Step.NAME -> BigTextField(profile.displayName, "Your name") {
                 profile = profile.copy(displayName = it)
             }
 
@@ -144,7 +149,7 @@ fun ProfileCreationScreen(
             }
 
             Step.SPEECH_RATE -> SpeechRate.entries.forEach { r ->
-                BigChoiceButton(r.label(), profile.speechRate == r ) {
+                BigChoiceButton(r.label(), profile.speechRate == r) {
                     profile = profile.copy(speechRate = r); next()
                 }
             }
@@ -156,7 +161,7 @@ fun ProfileCreationScreen(
             }
 
             Step.DONE -> Text(
-                "You can change any of this later in Settings — or just ask.",
+                "You can change any of this later in Settings - or just ask.",
                 fontSize = 22.sp,
                 lineHeight = 30.sp,
             )
@@ -169,7 +174,7 @@ fun ProfileCreationScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = CutCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
             ),
         ) {
@@ -203,6 +208,7 @@ private fun BigTextField(
         placeholder = { Text(placeholder, fontSize = 26.sp) },
         colors = OutlinedTextFieldDefaults.colors(
         ),
+        shape = CutCornerShape(4.dp)
     )
     // TODO(VISOR-124): mic button wired to SpeechRecognizer so answers can be spoken.
 }
@@ -219,7 +225,7 @@ private fun BigChoiceButton(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 72.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = CutCornerShape(16.dp),
         colors = ButtonDefaults.outlinedButtonColors(),
     ) {
         Row(
@@ -240,30 +246,15 @@ private fun VisionType.label() = when (this) {
     VisionType.CONTRAST_LIGHT -> "Contrast / light sensitivity"
     VisionType.NOT_SURE -> "Not sure"
 }
+
 private fun Severity.label() = when (this) {
     Severity.MILD -> "A little"; Severity.MODERATE -> "A moderate amount"; Severity.SEVERE -> "A lot"
 }
+
 private fun SpeechRate.label() = when (this) {
     SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
 }
+
 private fun Verbosity.label() = when (this) {
     Verbosity.BRIEF -> "Brief"; Verbosity.STANDARD -> "Standard"; Verbosity.DETAILED -> "Detailed"
-}
-
-// ---------------------------------------------------------------------------
-// Previews — open this file, click "Split" (top right) to see the screen.
-// ---------------------------------------------------------------------------
-
-/** What setup actually looks like: VisorPalette.Current = Clarity (team vote, VISOR-165). */
-@Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, heightDp = 800)
-@Composable
-private fun ProfileCreationPreview() {
-    ProfileCreationScreen()
-}
-
-/** Reference only: dark high-contrast rendering (future appHighContrast dark variant). */
-@Preview(showBackground = true, backgroundColor = 0xFF0E2A47, heightDp = 800)
-@Composable
-private fun ProfileCreationPreviewDarkReference() {
-    ProfileCreationScreen()
 }

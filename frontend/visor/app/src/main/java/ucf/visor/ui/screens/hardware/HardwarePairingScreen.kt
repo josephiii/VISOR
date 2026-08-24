@@ -1,17 +1,15 @@
-package ucf.visor.ui.screens
+package ucf.visor.ui.screens.home
 
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -25,21 +23,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
-import ucf.visor.wearables.WearablesViewModel
+import ucf.visor.ui.components.TipItem
+import ucf.visor.ui.viewmodel.VisorViewModel
 
+// This screen will prompt the user to
 @Composable
-fun HomeScreen(
-    viewModel: WearablesViewModel,
+fun HardwarePairingScreen(
+    viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val context = LocalContext.current
@@ -48,7 +45,7 @@ fun HomeScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -72,18 +69,8 @@ fun HomeScreen(
             ) {
                 TipItem(
                     iconResId = R.drawable.smart_glasses_icon,
-                    title = stringResource(R.string.home_tip_video_title),
-                    text = stringResource(R.string.home_tip_video),
-                )
-                TipItem(
-                    iconResId = R.drawable.sound_icon,
-                    title = stringResource(R.string.home_tip_audio_title),
-                    text = stringResource(R.string.home_tip_audio),
-                )
-                TipItem(
-                    iconResId = R.drawable.walking_icon,
-                    title = stringResource(R.string.home_tip_hands_title),
-                    text = stringResource(R.string.home_tip_hands),
+                    title = stringResource(R.string.environment_capture_title),
+                    text = stringResource(R.string.environment_capture),
                 )
             }
         }
@@ -108,35 +95,6 @@ fun HomeScreen(
                             .show()
                 },
             )
-        }
-    }
-}
-
-@Composable
-private fun TipItem(
-    iconResId: Int,
-    title: String,
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier = modifier.fillMaxWidth()) {
-        Icon(
-            painter = painterResource(id = iconResId),
-            contentDescription = "Tip icon",
-            modifier = Modifier
-                .padding(start = 4.dp, top = 4.dp)
-                .width(24.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(text = text, color = Color.Gray)
         }
     }
 }

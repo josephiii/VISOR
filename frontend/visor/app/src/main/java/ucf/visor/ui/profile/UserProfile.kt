@@ -21,7 +21,7 @@ enum class SpeechRate { SLOW, NORMAL, FAST }
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
 
 data class UserProfile(
-    val userId: String = "",                                    // Supabase user.id from /auth/register
+    val userId: String = "", // Supabase user.id from /auth/register
     val displayName: String = "",
     val visionTypes: Set<VisionType> = setOf(VisionType.NOT_SURE),
     /** Free-text "describe your vision in your own words" — patients don't fit fixed boxes.
