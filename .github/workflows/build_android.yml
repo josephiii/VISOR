@@ -1,0 +1,5 @@
+- name: Build Android App
+  uses: sparkfabrik/android-build-action@v1.5.0
+  with:
+    project-path: frontend
+    output-path: visor.apk
