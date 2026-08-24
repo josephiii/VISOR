@@ -13,7 +13,7 @@ jobs:
       - name: Build Android App
         uses: sparkfabrik/android-build-action@v1.5.0
         with:
-          project-path: frontend
+          project-path: frontend/visor
           output-path: visor.apk
           gradle-task: assembleDebug   # or assembleRelease/bundleRelease
           ruby-version: "3.1"
