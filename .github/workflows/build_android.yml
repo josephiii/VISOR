@@ -1,0 +1,23 @@
+name: Build Android App
+
+on:
+  workflow_dispatch:  # lets you trigger manually from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Make gradlew executable
+        run: chmod +x frontend/visor/gradlew
+
+      - name: Build Android App
+        uses: sparkfabrik/android-build-action@v1.5.0
+        with:
+          project-path: frontend/visor
+          output-path: visor.apk
+          gradle-task: assembleDebug   # or assembleRelease/bundleRelease
+          ruby-version: "3.1"
+          bundler-version: "2.3.26"

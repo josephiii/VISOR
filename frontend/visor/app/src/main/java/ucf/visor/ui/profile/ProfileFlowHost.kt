@@ -3,6 +3,8 @@ package ucf.visor.ui.profile
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import ucf.visor.ui.screens.profile.ProfileCreationScreen
+import ucf.visor.ui.viewmodel.VisorViewModel
 
 /**
  * VISOR-124 — hosts the profile creation wizard and persists the result.
@@ -16,13 +18,16 @@ import androidx.compose.ui.platform.LocalContext
  */
 @Composable
 fun ProfileFlowHost(
+    viewModel: VisorViewModel,
     speak: (String) -> Unit = {},
     onSetupComplete: () -> Unit = {},
-) {
+
+    ) {
     val context = LocalContext.current
     val store = remember { ProfileStore(context) }
 
     ProfileCreationScreen(
+        viewModel = viewModel,
         speak = speak,
         onFinished = { profile ->
             store.save(profile)

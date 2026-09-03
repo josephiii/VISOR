@@ -1,12 +1,4 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-package ucf.visor.ui
+package ucf.visor.ui.components
 
 import android.graphics.Bitmap
 import android.util.Log
@@ -34,21 +26,16 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import ucf.visor.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
 import org.json.JSONObject
+import ucf.visor.R
 import java.io.ByteArrayOutputStream
-import java.util.Base64
-
-import ucf.visor.BuildConfig
-
-import okhttp3.MultipartBody
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -67,11 +54,15 @@ fun SharePhotoDialog(photo: Bitmap, onDismiss: () -> Unit, onShare: (Bitmap) -> 
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth(0.9f).wrapContentHeight(),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .wrapContentHeight(),
             shape = RoundedCornerShape(16.dp),
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -80,7 +71,9 @@ fun SharePhotoDialog(photo: Bitmap, onDismiss: () -> Unit, onShare: (Bitmap) -> 
                 Image(
                     bitmap = photo.asImageBitmap(),
                     contentDescription = stringResource(R.string.captured_photo),
-                    modifier = Modifier.fillMaxWidth().height(300.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp),
                 )
 
 
@@ -134,7 +127,10 @@ private suspend fun describeImageWithGemini(
 
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(300, TimeUnit.SECONDS)   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
+            .readTimeout(
+                300,
+                TimeUnit.SECONDS
+            )   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
             .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 

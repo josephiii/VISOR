@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Required permissions for MWDAT -->
     <uses-permission android:name="android.permission.BLUETOOTH" />
@@ -9,7 +8,9 @@
 
     <!-- For MWDAT mock device testing -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:allowBackup="false"
@@ -26,18 +27,21 @@
         <!-- Without Developer Mode, these values need to be set with credentials from the app registered in Wearables Developer Center -->
         <meta-data
             android:name="com.meta.wearable.mwdat.APPLICATION_ID"
-            android:value="${mwdat_application_id}"
-            />
+            android:value="${mwdat_application_id}" />
         <meta-data
             android:name="com.meta.wearable.mwdat.CLIENT_TOKEN"
-            android:value="${mwdat_client_token}"
-            />
+            android:value="${mwdat_client_token}" />
+
+        <!-- Opt out of Data Collection while using MWDAT -->
+        <!-- (true = Opt out, i.e., analytics are disabled) -->
+        <meta-data
+            android:name="com.meta.wearable.mwdat.ANALYTICS_OPT_OUT"
+            android:value="true" />
 
         <!-- Enable the Device Access Toolkit App Model (DAM) -->
         <meta-data
             android:name="com.meta.wearable.mwdat.DAM_ENABLED"
-            android:value="true"
-            />
+            android:value="true" />
 
         <activity
             android:name=".MainActivity"
@@ -50,8 +54,10 @@
             </intent-filter>
             <intent-filter> <!-- Callback scheme Meta AI uses to return to the app  -->
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:scheme="visor" />
             </intent-filter>
         </activity>

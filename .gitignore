@@ -13,9 +13,10 @@
 **/.cache/
 
 # Kotlin/Android
-frontend/mobile/.gradle/
-frontend/mobile/build/
-frontend/mobile/local.properties
+frontend/visor/.gradle/
+frontend/visor/build/
+frontend/visor/local.properties
+**/.idea/
 
 # Obsidian
 **/.obsidian/
