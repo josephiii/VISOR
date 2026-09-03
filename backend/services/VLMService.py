@@ -13,7 +13,10 @@ class VLMService:
         self.vlm: VLModel = QwenVL()  # SELECT DESIRED MODEL # ALSO ADD A SETTINGS FILE TO SELECT FROM THERE
         self.vlm.load_model()
 
-    def answer_question(self, token : str, prompt: str, image_bytes: bytes):
+    #def answer_question(self, token : str, prompt: str, image_bytes: bytes):
+    def answer_question(self, prompt: str, image_bytes: bytes):
+
+
 
         # CHECK TO SE IF USER EXISTS
         # database = supabase_client()
