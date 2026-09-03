@@ -16,15 +16,15 @@ class VLMService:
     def answer_question(self, token : str, prompt: str, image_bytes: bytes):
 
         # CHECK TO SE IF USER EXISTS
-        database = supabase_client()
-        try:
-            response = database.auth.get_user(token)
-        except Exception:
-            raise HTTPException(status_code=401, detail="Invalid or expired user token")
-
-        if response.user is None:
-            raise HTTPException(status_code=401, detail="Invalid or expired user token")
-        user = response.user
+        # database = supabase_client()
+        # try:
+        #     response = database.auth.get_user(token)
+        # except Exception:
+        #     raise HTTPException(status_code=401, detail="Invalid or expired user token")
+        #
+        # if response.user is None:
+        #     raise HTTPException(status_code=401, detail="Invalid or expired user token")
+        # user = response.user
 
         # TEMP FILE
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:

@@ -9,14 +9,14 @@ service = VLMService()
 async def image_prompt(
     prompt: str = Form(...),
     image: UploadFile = File(...),
-    authorization: str = Header(...)
+    #authorization: str = Header(...)
 ):
     image_bytes = await image.read()
 
-    token = authorization.replace("Bearer ", "", 1)
+    #token = authorization.replace("Bearer ", "", 1)
 
     response = service.answer_question(
-        token=token,
+        #token=token,
         prompt=prompt,
         image_bytes=image_bytes
     )
