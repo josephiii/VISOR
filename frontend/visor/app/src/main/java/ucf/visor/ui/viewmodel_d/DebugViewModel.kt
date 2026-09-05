@@ -19,7 +19,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.mockdevice.MockDeviceKit
-import com.meta.wearable.dat.mockdevice.api.MockRaybanMeta
+import com.meta.wearable.dat.mockdevice.api.MockGlasses
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,11 +54,11 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Pairing RayBan Meta device")
-                val mockDevice = mockDeviceKit.pairRaybanMeta()
+                val mockDevice = mockDeviceKit.pairedDevices // uses collection now...
                 val deviceName = "RayBan Meta Glasses"
                 val deviceInfo =
                     MockDeviceInfo(
-                        device = mockDevice,
+                        device = mockDevice.first() as MockGlasses,
                         deviceId = UUID.randomUUID().toString(),
                         deviceName = deviceName,
                     )
@@ -222,7 +222,7 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
         deviceInfo: MockDeviceInfo,
         operationName: String,
         updatedDeviceInfo: MockDeviceInfo,
-        operation: (MockRaybanMeta) -> Unit,
+        operation: (MockGlasses) -> Unit,
     ) {
         viewModelScope.launch {
             try {

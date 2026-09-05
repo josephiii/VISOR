@@ -1,19 +1,3 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-// WearablesViewModel - Core DAT SDK Integration
-//
-// This ViewModel demonstrates the core DAT API patterns for:
-// - Device registration and unregistration using the DAT SDK
-// - Permission management for wearable devices
-// - Device discovery and state management
-// - Integration with MockDeviceKit for testing
-
 package ucf.visor.ui.viewmodel
 
 import android.app.Activity
@@ -38,7 +22,6 @@ import kotlinx.coroutines.launch
 import ucf.visor.ui.profile.UserProfile
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
-    // Static Variables
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // VISOR
     private val _uiState = MutableStateFlow(VisorUiState())
@@ -55,7 +38,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val deviceMonitoringJobs = mutableMapOf<DeviceIdentifier, Job>()
     private val deviceCompatibility = mutableMapOf<DeviceIdentifier, DeviceCompatibility>()
 
-    // Methods
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
     private fun startMonitoring() {

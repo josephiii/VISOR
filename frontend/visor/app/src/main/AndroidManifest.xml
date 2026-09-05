@@ -55,8 +55,8 @@
             <intent-filter> <!-- Callback scheme Meta AI uses to return to the app  -->
                 <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="visor" />
             </intent-filter>

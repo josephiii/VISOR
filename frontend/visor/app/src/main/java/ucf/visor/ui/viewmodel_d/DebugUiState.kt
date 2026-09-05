@@ -23,11 +23,11 @@
 package ucf.visor.ui.viewmodel_d
 
 
-import com.meta.wearable.dat.mockdevice.api.MockRaybanMeta
+import com.meta.wearable.dat.mockdevice.api.MockGlasses
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 
 data class MockDeviceInfo(
-    val device: MockRaybanMeta,
+    val device: MockGlasses,
     val deviceId: String,
     val deviceName: String,
     val hasCameraFeed: Boolean = false,
