@@ -86,7 +86,7 @@ fun VisorNavHost(
             )
         }
 
-        // Add Profile stuff
+        // TODO: Add Profile stuff
 
         composable("home") {
             HomeScreen(
@@ -114,12 +114,10 @@ fun VisorNavHost(
             );
         }
 
-        // DEBUG
+        ///////////////////////////////////////////////////////////////////////
+        // PHASE 1
         composable("onboarding") {
-            ProfileFlowHost( // TODO: Add speak function parameter
-                viewModel = viewModel,
-                onSetupComplete = { viewModel.home() }
-            );
+            // Add Phase 1 Environment
         }
 
     }

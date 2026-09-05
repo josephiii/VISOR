@@ -66,7 +66,7 @@
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
 
     <!-- DEBUG -->
-    <string name="debug_screen_view_title" description="Title for the debug screen viewer">DEBUG: Screen Viewer</string>
+    <string name="debug_screen_view_title" description="Title for the debug screen viewer">Quick Screen Viewer</string>
     <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
     <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>
     <string name="debug_login_screen" description="login screen debug option">LOGIN SCREEN</string>
@@ -171,4 +171,10 @@
     <string name="getting_started_tip_led" description="Tip about capture LED">The capture LED lets others know when you\'re capturing content or going live.</string>
     <string name="getting_started_tip_photo" description="Tip about photo capture">Capture photos by tapping the camera button.</string>
     <string name="getting_started_continue" description="Continue button">Continue</string>
+
+    <!-- PHASE 1 -->
+    <string name="p1_test_title" description="Phase 1 test title in debug options">VISOR Phase 1 Test Environment</string>
+    <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
+    <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
+
 </resources>
