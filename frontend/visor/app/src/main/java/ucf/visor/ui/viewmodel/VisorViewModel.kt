@@ -209,15 +209,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     fun home() {
         _uiState.update { it.copy(isPairingHardware = false) }
         _uiState.update { it.copy(atSettings = false) }
-        _uiState.update { it.copy(isAuthComplete = true) }
         _uiState.update { it.copy(goingHome = true) }
+        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
     fun hardwarePairing() {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(isPairingHardware = true) }
-
+        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
     fun settings() {
@@ -252,7 +252,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
-
     internal fun setDatAppUpdateRequired(required: Boolean) {
         _uiState.update { it.copy(isDatAppUpdateRequired = required) }
     }
@@ -296,4 +295,33 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isGettingStartedSheetVisible = false) }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // PHASE 1
+    fun initiatePhase1() {
+        _uiState.update { it.copy(phase1Initiated = true) }
+    }
+
+    fun configure() {
+        _uiState.update { it.copy(isConfiguring = true) }
+        _uiState.update { it.copy(goingHome = false) }
+        _uiState.update { it.copy(atSettings = false) }
+    }
+
+    fun toggleHazardAwarenessMode() {
+        _uiState.update { it.copy(inHazardAwarenessMode = true) }
+        _uiState.update { it.copy(inSceneDescriptionMode = false) }
+        _uiState.update { it.copy(inReadingAssistanceMode = false) }
+    }
+
+    fun toggleSceneDescriptionMode() {
+        _uiState.update { it.copy(inSceneDescriptionMode = true) }
+        _uiState.update { it.copy(inHazardAwarenessMode = false) }
+        _uiState.update { it.copy(inReadingAssistanceMode = false) }
+    }
+
+    fun toggleReadingAssistanceMode() {
+        _uiState.update { it.copy(inReadingAssistanceMode = true) }
+        _uiState.update { it.copy(inHazardAwarenessMode = false) }
+        _uiState.update { it.copy(inSceneDescriptionMode = false) }
+    }
 }

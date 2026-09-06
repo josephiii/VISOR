@@ -176,5 +176,6 @@
     <string name="p1_test_title" description="Phase 1 test title in debug options">VISOR Phase 1 Test Environment</string>
     <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
     <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
+    <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
 
 </resources>

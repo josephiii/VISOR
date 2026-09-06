@@ -113,7 +113,8 @@ fun DebugScreen(
                     text = stringResource(R.string.p1_initiate_button),
                     onClick = {
                         onDismiss()
-                        navController.navigate("phase_1")
+                        visorViewModel.initiatePhase1()
+                        visorViewModel.home()
                     }
                 )
             }

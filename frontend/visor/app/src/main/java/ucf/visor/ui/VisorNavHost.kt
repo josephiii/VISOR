@@ -6,6 +6,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import ucf.visor.ui.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
 import ucf.visor.ui.screens.auth.ForgotPasswordScreen
@@ -86,8 +87,6 @@ fun VisorNavHost(
             )
         }
 
-        // TODO: Add Profile stuff
-
         composable("home") {
             HomeScreen(
                 viewModel = viewModel
@@ -116,9 +115,10 @@ fun VisorNavHost(
 
         ///////////////////////////////////////////////////////////////////////
         // PHASE 1
-        composable("onboarding") {
-            // Add Phase 1 Environment
+        composable("p1_test_mode_config") {
+            Phase1ModeConfigurationScreen(
+                viewModel = viewModel
+            )
         }
-
     }
 }
