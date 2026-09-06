@@ -3,44 +3,38 @@ package ucf.visor.ui.phase1
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ucf.visor.ui.profile.SpeechRate
-import ucf.visor.ui.profile.UserProfile
-import ucf.visor.ui.profile.Verbosity
+import ucf.visor.R
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
 fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
-    speak: (String) -> Unit = {},
-    onProfileChange: (UserProfile) -> Unit = {},
-    onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
-    onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
 ) {
-    var profile by remember { mutableStateOf(viewModel.userProfile) }
+    val session by viewModel.session.collectAsState()
 
     Column(
         modifier = Modifier
@@ -50,94 +44,67 @@ fun Phase1ModeConfigurationScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            "Settings",
+            stringResource(R.string.p1_mode_config_screen_title),
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.semantics { heading() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { heading() },
+            textAlign = TextAlign.Center
         )
-
-        SettingSection("How fast VISOR talks")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SpeechRate.entries.forEach { r ->
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SessionMode.entries.forEach { mode ->
+                val isSelected = mode == session.mode
                 ChoiceChip(
-                    label = when (r) {
-                        SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
+                    label = when (mode) {
+                        SessionMode.HAZARD -> stringResource(R.string.hazard_mode)
+                        SessionMode.SCENE -> stringResource(R.string.scene_mode)
+                        SessionMode.READER -> stringResource(R.string.reader_mode)
                     },
-                    selected = profile.speechRate == r,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    onProfileChange(profile.copy(speechRate = r))
-                    speak("Speech ${if (r == SpeechRate.SLOW) "slower" else if (r == SpeechRate.FAST) "faster" else "normal"}.")
-                }
+                    isSelected = isSelected,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        if (!isSelected) {
+                            viewModel.setMode(mode)
+                        }
+                    }
+                )
             }
         }
-
-        SettingSection("How much detail")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Verbosity.entries.forEach { v ->
-                ChoiceChip(
-                    label = v.name.lowercase().replaceFirstChar { it.uppercase() },
-                    selected = profile.verbosity == v,
-                    modifier = Modifier.weight(1f),
-                ) { onProfileChange(profile.copy(verbosity = v)) }
-            }
-        }
-
-        SettingSection("Display")
-        ChoiceChip(
-            label = if (profile.appHighContrast) "High contrast: ON" else "High contrast: OFF",
-            selected = profile.appHighContrast,
-            modifier = Modifier.fillMaxWidth(),
-        ) { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) }
-
-        Spacer(Modifier.height(24.dp))
-        SettingSection("Account")
-        ChoiceChip(
-            "Log out",
-            selected = false,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onLogout
-        )
-        ChoiceChip(
-            "Delete my account",
-            selected = false,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onDeleteAccount
-        )
     }
-}
-
-@Composable
-private fun SettingSection(title: String) {
-    Text(
-        title,
-        fontSize = 20.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .padding(top = 10.dp)
-            .semantics { heading() },
-    )
 }
 
 @Composable
 private fun ChoiceChip(
     label: String,
-    selected: Boolean,
+    isSelected: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val containerColor = if (isSelected) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 64.dp),
+        modifier = modifier
+            .heightIn(min = 64.dp)
+            .semantics { selected = isSelected },
         shape = CutCornerShape(14.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
         colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = containerColor,
         ),
     ) {
         Text(
             label,
             fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
             maxLines = 1,
             softWrap = false,
         )

@@ -26,6 +26,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     // VISOR
     private val _uiState = MutableStateFlow(VisorUiState())
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
+
+    private val _session = MutableStateFlow(VisorSession())
+    val session: StateFlow<VisorSession> = _session.asStateFlow()
     val userProfile: UserProfile = UserProfile()
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,20 +311,28 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleHazardAwarenessMode() {
-        _uiState.update { it.copy(inHazardAwarenessMode = true) }
-        _uiState.update { it.copy(inSceneDescriptionMode = false) }
-        _uiState.update { it.copy(inReadingAssistanceMode = false) }
+        _session.update { it.copy(inHazardAwarenessMode = true) }
+        _session.update { it.copy(inSceneDescriptionMode = false) }
+        _session.update { it.copy(inReadingAssistanceMode = false) }
     }
 
     fun toggleSceneDescriptionMode() {
-        _uiState.update { it.copy(inSceneDescriptionMode = true) }
-        _uiState.update { it.copy(inHazardAwarenessMode = false) }
-        _uiState.update { it.copy(inReadingAssistanceMode = false) }
+        _session.update { it.copy(inSceneDescriptionMode = true) }
+        _session.update { it.copy(inHazardAwarenessMode = false) }
+        _session.update { it.copy(inReadingAssistanceMode = false) }
     }
 
     fun toggleReadingAssistanceMode() {
-        _uiState.update { it.copy(inReadingAssistanceMode = true) }
-        _uiState.update { it.copy(inHazardAwarenessMode = false) }
-        _uiState.update { it.copy(inSceneDescriptionMode = false) }
+        _session.update { it.copy(inReadingAssistanceMode = true) }
+        _session.update { it.copy(inHazardAwarenessMode = false) }
+        _session.update { it.copy(inSceneDescriptionMode = false) }
+    }
+
+    fun setMode(newMode: SessionMode) {
+        when (newMode) {
+            SessionMode.HAZARD -> toggleHazardAwarenessMode()
+            SessionMode.SCENE -> toggleSceneDescriptionMode()
+            else -> toggleReadingAssistanceMode()
+        }
     }
 }

@@ -44,9 +44,6 @@ data class VisorUiState(
     // PHASE 1 States.
     val phase1Initiated: Boolean = false,
     val isConfiguring: Boolean = false,
-    val inHazardAwarenessMode: Boolean = true, // Default.
-    val inSceneDescriptionMode: Boolean = false,
-    val inReadingAssistanceMode: Boolean = false,
 ) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||
