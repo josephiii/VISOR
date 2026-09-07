@@ -40,6 +40,10 @@ data class VisorUiState(
     // Component States.
     val isAuthComplete: Boolean = false,
     val isSessionActive: Boolean = false,
+
+    // PHASE 1 States.
+    val phase1Initiated: Boolean = false,
+    val isConfiguring: Boolean = false,
 ) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||
@@ -50,4 +54,6 @@ data class VisorUiState(
     val canStartRegistration: Boolean = canRegister && !isRegistering
 
     val finishedOnboarding: Boolean = goingHome
+
+    val navigationBarEnabled: Boolean = isAuthComplete
 }
