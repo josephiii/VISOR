@@ -59,6 +59,8 @@ fun Phase1ModeConfigurationScreen(
                 .semantics { heading() },
             textAlign = TextAlign.Center
         )
+        Spacer( modifier = Modifier.height(64.dp))
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -81,9 +83,9 @@ fun Phase1ModeConfigurationScreen(
                 )
             }
         }
-        Spacer( modifier = Modifier.height(16.dp))
+        Spacer( modifier = Modifier.height(64.dp))
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ){
             List(scripts) {index->
                 Button(
