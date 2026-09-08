@@ -1,6 +1,8 @@
 name: Code Summarizer
 on:
   push:
+    branches:
+      - main
 permissions:
   contents: write
 jobs:
@@ -9,13 +11,15 @@ jobs:
     steps:
       - name: Get Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Get diff from repo
         run: |
           if git rev-parse HEAD~1 > /dev/null 2>&1; then
             git diff HEAD~1 HEAD > diff.txt
           else
-            git diff --root HEAD > diff.txt
+            git diff $(git hash-object -t tree /dev/null) HEAD > diff.txt
           fi
 
       - name: Call AI API to summarize diff
@@ -46,7 +50,7 @@ jobs:
         run: jq -r '.choices[0].message.content' response.txt >> CHANGELOG.md
 
       - name: Add the author
-        run: echo -e "\nChanges by:${{ github.actor }}" >> CHANGELOG.md
+        run: echo -e '\nChanges by:${{ github.actor }}\n' >> CHANGELOG.md
 
       - name: Push the changelog file
         uses: stefanzweifel/git-auto-commit-action@v5

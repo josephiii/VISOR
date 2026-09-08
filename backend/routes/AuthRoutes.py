@@ -1,27 +1,55 @@
 
-from fastapi import APIRouter
+from fastapi import Header, APIRouter, HTTPException
 from services.AuthService import AuthService
 from schemas.AuthSchema import RegisterSchema, LoginSchema
 
-router = APIRouter()
-
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 service = AuthService()
 
-## MAKE SURE TO ADD PROPER ERROR RESPONSES FOR LOGIN AND RESGISTER!!
-@router.post("/register")
-async def register(userData: RegisterSchema):
-    response = service.register(userData)
+@auth_router.post("/register")
+def register(userData: RegisterSchema):
+    try:
+        response = service.register(userData.username, userData.email, userData.password)
 
-    if not response:
-        return "Error" # <---- HERE
-    return response
-
-@router.post("/login")
-async def login(userData: LoginSchema):
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Registration Failed")
     
-    response = service.login(userData)
+    if not response.user:
+        raise HTTPException(status_code=400, detail="Registration Failed")
+    
+    return {"user_id": response.user.id}
 
-    if not response:
-        return "Error" # <---- HERE
-    return response
+@auth_router.post("/login")
+def login(userData: LoginSchema):
+    try:
+        response = service.login(userData.email, userData.password)
+    
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Email or Password")
+    
+    if not response.session:
+        raise HTTPException(status_code=401, detail="Session Error")
+    
+    return {
+        "access_token": response.session.access_token,
+        "refresh_token": response.session.refresh_token
+    }
+
+@auth_router.delete("/deleteAccount")
+def delete_account(authorization: str = Header(...)):
+    token = authorization.replace("Bearer ", "")
+
+    try:
+        service.delete_account(token)
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Account Deletion Failed")
+    
+    return {"message": "Account Successfully Deleted"}
 

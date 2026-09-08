@@ -1,0 +1,40 @@
+package ucf.visor.ui.components
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun SwitchButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDestructive: Boolean = false,
+    enabled: Boolean = true,
+) {
+    Button(
+        modifier = modifier
+            .height(56.dp)
+            .fillMaxWidth(),
+        onClick = onClick,
+        enabled = enabled,
+        shape = CutCornerShape(4.dp),
+    ) {
+        Text(label)
+    }
+}
+
+@Preview
+@Composable
+fun SwitchButtonPreview() {
+    SwitchButton(
+        onClick = {},
+        label = "Test Label"
+    )
+}

@@ -1,6 +1,24 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+
 fastapi
 uvicorn
 python-dotenv
-bcrypt
-pyjwt
 pydantic[email]
+supabase
+
+torch
+torchvision
+numpy
+
+transformers
+accelerate
+pillow
+python-multipart
+
+qwen-vl-utils
+
+einops
+
+sherpa-onnx
+sentencepiece
+pypinyin

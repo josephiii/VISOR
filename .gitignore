@@ -1,10 +1,23 @@
-#Backend/Python
-backend/.env
-backend/venv/
+# ENVIORMENT
+**/.env*
 
-#Mobile/Kotlin
-frontend/mobile/.gradle/
-frontend/mobile/build/
-frontend/mobile/local.properties
-backend/__pycache__/
-backend/*.pyc
+# Python
+**/__pycache__/
+*.py[cod]
+*.pyc
+
+# Python virtual environments
+**/venv/
+
+# Cache directories
+**/.cache/
+
+# Kotlin/Android
+frontend/visor/.gradle/
+frontend/visor/build/
+frontend/visor/local.properties
+**/.idea/
+
+# Obsidian
+**/.obsidian/
+**/*.sync-conflict-*
