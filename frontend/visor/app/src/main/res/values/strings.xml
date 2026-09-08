@@ -184,5 +184,6 @@
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
 
+    <!-- Script strings -->
 
 </resources>
