@@ -50,7 +50,11 @@ fun HomeScreen(
 //PHASE 1: Button must take in context of current mode, and pass the text from mode into talk()
             onToggle = {
                 viewModel.toggleSession()
-                if(uiState.isSessionActive) talk("Session ended") else talk("Session started")
+                if(uiState.isSessionActive) {
+                    talk("Session ended")
+                }else {
+                    talk("Session started")
+                }
             }
         )
 

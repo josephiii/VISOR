@@ -119,7 +119,8 @@ fun VisorNavHost(
         // PHASE 1
         composable("p1_test_mode_config") {
             Phase1ModeConfigurationScreen(
-                viewModel = viewModel
+                viewModel = viewModel,
+                talk= talk
             )
         }
     }

@@ -178,11 +178,32 @@
     <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
     <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
     <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode Configuration</string>
-    
+
     <!-- VISOR Session Modes -->
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
 
+    <!-- Script strings -->
+    <string-array name="hazard_awareness_scripts">
+        <item>A box is on the floor ahead, slightly to your right. It partially blocks the walkway.</item>
+        <item>A chair extends into the aisle on your left. It is pulled out from the table.</item>
+        <item>An electrical cord lies across the walkway ahead. It runs from left to right.</item>
+        <item>A cabinet door is open on your right. It projects outward above the counter.</item>
+    </string-array>
+
+    <string-array name="scene_description_scripts">
+        <item>A playground has a red slide near the center and a yellow bridge to the right. A picnic table is in the foreground on the right. Trees surround the play area.</item>
+        <item>A waiting room has chairs along the wall on your left. A reception desk is ahead, with a doorway to its right.</item>
+        <item>A plate is in the center of the table setting. A fork is to the left of the plate, and a cup is beyond it on the right.</item>
+        <item>A living room has a sofa on your left and an armchair on your right. A coffee table stands between them.</item>
+    </string-array>
+
+    <string-array name="reading_assistance_scripts">
+        <item>The sign says: Reception. Please check in at the front desk.</item>
+        <item>The sign says: Room two hundred four. Vision Clinic.</item>
+        <item>Library hours. Monday through Friday, nine A.M. to five P.M. Saturday and Sunday, closed.</item>
+        <item>Drinks. Tea, two dollars. Coffee, three dollars. Water, one dollar.</item>
+    </string-array>
 
 </resources>
