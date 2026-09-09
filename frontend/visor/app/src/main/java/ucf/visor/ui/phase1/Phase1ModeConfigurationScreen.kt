@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
@@ -42,7 +43,12 @@ fun Phase1ModeConfigurationScreen(
     talk: (String)->Unit = {}
 ) {
     val session by viewModel.session.collectAsState()
-    val scripts =3
+    val scriptsArrayRes = when (session.mode) {
+        SessionMode.HAZARD -> R.array.hazard_awareness_scripts
+        SessionMode.SCENE -> R.array.scene_description_scripts
+        SessionMode.READER -> R.array.reading_assistance_scripts
+    }
+    val scripts = stringArrayResource(scriptsArrayRes)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,20 +91,20 @@ fun Phase1ModeConfigurationScreen(
         }
         Spacer( modifier = Modifier.height(64.dp))
         Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ){
-            List(scripts) {index->
+            scripts.forEachIndexed { index, scriptText ->
                 Button(
-                    modifier = Modifier.fillMaxSize(),
-                    //Get selected mode and play the respective script
+                    modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                    /* talk(scriptText)*/
+                        talk(scriptText)
                     }
                 ){
-                    val num = index+1
-                    Text("Play Script $num")}
+                    Text("Play Script ${index + 1}")
+                }
             }
-
         }
     }
 }
