@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="Live IMU sensor readout for VISOR — shows accelerometer, gyroscope, and orientation data from Meta Ray-Ban Display glasses.">
+  <meta name="mrbd-web-app-capable" content="yes">
+  <title>VISOR IMU</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <div id="home" class="screen">
+      <header class="header">
+        <h1>IMU Sensors</h1>
+        <span class="header-meta" id="status-indicator">Starting…</span>
+      </header>
+
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Accelerometer</div>
+          <div class="card-subtitle">m/s², includes gravity</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">X</span><span id="accel-x">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">Y</span><span id="accel-y">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">Z</span><span id="accel-z">0.00</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Gyroscope</div>
+          <div class="card-subtitle">rotation rate, °/s</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">α</span><span id="gyro-alpha">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">β</span><span id="gyro-beta">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">γ</span><span id="gyro-gamma">0.00</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Orientation</div>
+          <div class="card-subtitle">absolute angle, °</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">α</span><span id="orient-alpha">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">β</span><span id="orient-beta">0.00</span></div>
+            <div class="axis-value"><span class="axis-label">γ</span><span id="orient-gamma">0.00</span></div>
+          </div>
+        </div>
+
+        <div id="error" class="error-container hidden">
+          <div class="error-icon">⚠️</div>
+          <div class="error-message">Something went wrong.</div>
+        </div>
+      </div>
+
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="request-permission" id="permission-btn">Enable Sensors</button>
+        <button class="nav-item focusable" data-action="toggle-stream" id="toggle-btn">Pause</button>
+      </nav>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

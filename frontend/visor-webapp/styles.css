@@ -1,0 +1,188 @@
+/**
+ * VISOR IMU Web App — Meta Ray-Ban Display glasses
+ */
+
+:root {
+  --bg-primary: #000000; /* transparent on additive display */
+  --bg-secondary: #0a0a0f;
+  --bg-tertiary: #14141f;
+  --bg-card: #1a1a2e;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --accent-primary: #00d4ff;
+  --accent-secondary: #00ff88;
+  --danger: #ff4466;
+  --focus-ring: #00d4ff;
+  --focus-glow: rgba(0, 212, 255, 0.4);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: 600px;
+  height: 600px;
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* --- Screens --- */
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.screen.hidden { display: none; }
+
+/* --- Header --- */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 16px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  gap: 12px;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  flex: 1;
+}
+.header-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* --- Content Area --- */
+.content {
+  flex: 1;
+  padding: 12px 4px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Focus States (critical for EMG/D-pad) --- */
+.focusable {
+  transition:
+    transform 475ms cubic-bezier(0.6, 0, 0.4, 1),
+    box-shadow 300ms cubic-bezier(0.4, 0.04, 0.5, 1);
+  border: 2px solid transparent;
+  cursor: pointer;
+  min-height: 44px;
+}
+.focusable:focus {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 20px var(--focus-glow);
+  transform: scale(0.91);
+}
+
+/* --- Navigation Bar --- */
+.nav-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 4px 4px;
+  background: transparent;
+  flex-shrink: 0;
+}
+.nav-item {
+  flex: 1;
+  height: 56px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-item.primary {
+  background: var(--accent-primary);
+  color: #0a0a0f;
+}
+
+/* --- Cards --- */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* --- IMU axis readout --- */
+.data-grid.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.axis-value {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.axis-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.axis-value span:last-child {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-primary);
+}
+
+/* --- Error States --- */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.error-icon { font-size: 36px; }
+.error-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+
+/* --- Utility --- */
+.hidden { display: none !important; }

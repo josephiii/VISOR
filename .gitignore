@@ -21,3 +21,4 @@ frontend/visor/local.properties
 # Obsidian
 **/.obsidian/
 **/*.sync-conflict-*
+.mcp.json
