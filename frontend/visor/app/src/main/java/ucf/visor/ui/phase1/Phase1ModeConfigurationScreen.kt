@@ -9,9 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -20,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,24 +28,29 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
+
 @Composable
 fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
-    talk: (String)->Unit = {}
+    talk: (String) -> Unit = {}
 ) {
-    val session by viewModel.session.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val session by viewModel.session.collectAsStateWithLifecycle()
+
     val scriptsArrayRes = when (session.mode) {
         SessionMode.HAZARD -> R.array.hazard_awareness_scripts
         SessionMode.SCENE -> R.array.scene_description_scripts
         SessionMode.READER -> R.array.reading_assistance_scripts
     }
+
     val scripts = stringArrayResource(scriptsArrayRes)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,7 +67,7 @@ fun Phase1ModeConfigurationScreen(
                 .semantics { heading() },
             textAlign = TextAlign.Center
         )
-        Spacer( modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -82,27 +84,37 @@ fun Phase1ModeConfigurationScreen(
                     isSelected = isSelected,
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        if (!isSelected) {
+                        // Switch modes when selecting a non-active mode
+                        if (!isSelected && uiState.isSessionActive) {
+                            val activateScript: String = when (mode) {
+                                SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
+                                SessionMode.SCENE -> "Scene Description Mode Activated!"
+                                SessionMode.READER -> "Reading Assistance Mode Activated!"
+                            }
                             viewModel.setMode(mode)
+                            talk(activateScript)
                         }
                     }
                 )
             }
         }
-        Spacer( modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp)
-        ){
+        ) {
             scripts.forEachIndexed { index, scriptText ->
                 Button(
                     modifier = Modifier.fillMaxWidth(),
+                    shape = CutCornerShape(14.dp),
                     onClick = {
-                        talk(scriptText)
+                        if (uiState.isSessionActive) {
+                            talk(scriptText)
+                        }
                     }
-                ){
-                    Text("Play Script ${index + 1}")
+                ) {
+                    Text("Script ${index + 1}: ${scriptText.substring(0, 20)} ...")
                 }
             }
         }

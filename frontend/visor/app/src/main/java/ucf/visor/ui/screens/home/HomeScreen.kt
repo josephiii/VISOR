@@ -22,12 +22,11 @@ import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.tts.Speaker
 
 @Composable
 fun HomeScreen(
     viewModel: VisorViewModel,
-    talk: (String)->Unit={},
+    talk: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,13 +46,12 @@ fun HomeScreen(
 
         SessionToggleButton(
             isSessionActive = uiState.isSessionActive,
-//PHASE 1: Button must take in context of current mode, and pass the text from mode into talk()
             onToggle = {
                 viewModel.toggleSession()
-                if(uiState.isSessionActive) {
-                    talk("Session ended")
-                }else {
-                    talk("Session started")
+                if (uiState.isSessionActive) {
+                    talk("Ending Session")
+                } else {
+                    talk("Starting Session")
                 }
             }
         )
@@ -61,10 +59,11 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(40.dp))
         Text(
             text =
-                if (uiState.isSessionActive)
+                if (uiState.isSessionActive) {
                     stringResource(R.string.end_session)
-                else
-                    stringResource(R.string.start_session),
+                } else {
+                    stringResource(R.string.start_session)
+                },
             fontSize = 25.sp
         )
     }
