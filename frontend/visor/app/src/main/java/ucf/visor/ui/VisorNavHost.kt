@@ -14,8 +14,8 @@ import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.ResetPasswordScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.auth.VerifyAccountScreen
+import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
-import ucf.visor.ui.screens.home.HardwarePairingScreen
 import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -24,7 +24,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 fun VisorNavHost(
     navController: NavHostController,
     viewModel: VisorViewModel,
-    talk: (String)-> Unit = {}
+    talk: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -128,7 +128,7 @@ fun VisorNavHost(
         composable("p1_test_mode_config") {
             Phase1ModeConfigurationScreen(
                 viewModel = viewModel,
-                talk= talk
+                talk = talk
             )
         }
     }

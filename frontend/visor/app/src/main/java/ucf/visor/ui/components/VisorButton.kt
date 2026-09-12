@@ -10,9 +10,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ucf.visor.ui.theme.VisorShapes
 
-// Basic Button implementation. Enforces a touch target well above the
-// ~48dp minimum recommended for low-vision users (Material's own Button
-// default is only 40dp tall).
+/**
+ * Basic Button implementation. Enforces a touch target well above the
+ * ~48dp minimum recommended for low-vision users (Material's own Button
+ * default is only 40dp tall).
+ */
 @Composable
 fun VisorButton(
     text: String,

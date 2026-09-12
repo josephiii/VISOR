@@ -16,12 +16,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/**
- * A single icon + text tip row, used in the Getting Started sheet and the
- * Hardware Pairing screen. [title] is optional: the Getting Started sheet's
- * tips are single lines with no heading, while Hardware Pairing's environment
- * capture tip pairs a heading with a description.
- */
 @Composable
 fun TipItem(
     iconResId: Int,

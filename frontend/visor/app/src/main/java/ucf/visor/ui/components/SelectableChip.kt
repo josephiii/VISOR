@@ -26,19 +26,8 @@ import ucf.visor.ui.theme.VisorShapes
 /**
  * VISOR's single selectable-choice control — used for settings toggles,
  * onboarding answers, and mode pickers.
- *
- * Consolidates three near-duplicate components that had drifted apart:
- * SettingsScreen's private ChoiceChip took a `selected` flag but never
- * changed color for it (users couldn't tell which speech rate/verbosity was
- * active), while Phase1ModeConfigurationScreen's private ChoiceChip and
- * ProfileCreationScreen's BigChoiceButton each independently got selection
- * styling right in slightly different ways. One component now owns it: a
- * container-color swap (always from the current theme, so it's correct in
- * all four AppThemes) plus an optional checkmark, exposed via
- * `Modifier.semantics { selected }` for screen readers.
- *
  * @param minHeight touch-target height. Defaults to 64.dp (well above the
- *   ~48dp minimum); onboarding's BigChoiceButton uses a taller 72.dp.
+ *   ~48dp minimum).
  * @param showCheckmark set false for chips packed 3-wide in a Row, where a
  *   checkmark would fight the label for space at large text sizes — the
  *   container color and bold weight still carry the selected state.
@@ -47,6 +36,7 @@ import ucf.visor.ui.theme.VisorShapes
 fun SelectableChip(
     label: String,
     selected: Boolean,
+    vital: Boolean = false,
     modifier: Modifier = Modifier,
     minHeight: Dp = 64.dp,
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
@@ -54,11 +44,29 @@ fun SelectableChip(
     onClick: () -> Unit,
 ) {
     val containerColor =
-        if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+        if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else if (vital) {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        }
     val contentColor =
-        if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+        if (selected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else if (vital) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
     val borderColor =
-        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+        if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else if (vital) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.outline
+        }
 
     OutlinedButton(
         onClick = onClick,

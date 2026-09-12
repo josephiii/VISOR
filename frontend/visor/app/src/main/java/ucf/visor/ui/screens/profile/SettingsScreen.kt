@@ -40,16 +40,6 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
- * (Ticket TBD — the "Profile Settings" page from Aidan's VISOR-155 page list.)
- *
- * Backed by VisorViewModel.userProfile, which loads from and saves to
- * ProfileStore — see VisorViewModel.updateProfile. The "About you" section
- * below is the only place besides onboarding that can change vision type,
- * severity, or the free-text description; previously those were write-once
- * during onboarding with no way to revisit them.
- *
- * Auth actions (logout / delete account / change username) are callbacks —
- * they belong to Joseph's /auth endpoints, not this screen's logic.
  */
 @Composable
 fun SettingsScreen(
@@ -124,7 +114,7 @@ fun SettingsScreen(
                 ) { onProfileChange(profile.copy(severity = s)) }
             }
         }
-
+        Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = profile.visionDescription,
             onValueChange = { onProfileChange(profile.copy(visionDescription = it)) },
@@ -200,6 +190,7 @@ fun SettingsScreen(
         SelectableChip(
             "Log out",
             selected = false,
+            vital = true,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
             onClick = { showLogoutConfirm = true },
@@ -207,6 +198,7 @@ fun SettingsScreen(
         SelectableChip(
             "Delete my account",
             selected = false,
+            vital = true,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
             onClick = { showDeleteConfirm = true },

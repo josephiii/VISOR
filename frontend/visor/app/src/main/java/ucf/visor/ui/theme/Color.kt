@@ -53,8 +53,6 @@ object HighContrastLightColors {
     val Text = Color(0xFF000000)
     val Primary = Color(0xFF0E2A47)
     val OnPrimary = Color(0xFFFFFFFF)
-    // High contrast: selected/filled states use the solid primary/secondary
-    // tone directly (no pastel tint) so the on/off state is unmistakable.
     val PrimaryContainer = Primary
     val OnPrimaryContainer = OnPrimary
     val Secondary = Color(0xFF083D3B)

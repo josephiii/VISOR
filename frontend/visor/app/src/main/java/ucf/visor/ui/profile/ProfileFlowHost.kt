@@ -24,8 +24,6 @@ fun ProfileFlowHost(
         viewModel = viewModel,
         speak = speak,
         onFinished = { profile ->
-            // viewModel owns persistence now — see VisorViewModel.updateProfile —
-            // so the running session reflects the new profile immediately.
             viewModel.updateProfile(profile)
             onSetupComplete()
         },

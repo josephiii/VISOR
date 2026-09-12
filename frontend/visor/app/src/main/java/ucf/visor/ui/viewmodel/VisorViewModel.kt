@@ -30,11 +30,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _session = MutableStateFlow(VisorSession())
     val session: StateFlow<VisorSession> = _session.asStateFlow()
-
-    // Loaded once at startup so a profile saved during onboarding (or a prior
-    // session) is reflected immediately — previously this was a hardcoded
-    // UserProfile() default, so Settings toggles like High Contrast and Text
-    // size had nothing real to read or write and did nothing.
     private val profileStore = ProfileStore(application)
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()

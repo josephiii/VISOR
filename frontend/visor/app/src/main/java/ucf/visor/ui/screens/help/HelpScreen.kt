@@ -19,11 +19,6 @@ import ucf.visor.ui.components.scrollIndicator
 
 private data class HelpTopic(val title: String, val description: String)
 
-// Grounded in what VISOR's screens actually do today — not a list of voice
-// commands the backend doesn't wire up yet, but a plain-language reference for
-// what each part of the app is for, since a voice-first assistive app is
-// exactly the kind of app that benefits from being explainable in one place
-// rather than only discoverable by trial and error.
 private val helpTopics = listOf(
     HelpTopic(
         "Starting a session",
@@ -71,7 +66,7 @@ fun HelpScreen(
         VisorButton(text = "Back", width = 0.4f, onClick = onBack)
 
         Text(
-            "Help & how VISOR works",
+            "(WIP) Help & how VISOR works",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },

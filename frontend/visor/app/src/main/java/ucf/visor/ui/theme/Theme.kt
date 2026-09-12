@@ -16,7 +16,7 @@ import ucf.visor.ui.profile.UserProfile
 
 // The four accessibility-first themes VISOR supports:
 // ClarityLight (default)
-// ClarityDark
+// ClarityDark  (default)
 // HighContrastLight
 // HighContrastDark
 enum class AppTheme {
@@ -39,12 +39,6 @@ enum class AppTheme {
     }
 }
 
-
-// Material3's ColorScheme has no built-in "success" or "warning" role, so
-// status colors are carried separately via CompositionLocal and pulled in
-// alongside MaterialTheme.colorScheme. Access with VisorTheme.statusColors
-// inside any @Composable.
-
 data class VisorStatusColors(
     val success: Color,
     val onSuccess: Color,
@@ -65,14 +59,6 @@ private val LocalVisorStatusColors = staticCompositionLocalOf {
     )
 }
 
-// NOTE: lightColorScheme()/darkColorScheme() default every role you don't pass
-// to Compose's stock Material-baseline palette (an arbitrary purple/gray scale)
-// rather than deriving it from the roles you do pass. Earlier, VISOR only set
-// 8 of the ~20 roles views in this app rely on, so anything using outline,
-// secondaryContainer, primaryContainer, surfaceVariant, errorContainer, or the
-// nav bar's surfaceContainer silently rendered in that unrelated stock palette
-// instead of one of VISOR's four vetted themes. Every role referenced anywhere
-// in ucf.visor.ui is set explicitly below so all four themes are fully covered.
 private fun colorSchemeFor(theme: AppTheme) = when (theme) {
     AppTheme.ClarityLight -> lightColorScheme(
         primary = ClarityLightColors.Primary,
@@ -259,13 +245,15 @@ private fun Typography.scaled(factor: Float): Typography = Typography(
     labelSmall = labelSmall.scaled(factor),
 )
 
-// @param appTheme which of the four VISOR themes to render. Defaults to
-//       Clarity Light/Dark based on the system setting, but is normally
-//       driven by the user's saved accessibility preference — see
-//       AppTheme.forProfile — so High Contrast can be picked independently
-//       of the OS theme.
-// @param textScale multiplier applied on top of the base type scale (1.0 =
-//       standard). Comes from the user's Settings > Text size preference.
+/**
+ * @param appTheme which of the four VISOR themes to render. Defaults to
+ *       Clarity Light/Dark based on the system setting, but is normally
+ *       driven by the user's saved accessibility preference — see
+ *       AppTheme.forProfile — so High Contrast can be picked independently
+ *       of the OS theme.
+ * @param textScale multiplier applied on top of the base type scale (1.0 =
+ *       standard). Comes from the user's Settings > Text size preference.
+ */
 @Composable
 fun VisorTheme(
     appTheme: AppTheme = if (isSystemInDarkTheme()) AppTheme.ClarityDark else AppTheme.ClarityLight,

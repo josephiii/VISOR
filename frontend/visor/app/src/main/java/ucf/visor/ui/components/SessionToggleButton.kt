@@ -17,11 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import ucf.visor.R
 
-// The main session control — VISOR's single most important button. Previously
-// a thin ring outline around a small, low-contrast icon (easy to miss at a
-// glance); now a solid color-filled disc so "session is running" is readable
-// as a color change, not just an icon swap, and Stop reads as a distinct
-// (error-toned) action from Start rather than looking identical to it.
 @Composable
 fun SessionToggleButton(
     isSessionActive: Boolean,
