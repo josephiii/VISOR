@@ -114,7 +114,7 @@ fun Phase1ModeConfigurationScreen(
                         }
                     }
                 ) {
-                    Text("Script ${index + 1}: ${scriptText.substring(0, 20)} ...")
+                    Text("Script ${index + 1}: ${scriptText.substring(0, 25)} ...")
                 }
             }
         }
@@ -151,6 +151,11 @@ private fun ChoiceChip(
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
             maxLines = 1,
             softWrap = false,
+            color = if (isSelected) {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
         )
     }
 }
