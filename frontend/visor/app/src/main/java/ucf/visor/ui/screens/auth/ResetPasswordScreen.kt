@@ -24,6 +24,7 @@ import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -39,12 +40,14 @@ fun ResetPasswordScreen(
     var password by remember { mutableStateOf("") }
     var confirmedPassword by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(vertical = 24.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
     ) {
 
         VisorHeader()

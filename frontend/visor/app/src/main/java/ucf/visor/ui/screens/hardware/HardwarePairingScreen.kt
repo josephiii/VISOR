@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 // This screen will prompt the user to
@@ -39,12 +41,14 @@ fun HardwarePairingScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
+                .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

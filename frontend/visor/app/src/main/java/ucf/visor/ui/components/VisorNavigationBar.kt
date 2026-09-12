@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -38,7 +37,7 @@ fun VisorNavigationBar(
                     contentDescription = "Profile Settings"
                 )
             },
-            label = { Text(stringResource(R.string.user_profile_navbar_title)) }
+            label = { AutoSizeText(stringResource(R.string.user_profile_navbar_title), style = MaterialTheme.typography.labelMedium) }
         )
         NavigationBarItem(
             selected = currentRoute == "home",
@@ -49,7 +48,7 @@ fun VisorNavigationBar(
                     contentDescription = "Home"
                 )
             },
-            label = { Text(stringResource(R.string.home_screen_title)) }
+            label = { AutoSizeText(stringResource(R.string.home_screen_title), style = MaterialTheme.typography.labelMedium) }
         )
         NavigationBarItem(
             selected = currentRoute == "hardware_pairing",
@@ -60,7 +59,7 @@ fun VisorNavigationBar(
                     contentDescription = "Hardware"
                 )
             },
-            label = { Text(stringResource(R.string.hardware_pairing_navbar_title)) }
+            label = { AutoSizeText(stringResource(R.string.hardware_pairing_navbar_title), style = MaterialTheme.typography.labelMedium) }
         )
     }
 }

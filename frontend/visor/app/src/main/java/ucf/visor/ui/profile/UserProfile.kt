@@ -41,3 +41,19 @@ data class UserProfile(
     val appHighContrast: Boolean = true,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
 )
+
+// Human-readable labels — shared by the onboarding wizard and Settings' "About
+// you" section so both ever say exactly the same thing for each option.
+fun VisionType.label(): String = when (this) {
+    VisionType.CENTRAL_LOSS -> "Trouble seeing the center"
+    VisionType.PERIPHERAL_LOSS -> "Trouble seeing the sides"
+    VisionType.BLUR_LOW_ACUITY -> "Everything is blurry"
+    VisionType.CONTRAST_LIGHT -> "Contrast / light sensitivity"
+    VisionType.NOT_SURE -> "Not sure"
+}
+
+fun Severity.label(): String = when (this) {
+    Severity.MILD -> "A little"
+    Severity.MODERATE -> "A moderate amount"
+    Severity.SEVERE -> "A lot"
+}

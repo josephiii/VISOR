@@ -23,6 +23,7 @@ import ucf.visor.R
 import ucf.visor.ui.components.AuthCodeInput
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -34,12 +35,14 @@ fun EnterCodeScreen(
     modifier: Modifier = Modifier
 ) {
     var code by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(vertical = 24.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
     ) {
 
         VisorHeader()

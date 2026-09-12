@@ -26,12 +26,15 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.profile.Severity
 import ucf.visor.ui.profile.SpeechRate
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.profile.VisionType
+import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -87,6 +90,7 @@ fun ProfileCreationScreen(
 ) {
     var step by remember { mutableStateOf(Step.NAME) }
     var profile by remember { mutableStateOf(UserProfile()) }
+    val scrollState = rememberScrollState()
 
     // Speak each question as it appears — the "voice-first" half of the screen.
     LaunchedEffect(step) { speak(step.spokenPrompt) }
@@ -100,7 +104,8 @@ fun ProfileCreationScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         LinearProgressIndicator(
@@ -170,7 +175,7 @@ fun ProfileCreationScreen(
                 .heightIn(min = 72.dp),
             shape = VisorShapes.Control,
         ) {
-            Text(
+            AutoSizeText(
                 if (step == Step.DONE) "Start using VISOR" else "Continue",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
@@ -180,7 +185,7 @@ fun ProfileCreationScreen(
         // Skip is always available — every profile field has a safe default.
         if (step != Step.DONE) {
             TextButton(onClick = ::next, modifier = Modifier.fillMaxWidth()) {
-                Text("Skip for now", style = MaterialTheme.typography.titleMedium)
+                AutoSizeText("Skip for now", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -221,18 +226,6 @@ private fun BigChoiceButton(
 }
 
 // Human-readable labels (also what voice commands should map to).
-private fun VisionType.label() = when (this) {
-    VisionType.CENTRAL_LOSS -> "Trouble seeing the center"
-    VisionType.PERIPHERAL_LOSS -> "Trouble seeing the sides"
-    VisionType.BLUR_LOW_ACUITY -> "Everything is blurry"
-    VisionType.CONTRAST_LIGHT -> "Contrast / light sensitivity"
-    VisionType.NOT_SURE -> "Not sure"
-}
-
-private fun Severity.label() = when (this) {
-    Severity.MILD -> "A little"; Severity.MODERATE -> "A moderate amount"; Severity.SEVERE -> "A lot"
-}
-
 private fun SpeechRate.label() = when (this) {
     SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
 }

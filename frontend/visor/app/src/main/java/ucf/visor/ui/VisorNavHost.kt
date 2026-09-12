@@ -14,6 +14,7 @@ import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.ResetPasswordScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.auth.VerifyAccountScreen
+import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HardwarePairingScreen
 import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
@@ -107,7 +108,12 @@ fun VisorNavHost(
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.login() },
                 // onDeleteAccount: TODO wire to POST /auth/deleteAccount once Joseph's endpoint lands.
+                onHelp = { navController.navigate("help") },
             );
+        }
+
+        composable("help") {
+            HelpScreen(onBack = { navController.popBackStack() })
         }
 
         composable("onboarding") {

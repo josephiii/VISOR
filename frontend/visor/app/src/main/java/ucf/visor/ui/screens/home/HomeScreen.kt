@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
 import ucf.visor.ui.components.VisorHeader
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.tts.Speaker
 
@@ -31,12 +32,14 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val scrollState = rememberScrollState()
 
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
+                .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

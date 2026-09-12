@@ -10,12 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import ucf.visor.R
+import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -38,7 +38,7 @@ fun Phase1NavigationBar(
                     contentDescription = "Configure VISOR Mode"
                 )
             },
-            label = { Text(stringResource(R.string.p1_mode_navbar_title)) }
+            label = { AutoSizeText(stringResource(R.string.p1_mode_navbar_title), style = MaterialTheme.typography.labelMedium) }
         )
         NavigationBarItem(
             selected = currentRoute == "home",
@@ -49,7 +49,7 @@ fun Phase1NavigationBar(
                     contentDescription = "Home"
                 )
             },
-            label = { Text(stringResource(R.string.home_screen_title)) }
+            label = { AutoSizeText(stringResource(R.string.home_screen_title), style = MaterialTheme.typography.labelMedium) }
         )
         NavigationBarItem(
             selected = currentRoute == "hardware_pairing",
@@ -60,7 +60,7 @@ fun Phase1NavigationBar(
                     contentDescription = "Hardware"
                 )
             },
-            label = { Text(stringResource(R.string.hardware_pairing_navbar_title)) }
+            label = { AutoSizeText(stringResource(R.string.hardware_pairing_navbar_title), style = MaterialTheme.typography.labelMedium) }
         )
     }
 }

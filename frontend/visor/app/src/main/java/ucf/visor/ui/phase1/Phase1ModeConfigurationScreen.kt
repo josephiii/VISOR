@@ -26,7 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ucf.visor.R
+import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 @Composable
@@ -41,11 +43,13 @@ fun Phase1ModeConfigurationScreen(
         SessionMode.READER -> R.array.reading_assistance_scripts
     }
     val scripts = stringArrayResource(scriptsArrayRes)
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
@@ -94,7 +98,7 @@ fun Phase1ModeConfigurationScreen(
                         talk(scriptText)
                     }
                 ){
-                    Text("Play Script ${index + 1}")
+                    AutoSizeText("Play Script ${index + 1}", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
