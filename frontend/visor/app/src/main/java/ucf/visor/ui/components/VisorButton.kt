@@ -1,15 +1,19 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ucf.visor.ui.theme.VisorShapes
 
-// Basic Button implementation.
+// Basic Button implementation. Enforces a touch target well above the
+// ~48dp minimum recommended for low-vision users (Material's own Button
+// default is only 40dp tall).
 @Composable
 fun VisorButton(
     text: String,
@@ -20,10 +24,11 @@ fun VisorButton(
     Button(
         onClick = onClick,
         modifier = modifier
-            .fillMaxWidth(fraction = width),
-        shape = CutCornerShape(4.dp)
+            .fillMaxWidth(fraction = width)
+            .heightIn(min = 56.dp),
+        shape = VisorShapes.Control
     ) {
-        Text(text)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 

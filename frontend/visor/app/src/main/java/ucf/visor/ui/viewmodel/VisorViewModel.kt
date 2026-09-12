@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucf.visor.ui.profile.ProfileStore
 import ucf.visor.ui.profile.UserProfile
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
@@ -29,7 +30,19 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _session = MutableStateFlow(VisorSession())
     val session: StateFlow<VisorSession> = _session.asStateFlow()
-    val userProfile: UserProfile = UserProfile()
+
+    // Loaded once at startup so a profile saved during onboarding (or a prior
+    // session) is reflected immediately — previously this was a hardcoded
+    // UserProfile() default, so Settings toggles like High Contrast and Text
+    // size had nothing real to read or write and did nothing.
+    private val profileStore = ProfileStore(application)
+    private val _userProfile = MutableStateFlow(profileStore.load())
+    val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
+
+    fun updateProfile(profile: UserProfile) {
+        _userProfile.value = profile
+        profileStore.save(profile)
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT

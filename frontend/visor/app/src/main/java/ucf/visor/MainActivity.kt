@@ -11,9 +11,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
@@ -25,6 +28,7 @@ import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 import kotlin.coroutines.resume
@@ -88,7 +92,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            VisorTheme {
+            // High Contrast and Text size are user preferences (Settings / onboarding),
+            // not just the OS light/dark setting — see AppTheme.forProfile.
+            val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+            val appTheme = AppTheme.forProfile(profile, isSystemInDarkTheme())
+
+            VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
                         talk = { speaker.speak(it) },

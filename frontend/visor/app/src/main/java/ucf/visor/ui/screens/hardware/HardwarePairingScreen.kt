@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +58,7 @@ fun HardwarePairingScreen(
             Icon(
                 painter = painterResource(id = R.drawable.camera_access_icon),
                 contentDescription = stringResource(R.string.camera_access_icon_description),
-                modifier = Modifier.size(80.dp * LocalDensity.current.density),
+                modifier = Modifier.size(80.dp),
             )
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),

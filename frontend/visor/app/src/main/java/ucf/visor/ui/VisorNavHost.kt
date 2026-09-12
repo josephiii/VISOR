@@ -103,8 +103,10 @@ fun VisorNavHost(
 
         composable("settings") {
             SettingsScreen(
-                viewModel = viewModel
-                // other necessary function parameters
+                viewModel = viewModel,
+                onProfileChange = { viewModel.updateProfile(it) },
+                onLogout = { viewModel.login() },
+                // onDeleteAccount: TODO wire to POST /auth/deleteAccount once Joseph's endpoint lands.
             );
         }
 

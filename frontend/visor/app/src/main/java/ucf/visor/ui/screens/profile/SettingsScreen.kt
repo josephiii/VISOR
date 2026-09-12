@@ -2,32 +2,27 @@ package ucf.visor.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.TextScale
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -53,7 +48,7 @@ fun SettingsScreen(
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
 ) {
-    var profile by remember { mutableStateOf (viewModel.userProfile)}
+    val profile by viewModel.userProfile.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -64,7 +59,7 @@ fun SettingsScreen(
     ) {
         Text(
             "Settings",
-            fontSize = 34.sp,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },
         )
@@ -72,9 +67,10 @@ fun SettingsScreen(
         SettingSection("How fast VISOR talks")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SpeechRate.entries.forEach { r ->
-                ChoiceChip(
+                SelectableChip(
                     label = when (r) { SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster" },
                     selected = profile.speechRate == r,
+                    showCheckmark = false,
                     modifier = Modifier.weight(1f),
                 ) {
                     onProfileChange(profile.copy(speechRate = r))
@@ -86,16 +82,33 @@ fun SettingsScreen(
         SettingSection("How much detail")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Verbosity.entries.forEach { v ->
-                ChoiceChip(
+                SelectableChip(
                     label = v.name.lowercase().replaceFirstChar { it.uppercase() },
                     selected = profile.verbosity == v,
+                    showCheckmark = false,
                     modifier = Modifier.weight(1f),
                 ) { onProfileChange(profile.copy(verbosity = v)) }
             }
         }
 
+        SettingSection("Text size")
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TextScale.entries.forEach { scale ->
+                SelectableChip(
+                    label = when (scale) {
+                        TextScale.STANDARD -> "Standard"
+                        TextScale.LARGE -> "Large"
+                        TextScale.EXTRA_LARGE -> "Extra large"
+                    },
+                    selected = profile.textScale == scale,
+                    showCheckmark = false,
+                    modifier = Modifier.weight(1f),
+                ) { onProfileChange(profile.copy(textScale = scale)) }
+            }
+        }
+
         SettingSection("Display")
-        ChoiceChip(
+        SelectableChip(
             label = if (profile.appHighContrast) "High contrast: ON" else "High contrast: OFF",
             selected = profile.appHighContrast,
             modifier = Modifier.fillMaxWidth(),
@@ -103,8 +116,20 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(24.dp))
         SettingSection("Account")
-        ChoiceChip("Log out", selected = false, modifier = Modifier.fillMaxWidth(), onClick = onLogout)
-        ChoiceChip("Delete my account", selected = false, modifier = Modifier.fillMaxWidth(), onClick = onDeleteAccount)
+        SelectableChip(
+            "Log out",
+            selected = false,
+            showCheckmark = false,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onLogout,
+        )
+        SelectableChip(
+            "Delete my account",
+            selected = false,
+            showCheckmark = false,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onDeleteAccount,
+        )
     }
 }
 
@@ -112,35 +137,10 @@ fun SettingsScreen(
 private fun SettingSection(title: String) {
     Text(
         title,
-        fontSize = 20.sp,
+        style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier
             .padding(top = 10.dp)
             .semantics { heading() },
     )
-}
-
-@Composable
-private fun ChoiceChip(
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.heightIn(min = 64.dp),
-        shape = CutCornerShape(14.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-        ),
-    ) {
-        Text(
-            label,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            softWrap = false,
-        )
-    }
 }

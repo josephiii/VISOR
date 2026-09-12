@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LinkOff
@@ -52,7 +50,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +62,7 @@ import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.ui.components.SwitchButton
+import ucf.visor.ui.components.TipItem
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,7 +135,7 @@ fun NonStreamScreen(
                 painter = painterResource(id = R.drawable.camera_access_icon),
                 contentDescription = stringResource(R.string.camera_access_icon_description),
                 tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(80.dp * LocalDensity.current.density),
+                modifier = Modifier.size(80.dp),
             )
             Text(
                 text = stringResource(R.string.non_stream_screen_title),
@@ -169,7 +167,7 @@ fun NonStreamScreen(
                         painter = painterResource(id = R.drawable.hourglass_icon),
                         contentDescription = "Waiting for device",
                         tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                     Text(
                         text = stringResource(R.string.waiting_for_active_device),
@@ -339,17 +337,3 @@ private fun GettingStartedSheetContent(onContinue: () -> Unit, modifier: Modifie
     }
 }
 
-@Composable
-private fun TipItem(iconResId: Int, text: String, modifier: Modifier = Modifier) {
-    Row(modifier = modifier.fillMaxWidth()) {
-        Icon(
-            painter = painterResource(id = iconResId),
-            contentDescription = "Getting started tip icon",
-            modifier = Modifier
-                .padding(start = 4.dp, top = 4.dp)
-                .width(24.dp),
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(text = text)
-    }
-}
