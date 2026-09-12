@@ -1,13 +1,15 @@
 package ucf.visor.ui.components
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,15 +23,27 @@ fun SessionToggleButton(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    IconButton(
+    val containerColor = if (isSessionActive) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val contentColor = if (isSessionActive) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    Button(
         onClick = onToggle,
-        modifier = modifier
-            .size(160.dp)
-            .border(
-                width = 5.dp,
-                color = MaterialTheme.colorScheme.onSurface,
-                shape = CircleShape
-            )
+        modifier = modifier.size(160.dp),
+        shape = CircleShape,
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+        ),
+        border = BorderStroke(4.dp, MaterialTheme.colorScheme.outline),
     ) {
         Icon(
             imageVector = if (isSessionActive) Icons.Default.Stop else Icons.Default.PlayArrow,
@@ -38,7 +52,7 @@ fun SessionToggleButton(
                     stringResource(R.string.end_session)
                 else
                     stringResource(R.string.start_session),
-            modifier = modifier.size(72.dp)
+            modifier = Modifier.size(72.dp)
         )
     }
 }

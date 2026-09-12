@@ -20,6 +20,14 @@ enum class SpeechRate { SLOW, NORMAL, FAST }
 /** How much detail VISOR gives when describing scenes. */
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
 
+/**
+ * User-controlled text size, layered on top of the app's already-enlarged
+ * base type scale. Section 508 calls for text resizable up to 200% without
+ * losing content or functionality; EXTRA_LARGE combines with a user's OS
+ * font scale setting to get well past that.
+ */
+enum class TextScale(val multiplier: Float) { STANDARD(1.0f), LARGE(1.15f), EXTRA_LARGE(1.3f) }
+
 data class UserProfile(
     val userId: String = "", // Supabase user.id from /auth/register
     val displayName: String = "",
@@ -31,4 +39,21 @@ data class UserProfile(
     val speechRate: SpeechRate = SpeechRate.NORMAL,
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = true,
+    val textScale: TextScale = TextScale.EXTRA_LARGE,
 )
+
+// Human-readable labels — shared by the onboarding wizard and Settings' "About
+// you" section so both ever say exactly the same thing for each option.
+fun VisionType.label(): String = when (this) {
+    VisionType.CENTRAL_LOSS -> "Trouble seeing the center"
+    VisionType.PERIPHERAL_LOSS -> "Trouble seeing the sides"
+    VisionType.BLUR_LOW_ACUITY -> "Everything is blurry"
+    VisionType.CONTRAST_LIGHT -> "Contrast / light sensitivity"
+    VisionType.NOT_SURE -> "Not sure"
+}
+
+fun Severity.label(): String = when (this) {
+    Severity.MILD -> "A little"
+    Severity.MODERATE -> "A moderate amount"
+    Severity.SEVERE -> "A lot"
+}

@@ -2,21 +2,17 @@ package ucf.visor.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,15 +24,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import ucf.visor.ui.components.AutoSizeText
+import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.profile.Severity
 import ucf.visor.ui.profile.SpeechRate
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.profile.VisionType
+import ucf.visor.ui.profile.label
+import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 
@@ -91,6 +90,7 @@ fun ProfileCreationScreen(
 ) {
     var step by remember { mutableStateOf(Step.NAME) }
     var profile by remember { mutableStateOf(UserProfile()) }
+    val scrollState = rememberScrollState()
 
     // Speak each question as it appears — the "voice-first" half of the screen.
     LaunchedEffect(step) { speak(step.spokenPrompt) }
@@ -104,7 +104,8 @@ fun ProfileCreationScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         LinearProgressIndicator(
@@ -114,8 +115,7 @@ fun ProfileCreationScreen(
 
         Text(
             text = step.title,
-            fontSize = 34.sp,
-            lineHeight = 42.sp,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },
         )
@@ -162,8 +162,7 @@ fun ProfileCreationScreen(
 
             Step.DONE -> Text(
                 "You can change any of this later in Settings - or just ask.",
-                fontSize = 22.sp,
-                lineHeight = 30.sp,
+                style = MaterialTheme.typography.titleMedium,
             )
         }
 
@@ -174,13 +173,11 @@ fun ProfileCreationScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 72.dp),
-            shape = CutCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-            ),
+            shape = VisorShapes.Control,
         ) {
-            Text(
+            AutoSizeText(
                 if (step == Step.DONE) "Start using VISOR" else "Continue",
-                fontSize = 24.sp,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
         }
@@ -188,7 +185,7 @@ fun ProfileCreationScreen(
         // Skip is always available — every profile field has a safe default.
         if (step != Step.DONE) {
             TextButton(onClick = ::next, modifier = Modifier.fillMaxWidth()) {
-                Text("Skip for now", fontSize = 20.sp)
+                AutoSizeText("Skip for now", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -204,11 +201,9 @@ private fun BigTextField(
         value = value,
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth(),
-        textStyle = TextStyle(fontSize = 26.sp),
-        placeholder = { Text(placeholder, fontSize = 26.sp) },
-        colors = OutlinedTextFieldDefaults.colors(
-        ),
-        shape = CutCornerShape(4.dp)
+        textStyle = MaterialTheme.typography.headlineSmall,
+        placeholder = { Text(placeholder, style = MaterialTheme.typography.headlineSmall) },
+        shape = VisorShapes.Control,
     )
     // TODO(VISOR-124): mic button wired to SpeechRecognizer so answers can be spoken.
 }
@@ -220,37 +215,17 @@ private fun BigChoiceButton(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    OutlinedButton(
+    SelectableChip(
+        label = label,
+        selected = selected,
+        modifier = Modifier.fillMaxWidth(),
+        minHeight = 72.dp,
+        textStyle = MaterialTheme.typography.titleLarge,
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp),
-        shape = CutCornerShape(16.dp),
-        colors = ButtonDefaults.outlinedButtonColors(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(label, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-            if (selected) Text("✓", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        }
-    }
+    )
 }
 
 // Human-readable labels (also what voice commands should map to).
-private fun VisionType.label() = when (this) {
-    VisionType.CENTRAL_LOSS -> "Trouble seeing the center"
-    VisionType.PERIPHERAL_LOSS -> "Trouble seeing the sides"
-    VisionType.BLUR_LOW_ACUITY -> "Everything is blurry"
-    VisionType.CONTRAST_LIGHT -> "Contrast / light sensitivity"
-    VisionType.NOT_SURE -> "Not sure"
-}
-
-private fun Severity.label() = when (this) {
-    Severity.MILD -> "A little"; Severity.MODERATE -> "A moderate amount"; Severity.SEVERE -> "A lot"
-}
-
 private fun SpeechRate.label() = when (this) {
     SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
 }

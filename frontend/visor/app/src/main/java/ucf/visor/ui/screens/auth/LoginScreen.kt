@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -22,11 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
+import ucf.visor.ui.components.scrollIndicator
+import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -39,18 +39,21 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .padding(24.dp)
-            .verticalScroll(rememberScrollState())
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState)
     ) {
 
         VisorHeader()
         Spacer(modifier = modifier.height(20.dp))
 
         Card(
+            shape = VisorShapes.Control,
             modifier = Modifier
                 .padding(
                     horizontal = 10.dp,
@@ -58,8 +61,8 @@ fun LoginScreen(
                 )
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    shape = CutCornerShape(8.dp)
+                    color = MaterialTheme.colorScheme.outline,
+                    shape = VisorShapes.Control
                 ),
         ) {
             Column(
@@ -70,7 +73,7 @@ fun LoginScreen(
 
                 Text(
                     text = stringResource(R.string.login_title),
-                    fontSize = 30.sp,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
 

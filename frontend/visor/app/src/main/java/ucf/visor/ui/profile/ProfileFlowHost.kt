@@ -1,8 +1,6 @@
 package ucf.visor.ui.profile
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import ucf.visor.ui.screens.profile.ProfileCreationScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -21,16 +19,12 @@ fun ProfileFlowHost(
     viewModel: VisorViewModel,
     speak: (String) -> Unit = {},
     onSetupComplete: () -> Unit = {},
-
-    ) {
-    val context = LocalContext.current
-    val store = remember { ProfileStore(context) }
-
+) {
     ProfileCreationScreen(
         viewModel = viewModel,
         speak = speak,
         onFinished = { profile ->
-            store.save(profile)
+            viewModel.updateProfile(profile)
             onSetupComplete()
         },
     )

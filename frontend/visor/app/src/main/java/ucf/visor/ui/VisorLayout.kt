@@ -206,7 +206,7 @@ fun VisorLayout(
                                 Icon(
                                     imageVector = Icons.Default.Error,
                                     contentDescription = "Camera Access error",
-                                    tint = MaterialTheme.colorScheme.error,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(data.visuals.message)
