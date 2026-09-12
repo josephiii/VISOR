@@ -41,8 +41,8 @@ fun ForgotPasswordScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(vertical = 24.dp)
-            .verticalScroll(scrollState)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState)
     ) {
 
         VisorHeader()

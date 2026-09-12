@@ -45,8 +45,8 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .padding(24.dp)
-            .verticalScroll(scrollState)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState)
     ) {
 
         VisorHeader()

@@ -47,8 +47,8 @@ fun HardwarePairingScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState)
                 .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+                .verticalScroll(scrollState)
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -104,8 +104,8 @@ fun ProfileCreationScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(scrollState)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline),
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         LinearProgressIndicator(

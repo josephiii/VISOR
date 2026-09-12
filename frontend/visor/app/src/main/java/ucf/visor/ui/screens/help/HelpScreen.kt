@@ -28,28 +28,28 @@ private val helpTopics = listOf(
     HelpTopic(
         "Starting a session",
         "On the Home screen, the large center button starts and ends a VISOR session. " +
-            "While a session is active, VISOR describes what your glasses see.",
+                "While a session is active, VISOR describes what your glasses see.",
     ),
     HelpTopic(
         "Pairing your glasses",
         "Use the Pair tab to connect your Meta glasses through the Meta AI app. " +
-            "You'll need to pair before you can start streaming or capture photos.",
+                "You'll need to pair before you can start streaming or capture photos.",
     ),
     HelpTopic(
         "Capturing and describing a photo",
         "While streaming, the camera button takes a photo and shows a description of it. " +
-            "Use this any time you want VISOR to describe something specific.",
+                "Use this any time you want VISOR to describe something specific.",
     ),
     HelpTopic(
         "Setting up your profile",
         "The first time you open VISOR, a short set of questions about your vision, " +
-            "your name, and how you'd like VISOR to talk builds your profile. Every question " +
-            "is skippable — you can always fill it in later.",
+                "your name, and how you'd like VISOR to talk builds your profile. Every question " +
+                "is skippable — you can always fill it in later.",
     ),
     HelpTopic(
         "Personalizing VISOR",
         "In Settings, you can change how fast VISOR talks, how much detail it gives, " +
-            "your text size, and turn on High Contrast mode. Changes apply immediately.",
+                "your text size, and turn on High Contrast mode. Changes apply immediately.",
     ),
 )
 
@@ -64,8 +64,8 @@ fun HelpScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(scrollState)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline),
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.tertiary)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         VisorButton(text = "Back", width = 0.4f, onClick = onBack)

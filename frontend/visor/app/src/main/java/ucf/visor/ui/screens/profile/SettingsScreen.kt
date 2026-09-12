@@ -69,8 +69,8 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .verticalScroll(scrollState)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline),
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
@@ -90,7 +90,10 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Text("Which of these describe what you experience?", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "Which of these describe what you experience?",
+            style = MaterialTheme.typography.bodyLarge
+        )
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             VisionType.entries.forEach { type ->
                 val selected = type in profile.visionTypes
@@ -134,7 +137,9 @@ fun SettingsScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SpeechRate.entries.forEach { r ->
                 SelectableChip(
-                    label = when (r) { SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster" },
+                    label = when (r) {
+                        SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
+                    },
                     selected = profile.speechRate == r,
                     showCheckmark = false,
                     modifier = Modifier.weight(1f),
