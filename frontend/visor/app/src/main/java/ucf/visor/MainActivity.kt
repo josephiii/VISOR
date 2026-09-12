@@ -22,7 +22,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ucf.visor.ocr.TextReaderOCR
-import ucf.visor.tts.Listener
+import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.theme.VisorTheme
@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
             VisorTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
+                        talk = { speaker.speak(it) },
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
                     )

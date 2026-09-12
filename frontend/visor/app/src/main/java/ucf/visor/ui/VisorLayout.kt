@@ -44,6 +44,7 @@ import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 
+
 // VisorLayout() will control the application screen state. It calls the separate screen functions
 // based on the current viewModel state (uiState) and is where we keep our debugging tools.
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +52,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 fun VisorLayout(
     viewModel: VisorViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
+    talk: (String)->Unit={},
     modifier: Modifier = Modifier,
 ) {
 
@@ -252,7 +254,8 @@ fun VisorLayout(
                     ) {
                         VisorNavHost(
                             navController = navController,
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            talk = talk
                         )
                     }
 
