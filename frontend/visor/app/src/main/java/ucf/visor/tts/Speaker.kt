@@ -11,6 +11,10 @@ class Speaker (context: Context){
     private var isReady = false
     private val pending = mutableListOf<String>()
 
+    // Tracks the last thing spoken so voice navigation can honor "repeat that".
+    var lastUtterance: String? = null
+        private set
+
     init {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS){
@@ -28,6 +32,7 @@ class Speaker (context: Context){
     // this is called to use tts
     fun speak(text: String){
         if(text.isBlank()) return
+        lastUtterance = text
         if(!isReady){
             pending.add(text)
             return
@@ -39,6 +44,11 @@ class Speaker (context: Context){
     private fun queueSpeaking(text: String){
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "VISOR_SPEAKING")
     }
+
+    // Lets voice navigation wait for a just-spoken prompt to finish before the
+    // mic starts capturing a command (see VoiceNavigationController.captureUtterance) —
+    // TextToSpeech itself already tracks this, no separate bookkeeping needed.
+    fun isSpeaking(): Boolean = tts?.isSpeaking == true
 
     // interupts speech w out killing engine, like a cancel btn mid sentence
     fun stop(){

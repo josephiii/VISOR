@@ -15,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,6 +36,7 @@ import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.voice.VoiceNavigationController
 import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +47,22 @@ class MainActivity : ComponentActivity() {
         // Required Android permissions for the DAT SDK to function properly
         val PERMISSIONS: Array<String> =
             arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
+
+        // The 3 existing OCR wake phrases from assets/kws/keywords.txt, and the
+        // one new voice-navigation activation phrase ("VISOR GO" — see
+        // VoiceNavigationController / CLAUDE.md). Compared letters-only,
+        // case-insensitive: sherpa-onnx's exact keyword-string formatting
+        // (spacing/case) isn't part of its documented contract, so this is
+        // robust to how it actually comes back.
+        private val OCR_WAKE_PHRASES = setOf(
+            "VISORWHATDOESTHISSAY",
+            "VISORREADTHIS",
+            "VISORWHATISTHIS",
+        )
+        private const val NAV_WAKE_PHRASE = "VISORGO"
+
+        private fun normalizeKeyword(phrase: String): String =
+            phrase.uppercase().filter { it.isLetter() }
     }
 
     val viewModel: VisorViewModel by viewModels()
@@ -90,6 +108,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var speaker: Speaker
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
+    private lateinit var voiceNav: VoiceNavigationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,12 +119,20 @@ class MainActivity : ComponentActivity() {
             val profile by viewModel.userProfile.collectAsStateWithLifecycle()
             val appTheme = AppTheme.forProfile(profile, isSystemInDarkTheme())
 
+            // Voice navigation on/off is itself a saved profile preference (Settings,
+            // and the onboarding wizard for first-run) — see UserProfile.voiceNavigationEnabled.
+            LaunchedEffect(profile.voiceNavigationEnabled) {
+                voiceNav.setEnabled(profile.voiceNavigationEnabled)
+            }
+
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
                         talk = { speaker.speak(it) },
+                        lastSpoken = { speaker.lastUtterance },
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
+                        voiceNav = voiceNav,
                     )
                 }
 
@@ -117,9 +144,24 @@ class MainActivity : ComponentActivity() {
         // swap for RealPhoto once glasses session exists
         reader = RealCapture(FakePhotoSource(this), textReaderOCR)
 
+        voiceNav = VoiceNavigationController(
+            context = this,
+            speak = { speaker.speak(it) },
+            pauseWakeListening = { listener.stop() },
+            resumeWakeListening = { listener.start() },
+            isSpeaking = { speaker.isSpeaking() },
+        )
+
+        // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
+        // running two overlapping AudioRecord/model instances would double up
+        // on the microphone and CPU for no benefit, so this callback routes by
+        // which phrase actually fired instead of owning a second Listener.
         listener = Listener(assets) { phrase ->
             Log.d("VISOR", "WAKE HEARD: $phrase")
-            reader.requestRead { text -> speaker.speak(text) }
+            when (normalizeKeyword(phrase)) {
+                in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
+                NAV_WAKE_PHRASE -> voiceNav.activate()
+            }
         }
     }
 
@@ -133,5 +175,6 @@ class MainActivity : ComponentActivity() {
         textReaderOCR.close()
         speaker.shutdown()
         listener.shutdown()
+        voiceNav.shutdown()
     }
 }

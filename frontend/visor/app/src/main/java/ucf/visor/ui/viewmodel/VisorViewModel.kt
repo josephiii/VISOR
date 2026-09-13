@@ -237,6 +237,34 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = true) }
     }
 
+    fun help() {
+        _uiState.update { it.copy(atHelp = true) }
+    }
+
+    fun closeHelp() {
+        _uiState.update { it.copy(atHelp = false) }
+    }
+
+    // Both actions are hard to undo (logging out mid-session, or permanent
+    // deletion), so a spoken "log out"/"delete my account" only opens the same
+    // confirm dialog a tap would — the destructive action still needs an explicit
+    // second confirmation (spoken "yes" or a tap), never fired by one utterance.
+    fun requestLogoutConfirm() {
+        _uiState.update { it.copy(isLogoutConfirmVisible = true) }
+    }
+
+    fun cancelLogoutConfirm() {
+        _uiState.update { it.copy(isLogoutConfirmVisible = false) }
+    }
+
+    fun requestDeleteAccountConfirm() {
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = true) }
+    }
+
+    fun cancelDeleteAccountConfirm() {
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
+    }
+
     fun onboard() {
         _uiState.update { it.copy(isEnteringCode = false) }
         _uiState.update { it.copy(isSigningUp = false) }

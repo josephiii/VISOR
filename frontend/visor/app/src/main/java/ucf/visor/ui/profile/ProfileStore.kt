@@ -29,6 +29,7 @@ class ProfileStore(context: Context) {
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_TEXT_SCALE, p.textScale.name)
+            .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
             .apply()
     }
 
@@ -49,6 +50,7 @@ class ProfileStore(context: Context) {
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
+            voiceNavigationEnabled = prefs.getBoolean(KEY_VOICE_NAV, defaults.voiceNavigationEnabled),
         )
     }
 
@@ -72,5 +74,6 @@ class ProfileStore(context: Context) {
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_TEXT_SCALE = "textScale"
+        const val KEY_VOICE_NAV = "voiceNavigationEnabled"
     }
 }

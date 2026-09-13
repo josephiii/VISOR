@@ -40,6 +40,9 @@ data class UserProfile(
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = true,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
+    /** Say "VISOR GO" to navigate by voice. Defaults on, matching that TTS
+     *  and the OCR wake-word listener are already always-on with no toggle. */
+    val voiceNavigationEnabled: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About

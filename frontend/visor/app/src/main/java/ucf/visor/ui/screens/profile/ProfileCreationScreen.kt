@@ -37,6 +37,7 @@ import ucf.visor.ui.profile.VisionType
 import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.voice.VoiceNavigationController
 
 
 /**
@@ -48,6 +49,10 @@ import ucf.visor.ui.viewmodel.VisorViewModel
  *
  * @param speak Wire to Android TextToSpeech in MainActivity. No-op default
  *   keeps @Preview working.
+ * @param voiceNav When present, each question also listens for a spoken answer
+ *   right after asking it (no "VISOR GO" needed here — the whole screen is
+ *   already a voice-first conversation by design). Null keeps @Preview working
+ *   and disables voice answers without disabling the touch fallback.
  * @param onFinished Receives the completed profile — save + POST to backend.
  */
 
@@ -55,6 +60,12 @@ private enum class Step(val title: String, val spokenPrompt: String) {
     NAME(
         "What should VISOR call you?",
         "Welcome to VISOR. What should I call you? Say your name, or tap Skip."
+    ),
+    VOICE_NAV(
+        "Navigate VISOR by voice?",
+        "You can navigate VISOR by voice, any time, by saying \"VISOR GO\" followed by " +
+                "a command, like \"open settings\" or \"go home\". This is on by default. " +
+                "Say yes to keep it on, or no to turn it off — you can always change this later in Settings."
     ),
     VISION(
         "Which of these describe what you experience?",
@@ -86,18 +97,112 @@ private enum class Step(val title: String, val spokenPrompt: String) {
 fun ProfileCreationScreen(
     viewModel: VisorViewModel,
     speak: (String) -> Unit = {},
+    voiceNav: VoiceNavigationController? = null,
     onFinished: (UserProfile) -> Unit = {},
 ) {
     var step by remember { mutableStateOf(Step.NAME) }
     var profile by remember { mutableStateOf(UserProfile()) }
     val scrollState = rememberScrollState()
 
-    // Speak each question as it appears — the "voice-first" half of the screen.
-    LaunchedEffect(step) { speak(step.spokenPrompt) }
-
     fun next() {
+        // A touch tap always wins over an in-flight spoken answer for the
+        // question being left — see VoiceNavigationController.cancelCapture.
+        voiceNav?.cancelCapture()
         val i = step.ordinal
         if (i < Step.entries.lastIndex) step = Step.entries[i + 1] else onFinished(profile)
+    }
+
+    // Voice-first by design (see doc comment): speak the question, then listen
+    // for a spoken answer immediately — no "VISOR GO" wake phrase needed inside
+    // this wizard, since the whole screen is already a guided conversation.
+    // Falls through to Unit (no-op) if nothing usable was heard; the on-screen
+    // buttons/text field remain a full touch fallback either way.
+    LaunchedEffect(step) {
+        speak(step.spokenPrompt)
+        val askedStep = step
+        // Gated on the wizard's own in-progress answer, not voiceNav's enabled
+        // flag (which only reflects the profile as last *saved*, before this
+        // wizard finishes) — otherwise saying "no" to the VOICE_NAV step above
+        // wouldn't take effect until onboarding was already over.
+        if (!profile.voiceNavigationEnabled) return@LaunchedEffect
+        voiceNav?.captureUtterance { text ->
+            val heard = text?.trim()?.lowercase()
+            if (heard.isNullOrEmpty()) return@captureUtterance
+            when (askedStep) {
+                Step.NAME -> {
+                    profile = profile.copy(displayName = text!!.trim())
+                    next()
+                }
+
+                Step.VOICE_NAV -> when {
+                    heard.contains("no") -> {
+                        profile = profile.copy(voiceNavigationEnabled = false); next()
+                    }
+                    heard.contains("yes") -> {
+                        profile = profile.copy(voiceNavigationEnabled = true); next()
+                    }
+                    else -> Unit
+                }
+
+                Step.VISION -> {
+                    val match = when {
+                        heard.contains("center") -> VisionType.CENTRAL_LOSS
+                        heard.contains("side") || heard.contains("peripheral") -> VisionType.PERIPHERAL_LOSS
+                        heard.contains("blur") -> VisionType.BLUR_LOW_ACUITY
+                        heard.contains("light") || heard.contains("contrast") -> VisionType.CONTRAST_LIGHT
+                        heard.contains("not sure") -> VisionType.NOT_SURE
+                        else -> null
+                    }
+                    if (match != null) {
+                        profile = profile.copy(visionTypes = setOf(match))
+                        next()
+                    }
+                }
+
+                Step.DESCRIBE -> {
+                    profile = profile.copy(visionDescription = text!!.trim())
+                    next()
+                }
+
+                Step.SEVERITY -> {
+                    val match = when {
+                        heard.contains("little") -> Severity.MILD
+                        heard.contains("moderate") -> Severity.MODERATE
+                        heard.contains("lot") -> Severity.SEVERE
+                        else -> null
+                    }
+                    if (match != null) {
+                        profile = profile.copy(severity = match); next()
+                    }
+                }
+
+                Step.SPEECH_RATE -> {
+                    val match = when {
+                        heard.contains("slow") -> SpeechRate.SLOW
+                        heard.contains("fast") -> SpeechRate.FAST
+                        heard.contains("normal") -> SpeechRate.NORMAL
+                        else -> null
+                    }
+                    if (match != null) {
+                        profile = profile.copy(speechRate = match); next()
+                    }
+                }
+
+                Step.VERBOSITY -> {
+                    val match = when {
+                        heard.contains("brief") -> Verbosity.BRIEF
+                        heard.contains("detail") -> Verbosity.DETAILED
+                        heard.contains("standard") -> Verbosity.STANDARD
+                        else -> null
+                    }
+                    if (match != null) {
+                        profile = profile.copy(verbosity = match); next()
+                    }
+                }
+
+                Step.DONE -> if (heard.contains("start")) next()
+            }
+        }
     }
 
     Column(
@@ -125,7 +230,16 @@ fun ProfileCreationScreen(
                 profile = profile.copy(displayName = it)
             }
 
-            // Free-text: patients who don't fit the boxes get heard. Voice input later (SpeechRecognizer).
+            Step.VOICE_NAV -> listOf(true, false).forEach { enabled ->
+                BigChoiceButton(
+                    if (enabled) "Yes, keep voice navigation on" else "No, turn it off",
+                    profile.voiceNavigationEnabled == enabled,
+                ) {
+                    profile = profile.copy(voiceNavigationEnabled = enabled); next()
+                }
+            }
+
+            // Free-text: patients who don't fit the boxes get heard, spoken or typed.
             Step.DESCRIBE -> BigTextField(profile.visionDescription, "In your own words…") {
                 profile = profile.copy(visionDescription = it)
             }
@@ -205,7 +319,6 @@ private fun BigTextField(
         placeholder = { Text(placeholder, style = MaterialTheme.typography.headlineSmall) },
         shape = VisorShapes.Control,
     )
-    // TODO(VISOR-124): mic button wired to SpeechRecognizer so answers can be spoken.
 }
 
 /** One large, high-contrast option row. Min 72dp tall = easy touch target. */
