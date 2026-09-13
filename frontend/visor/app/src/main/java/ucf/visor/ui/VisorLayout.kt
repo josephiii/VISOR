@@ -106,45 +106,60 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
+    // Observe TitleScreen — the signed-out landing point, both at cold start
+    // (see VisorViewModel.startDestination) and after an explicit logout (see
+    // VisorViewModel.logout). popUpTo(0) clears the ENTIRE back stack, unlike
+    // the popUpTo(startDestinationId) used below for post-login destinations:
+    // logout must never leave anything from the ended session reachable by
+    // pressing back afterward, even on a process that happened to start
+    // already logged in (where startDestinationId is "home", not "title").
+    LaunchedEffect(uiState.atTitle) {
+        if (uiState.atTitle) {
+            navController.navigate("title") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
     // Observe LoginScreen
     LaunchedEffect(uiState.isLoggingIn) {
         if (uiState.isLoggingIn) {
-            navController.navigate("login")
+            navController.navigate("login") { launchSingleTop = true }
         }
     }
 
     // Observe SignUpScreen
     LaunchedEffect(uiState.isSigningUp) {
         if (uiState.isSigningUp) {
-            navController.navigate("sign_up")
+            navController.navigate("sign_up") { launchSingleTop = true }
         }
     }
 
     // Observe ForgotPasswordScreen
     LaunchedEffect(uiState.hasForgottenPassword) {
         if (uiState.hasForgottenPassword) {
-            navController.navigate("forgot_password")
+            navController.navigate("forgot_password") { launchSingleTop = true }
         }
     }
 
     // Observe EnterCodeScreen
     LaunchedEffect(uiState.isEnteringCode) {
         if (uiState.isEnteringCode) {
-            navController.navigate("enter_code")
+            navController.navigate("enter_code") { launchSingleTop = true }
         }
     }
 
     // Observe VerifyAccountScreen
     LaunchedEffect(uiState.isVerifyingAccount) {
         if (uiState.isVerifyingAccount) {
-            navController.navigate("verify_account")
+            navController.navigate("verify_account") { launchSingleTop = true }
         }
     }
 
     // Observe ResetPasswordScreen
     LaunchedEffect(uiState.isResettingPassword) {
         if (uiState.isResettingPassword) {
-            navController.navigate("reset_password")
+            navController.navigate("reset_password") { launchSingleTop = true }
         }
     }
 
@@ -184,7 +199,7 @@ fun VisorLayout(
     // Observe Onboarding Process
     LaunchedEffect(uiState.isOnboarding) {
         if (uiState.isOnboarding) {
-            navController.navigate("onboarding")
+            navController.navigate("onboarding") { launchSingleTop = true }
         }
     }
 
@@ -224,16 +239,34 @@ fun VisorLayout(
     LaunchedEffect(voiceNav) {
         voiceNav?.commands?.collect { command ->
             when (command) {
-                VoiceCommand.GoHome -> viewModel.home()
-                VoiceCommand.OpenSettings -> viewModel.settings()
-                VoiceCommand.OpenHelp -> viewModel.help()
-                VoiceCommand.PairDevice -> viewModel.hardwarePairing()
+                // Home/Settings/Help/Pairing/sessions are all post-login-only —
+                // none of them have a touch equivalent before uiState.isAuthComplete
+                // either (no bottom nav bar yet), so voice shouldn't uniquely
+                // unlock them from TitleScreen/Login/SignUp.
+                VoiceCommand.GoHome ->
+                    if (uiState.isAuthComplete) viewModel.home()
+                    else talk("Log in first to go home.")
+
+                VoiceCommand.OpenSettings ->
+                    if (uiState.isAuthComplete) viewModel.settings()
+                    else talk("Log in first to open settings.")
+
+                VoiceCommand.OpenHelp ->
+                    if (uiState.isAuthComplete) viewModel.help()
+                    else talk("Log in first for help.")
+
+                VoiceCommand.PairDevice ->
+                    if (uiState.isAuthComplete) viewModel.hardwarePairing()
+                    else talk("Log in first to pair your glasses.")
+
                 VoiceCommand.GoBack -> {
                     if (!navController.popBackStack()) talk("There's nowhere to go back to.")
                 }
 
                 VoiceCommand.ToggleSession -> {
-                    if (currentRoute == "home") {
+                    if (!uiState.isAuthComplete) {
+                        talk("Log in first to start a session.")
+                    } else if (currentRoute == "home") {
                         val startingUp = !uiState.isSessionActive
                         viewModel.toggleSession()
                         talk(if (startingUp) "Starting session" else "Ending session")
@@ -262,8 +295,13 @@ fun VisorLayout(
                 VoiceCommand.GoToForgotPassword -> viewModel.forgotPassword()
                 VoiceCommand.ResendCode -> talk("Resend code isn't available yet.")
 
-                VoiceCommand.LogOut -> viewModel.requestLogoutConfirm()
-                VoiceCommand.DeleteAccount -> viewModel.requestDeleteAccountConfirm()
+                VoiceCommand.LogOut ->
+                    if (uiState.isAuthComplete) viewModel.requestLogoutConfirm()
+                    else talk("You're not logged in.")
+
+                VoiceCommand.DeleteAccount ->
+                    if (uiState.isAuthComplete) viewModel.requestDeleteAccountConfirm()
+                    else talk("You're not logged in.")
 
                 VoiceCommand.ToggleHighContrast ->
                     viewModel.updateProfile(profile.copy(appHighContrast = !profile.appHighContrast))
@@ -277,12 +315,12 @@ fun VisorLayout(
                 is VoiceCommand.SetTextScale ->
                     viewModel.updateProfile(profile.copy(textScale = command.scale))
 
+                // logout()/confirmDeleteAccount() already clear their own
+                // confirm-dialog flag as part of the bigger session reset —
+                // no separate cancelXConfirm() call needed here.
                 VoiceCommand.Confirm -> when {
-                    uiState.isLogoutConfirmVisible -> {
-                        viewModel.cancelLogoutConfirm(); viewModel.login()
-                    }
-
-                    uiState.isDeleteAccountConfirmVisible -> viewModel.cancelDeleteAccountConfirm()
+                    uiState.isLogoutConfirmVisible -> viewModel.logout()
+                    uiState.isDeleteAccountConfirmVisible -> viewModel.confirmDeleteAccount()
                     else -> Unit
                 }
 

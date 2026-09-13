@@ -26,6 +26,7 @@ data class VisorUiState(
     val recentError: String? = null,
 
     // Screen States.
+    val atTitle: Boolean = false,
     val isLoggingIn: Boolean = false,
     val isSigningUp: Boolean = false,
     val hasForgottenPassword: Boolean = false,

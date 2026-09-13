@@ -19,18 +19,33 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucf.visor.auth.SessionStore
 import ucf.visor.ui.profile.ProfileStore
 import ucf.visor.ui.profile.UserProfile
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // VISOR
-    private val _uiState = MutableStateFlow(VisorUiState())
+    private val sessionStore = SessionStore(application)
+    private val profileStore = ProfileStore(application)
+
+    /**
+     * Which route VisorNavHost's NavHost should start on. Read once here (not
+     * a StateFlow — NavHost only ever consults its startDestination on first
+     * composition anyway), so a returning, already-logged-in user skips
+     * TitleScreen and LoginScreen entirely and lands directly on Home, while a
+     * new or logged-out user sees the title screen first. See SessionStore.
+     */
+    val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
+
+    // isAuthComplete seeded from the same session flag, so a returning user's
+    // bottom navigation bar is visible immediately on that direct-to-Home
+    // landing, not just after actually calling home() in this process.
+    private val _uiState = MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
     private val _session = MutableStateFlow(VisorSession())
     val session: StateFlow<VisorSession> = _session.asStateFlow()
-    private val profileStore = ProfileStore(application)
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
@@ -186,8 +201,49 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun login() {
+        // Always represents "not authenticated" — whether that's the normal
+        // pre-auth navigation to the login form, or an explicit logout (see
+        // logout() below) landing back on it. isAuthComplete/the session flag
+        // should be false in both cases, so this covers it unconditionally
+        // rather than needing every caller to remember to reset them.
         _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isLoggingIn = true) }
+        _uiState.update { it.copy(isAuthComplete = false) }
+        sessionStore.setLoggedIn(false)
+    }
+
+    /** Explicit "log out" from Settings — returns all the way to TitleScreen
+     *  (not just the login form) and clears the whole back stack, so nothing
+     *  from the ended session stays reachable by pressing back afterward. */
+    fun logout() {
+        _uiState.update {
+            it.copy(
+                isLoggingIn = false,
+                isSigningUp = false,
+                goingHome = false,
+                atSettings = false,
+                atHelp = false,
+                isPairingHardware = false,
+                isAuthComplete = false,
+                isLogoutConfirmVisible = false,
+                isDeleteAccountConfirmVisible = false,
+                atTitle = true,
+            )
+        }
+        sessionStore.setLoggedIn(false)
+    }
+
+    /**
+     * Deleting the account is still frontend-only (no backend endpoint yet —
+     * see the TODO on SettingsScreen's onDeleteAccount), but it should still
+     * behave like account deletion locally: wipe the saved profile and end
+     * the session, landing back on TitleScreen same as logout().
+     */
+    fun confirmDeleteAccount() {
+        profileStore.clear()
+        _userProfile.value = UserProfile()
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
+        logout()
     }
 
     fun signUp() {
@@ -222,6 +278,12 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(goingHome = true) }
         _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
+        // Reaching Home is what "logged in" means today (see SessionStore) —
+        // this is the one place every real entry path (fresh login, password
+        // reset, completing onboarding, and just tapping the Home tab) funnels
+        // through, so it's also the one place that needs to record it.
+        _uiState.update { it.copy(isAuthComplete = true) }
+        sessionStore.setLoggedIn(true)
     }
 
     fun hardwarePairing() {

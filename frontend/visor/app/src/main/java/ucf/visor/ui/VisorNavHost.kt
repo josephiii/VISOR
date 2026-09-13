@@ -18,6 +18,7 @@ import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
+import ucf.visor.ui.screens.title.TitleScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.voice.VoiceNavigationController
 
@@ -33,8 +34,19 @@ fun VisorNavHost(
     // Each VISOR screen corresponds with a composable and a respective route string.
     NavHost(
         navController = navController,
-        startDestination = "login"
+        // A returning, already-logged-in user starts on "home" directly — see
+        // VisorViewModel.startDestination and SessionStore.
+        startDestination = viewModel.startDestination
     ) {
+
+        composable("title") {
+            TitleScreen(
+                viewModel = viewModel,
+                talk = talk,
+                onLoginClick = { viewModel.login() },
+                onSignUpClick = { viewModel.signUp() },
+            )
+        }
 
         composable("login") {
             LoginScreen(
@@ -109,8 +121,12 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 speak = talk,
                 onProfileChange = { viewModel.updateProfile(it) },
-                onLogout = { viewModel.login() },
-                // onDeleteAccount: TODO wire to POST /auth/deleteAccount once Joseph's endpoint lands.
+                onLogout = { viewModel.logout() },
+                // Frontend-only for now (no backend endpoint yet — see
+                // VisorViewModel.confirmDeleteAccount): clears the local
+                // profile/session so the app behaves as if the account is
+                // gone. TODO: also POST /auth/deleteAccount once it exists.
+                onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
             );
         }

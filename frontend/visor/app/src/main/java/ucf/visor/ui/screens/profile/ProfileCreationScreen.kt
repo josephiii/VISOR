@@ -101,7 +101,12 @@ fun ProfileCreationScreen(
     onFinished: (UserProfile) -> Unit = {},
 ) {
     var step by remember { mutableStateOf(Step.NAME) }
-    var profile by remember { mutableStateOf(UserProfile()) }
+    // Seeded from whatever's already saved (defaults if nothing is), not a
+    // blank UserProfile() — TitleScreen lets a new user turn voice nav on
+    // before they ever reach this wizard, and starting fresh here would
+    // silently throw that choice away the moment the VOICE_NAV step's default
+    // got applied on top of it.
+    var profile by remember { mutableStateOf(viewModel.userProfile.value) }
     val scrollState = rememberScrollState()
 
     fun next() {
