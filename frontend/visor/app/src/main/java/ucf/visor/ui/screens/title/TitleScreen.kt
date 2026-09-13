@@ -33,6 +33,7 @@ import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.voice.VoiceNavigationController
 
 /**
  * The very first screen a signed-out user sees — VISOR's front door.
@@ -50,6 +51,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 fun TitleScreen(
     viewModel: VisorViewModel,
     talk: (String) -> Unit = {},
+    voiceNav: VoiceNavigationController? = null,
     onLoginClick: () -> Unit,
     onSignUpClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -60,13 +62,16 @@ fun TitleScreen(
 
     // Speak the tip, not just show it — a low-vision user who just turned
     // voice nav on this screen may not be able to read the dialog either.
+    // Routed through voiceNav.speakGuarded (not talk directly): the tip's
+    // own wording says "VISOR GO" out loud, and the KWS wake-word listener
+    // is always on, so without pausing it first, the app would hear its own
+    // voice say the wake phrase and immediately, audibly interrupt itself.
     LaunchedEffect(showVoiceTip) {
         if (showVoiceTip) {
-            talk(
-                "Voice navigation is on. Say VISOR GO, then say what you'd like. " +
-                        "Try log in, sign up, go home, or help. " +
-                        "You can turn this off any time in Settings."
-            )
+            val tip = "Voice navigation is on. Say VISOR GO, then say what you'd like. " +
+                    "Try log in, sign up, go home, or help. " +
+                    "You can turn this off any time in Settings."
+            voiceNav?.speakGuarded(tip) ?: talk(tip)
         }
     }
 

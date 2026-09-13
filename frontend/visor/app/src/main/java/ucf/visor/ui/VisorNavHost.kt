@@ -43,6 +43,7 @@ fun VisorNavHost(
             TitleScreen(
                 viewModel = viewModel,
                 talk = talk,
+                voiceNav = voiceNav,
                 onLoginClick = { viewModel.login() },
                 onSignUpClick = { viewModel.signUp() },
             )

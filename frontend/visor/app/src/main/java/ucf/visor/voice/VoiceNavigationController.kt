@@ -124,6 +124,36 @@ class VoiceNavigationController(
     }
 
     /**
+     * Speaks [text] with the KWS wake-word listener paused for its duration
+     * (plus a short trailing buffer) — for any text that might literally say
+     * the wake phrase itself out loud, like the voice-nav tip explaining
+     * "VISOR GO". Without this, the always-on KWS listener can hear the
+     * device's own TTS say "VISOR GO" and fire a false [activate] in the
+     * middle of the sentence — turning voice nav on would immediately,
+     * audibly interrupt its own explanation of how to use it.
+     *
+     * Unlike [captureUtterance], this never starts [CommandRecognizer]
+     * afterward — it only pauses/resumes the wake listener around the speech,
+     * same idea as the user's own suggestion to delay wake-word listening
+     * right after voice nav is first turned on.
+     */
+    fun speakGuarded(text: String) {
+        pauseWakeListening()
+        speak(text)
+        scope.launch {
+            var waited = 0L
+            while (isSpeaking() && waited < MAX_SPEECH_WAIT_MS) {
+                delay(SPEECH_POLL_MS)
+                waited += SPEECH_POLL_MS
+            }
+            // isSpeaking() can flip false a beat before the last of the audio
+            // actually finishes playing/decaying out of the mic's earshot.
+            delay(POST_SPEECH_GUARD_MS)
+            resumeWakeListening()
+        }
+    }
+
+    /**
      * Cancels an in-flight [captureUtterance] without delivering its result, and
      * resumes wake listening immediately. SpeechRecognizer.cancel() doesn't
      * reliably invoke the pending RecognitionListener callback, so without this
@@ -153,5 +183,6 @@ class VoiceNavigationController(
     private companion object {
         const val SPEECH_POLL_MS = 100L
         const val MAX_SPEECH_WAIT_MS = 6000L
+        const val POST_SPEECH_GUARD_MS = 400L
     }
 }

@@ -52,7 +52,7 @@ fun SignUpScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(vertical = 24.dp)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline, xPosPadding = -6.0f)
             .verticalScroll(scrollState)
     ) {
 

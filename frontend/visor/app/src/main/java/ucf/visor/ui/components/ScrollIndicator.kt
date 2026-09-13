@@ -13,12 +13,14 @@ import androidx.compose.ui.unit.dp
  * has more content than fits on screen — a quiet hint that a screen scrolls,
  * without competing with the actual VISOR content for attention.
  *
- * NOTE: The position will be +24 pixels off the right most edge.
+ * NOTE: The position default to will be +30 pixels off the right most edge.
+ * So, if it is not appearing, set xPosPadding to a value < 30.0f.
  */
 fun Modifier.scrollIndicator(
     state: ScrollState,
     barColor: Color,
     trackColor: Color = barColor.copy(alpha = 0.15f),
+    xPosPadding: Float = 30.0f
 ): Modifier = drawWithContent {
     drawContent()
     if (state.maxValue <= 0) return@drawWithContent
@@ -26,7 +28,7 @@ fun Modifier.scrollIndicator(
     val barWidth = 4.dp.toPx()
     val margin = 3.dp.toPx()
 //    val xPosition = size.width - barWidth - margin
-    val xPosition = size.width + 30.0f // Reason: added to Columns with padding of 24
+    val xPosition = size.width + xPosPadding // Reason: added to Columns with padding of 24
     val minThumbHeight = 40.dp.toPx()
 
     val contentHeight = size.height + state.maxValue

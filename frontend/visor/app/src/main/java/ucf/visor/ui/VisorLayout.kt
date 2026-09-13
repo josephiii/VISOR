@@ -425,15 +425,19 @@ fun VisorLayout(
                             )
                         }
 
-                        // Once the user is fully logged in...
-                        if (uiState.navigationBarEnabled) {
-                            // Bottom Navigation Bar for VISOR
-                            VisorNavigationBar(currentRoute, viewModel)
-                        }
-
-                        // FOR PHASE 1
+                        // Exactly one bottom bar, never both: initiating Phase 1
+                        // (see DebugScreen's "P1 Initiate" button) also calls
+                        // home(), which sets navigationBarEnabled — so without
+                        // this being an if/else, both NavigationBars would
+                        // render stacked, showing up as extra empty space
+                        // (each one pads itself for the bottom system bar
+                        // inset) above the real bottom edge of the screen.
                         if (uiState.phase1Initiated) {
+                            // FOR PHASE 1
                             Phase1NavigationBar(currentRoute, viewModel)
+                        } else if (uiState.navigationBarEnabled) {
+                            // Once the user is fully logged in...
+                            VisorNavigationBar(currentRoute, viewModel)
                         }
                     }
 
