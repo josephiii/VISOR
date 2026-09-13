@@ -6,6 +6,7 @@ import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
 import android.Manifest.permission.RECORD_AUDIO
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,9 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.FakePhotoSource
+import ucf.visor.capture.ReadRequester
+import ucf.visor.capture.RealCapture
 import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
@@ -32,10 +36,6 @@ import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 import kotlin.coroutines.resume
-import android.util.Log
-import ucf.visor.capture.FakePhotoSource
-import ucf.visor.capture.ReadRequester
-import ucf.visor.capture.RealCapture
 
 class MainActivity : ComponentActivity() {
 
@@ -43,14 +43,17 @@ class MainActivity : ComponentActivity() {
     ///////////////////////////////////////////////////////////////////////////
     companion object {
         // Required Android permissions for the DAT SDK to function properly
-        val PERMISSIONS: Array<String> = arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
+        val PERMISSIONS: Array<String> =
+            arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
     }
 
     val viewModel: VisorViewModel by viewModels()
 
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
-            viewModel.onPermissionsResult(permissionsResult) {
+            viewModel.onPermissionsResult(permissionsResult) @androidx.annotation.RequiresPermission(
+                android.Manifest.permission.RECORD_AUDIO
+            ) {
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
