@@ -20,7 +20,7 @@ import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
 import ucf.visor.ui.screens.title.TitleScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceNavigationController
 
 @Composable
 fun VisorNavHost(
@@ -123,10 +123,7 @@ fun VisorNavHost(
                 speak = talk,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
-                // Frontend-only for now (no backend endpoint yet — see
-                // VisorViewModel.confirmDeleteAccount): clears the local
-                // profile/session so the app behaves as if the account is
-                // gone. TODO: also POST /auth/deleteAccount once it exists.
+                // TODO: POST /auth/deleteAccount once it exists.
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
             );

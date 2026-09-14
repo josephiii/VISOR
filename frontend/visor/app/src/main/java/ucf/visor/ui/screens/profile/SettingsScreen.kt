@@ -53,9 +53,6 @@ fun SettingsScreen(
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
-    // Lifted to VisorUiState (rather than local remember) so a spoken "log out" /
-    // "delete my account" voice command can open the same confirm dialog a tap
-    // would — see VoiceCommand.LogOut / DeleteAccount and CLAUDE.md.
     val showLogoutConfirm = uiState.isLogoutConfirmVisible
     val showDeleteConfirm = uiState.isDeleteAccountConfirmVisible
 
@@ -136,7 +133,8 @@ fun SettingsScreen(
         Slider(
             value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
             onValueChange = { position ->
-                val rate = SpeechRate.entries[position.roundToInt().coerceIn(0, SpeechRate.entries.lastIndex)]
+                val rate = SpeechRate.entries[position.roundToInt()
+                    .coerceIn(0, SpeechRate.entries.lastIndex)]
                 if (rate != profile.speechRate) onProfileChange(profile.copy(speechRate = rate))
             },
             onValueChangeFinished = { speak("Speech ${profile.speechRate.label().lowercase()}.") },

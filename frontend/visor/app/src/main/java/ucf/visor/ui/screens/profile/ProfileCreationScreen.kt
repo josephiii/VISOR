@@ -40,12 +40,12 @@ import ucf.visor.ui.profile.VisionType
 import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceNavigationController
 import kotlin.math.roundToInt
 
 
 /**
- * VISOR-124 — Voice-first profile creation (first-run onboarding).
+ * Voice-first profile creation (first-run onboarding).
  *
  * Design: a guided interview, one question per screen. The app SPEAKS each
  * question (voice-first); every answer is a huge high-contrast button (touch
@@ -105,41 +105,26 @@ fun ProfileCreationScreen(
     onFinished: (UserProfile) -> Unit = {},
 ) {
     var step by remember { mutableStateOf(Step.NAME) }
-    // Seeded from whatever's already saved (defaults if nothing is), not a
-    // blank UserProfile() — TitleScreen lets a new user turn voice nav on
-    // before they ever reach this wizard, and starting fresh here would
-    // silently throw that choice away the moment the VOICE_NAV step's default
-    // got applied on top of it.
     var profile by remember { mutableStateOf(viewModel.userProfile.value) }
     val scrollState = rememberScrollState()
 
     fun next() {
-        // A touch tap always wins over an in-flight spoken answer for the
-        // question being left — see VoiceNavigationController.cancelCapture.
-        voiceNav?.cancelCapture()
+        voiceNav?.cancelCapture() // on touch tap
         val i = step.ordinal
         if (i < Step.entries.lastIndex) step = Step.entries[i + 1] else onFinished(profile)
     }
 
-    // Voice-first by design (see doc comment): speak the question, then listen
-    // for a spoken answer immediately — no "VISOR GO" wake phrase needed inside
-    // this wizard, since the whole screen is already a guided conversation.
-    // Falls through to Unit (no-op) if nothing usable was heard; the on-screen
-    // buttons/text field remain a full touch fallback either way.
+    // VOICE NAVIGATION
     LaunchedEffect(step) {
         speak(step.spokenPrompt)
         val askedStep = step
-        // Gated on the wizard's own in-progress answer, not voiceNav's enabled
-        // flag (which only reflects the profile as last *saved*, before this
-        // wizard finishes) — otherwise saying "no" to the VOICE_NAV step above
-        // wouldn't take effect until onboarding was already over.
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()
             if (heard.isNullOrEmpty()) return@captureUtterance
             when (askedStep) {
                 Step.NAME -> {
-                    profile = profile.copy(displayName = text!!.trim())
+                    profile = profile.copy(displayName = text.trim())
                     next()
                 }
 
@@ -147,9 +132,11 @@ fun ProfileCreationScreen(
                     heard.contains("no") -> {
                         profile = profile.copy(voiceNavigationEnabled = false); next()
                     }
+
                     heard.contains("yes") -> {
                         profile = profile.copy(voiceNavigationEnabled = true); next()
                     }
+
                     else -> Unit
                 }
 
@@ -169,7 +156,7 @@ fun ProfileCreationScreen(
                 }
 
                 Step.DESCRIBE -> {
-                    profile = profile.copy(visionDescription = text!!.trim())
+                    profile = profile.copy(visionDescription = text.trim())
                     next()
                 }
 
@@ -248,12 +235,10 @@ fun ProfileCreationScreen(
                 }
             }
 
-            // Free-text: patients who don't fit the boxes get heard, spoken or typed.
             Step.DESCRIBE -> BigTextField(profile.visionDescription, "In your own words…") {
                 profile = profile.copy(visionDescription = it)
             }
 
-            // Multi-select: tapping toggles; "Not sure" clears when a real answer is picked.
             Step.VISION -> VisionType.entries.forEach { type ->
                 val selected = type in profile.visionTypes
                 BigChoiceButton(type.label(), selected) {
@@ -271,9 +256,6 @@ fun ProfileCreationScreen(
                 }
             }
 
-            // Slider, not a button per option — a set-then-tap-Continue
-            // interaction, unlike the other steps here, since immediately
-            // auto-advancing on the first drag would cut off adjusting it.
             Step.SPEECH_RATE -> {
                 Text(
                     text = profile.speechRate.label(),
@@ -292,9 +274,14 @@ fun ProfileCreationScreen(
                     steps = SpeechRate.entries.size - 2,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Speech rate: ${profile.speechRate.label()}" },
+                        .semantics {
+                            contentDescription = "Speech rate: ${profile.speechRate.label()}"
+                        },
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text("Slower", style = MaterialTheme.typography.bodyMedium)
                     Text("Faster", style = MaterialTheme.typography.bodyMedium)
                 }
@@ -370,8 +357,6 @@ private fun BigChoiceButton(
     )
 }
 
-// Human-readable labels (also what voice commands should map to).
-// SpeechRate.label() now lives in UserProfile.kt, shared with SettingsScreen.
 private fun Verbosity.label() = when (this) {
     Verbosity.BRIEF -> "Brief"; Verbosity.STANDARD -> "Standard"; Verbosity.DETAILED -> "Detailed"
 }

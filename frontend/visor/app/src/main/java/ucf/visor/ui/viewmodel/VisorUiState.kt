@@ -42,10 +42,6 @@ data class VisorUiState(
     // Component States.
     val isAuthComplete: Boolean = false,
     val isSessionActive: Boolean = false,
-
-    // Settings confirm dialogs — lifted out of SettingsScreen's local state so a
-    // spoken "log out" / "delete my account" (see VoiceCommand) can open the same
-    // confirmation a tap would, without ever firing the destructive action itself.
     val isLogoutConfirmVisible: Boolean = false,
     val isDeleteAccountConfirmVisible: Boolean = false,
 

@@ -50,6 +50,7 @@ class CommandRecognizer(private val context: Context) {
                 onResult(null)
             }
 
+            // Overridden functions to be updated as necessary...
             override fun onPartialResults(partialResults: Bundle) = Unit
             override fun onReadyForSpeech(params: Bundle?) = Unit
             override fun onBeginningOfSpeech() = Unit
@@ -60,7 +61,10 @@ class CommandRecognizer(private val context: Context) {
         })
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
         }

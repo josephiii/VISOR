@@ -33,7 +33,7 @@ import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceNavigationController
 
 /**
  * The very first screen a signed-out user sees — VISOR's front door.
@@ -41,8 +41,7 @@ import ucf.visor.voice.VoiceNavigationController
  * Purpose is narrow by design: get to Log In or Sign Up, and (for anyone who
  * wants their hands free before they've even made an account) turn on voice
  * navigation. Nothing here asks for credentials, so unlike the screens behind
- * it, everything on this screen is safe to also drive by voice — see the
- * "navigation-only" screens list in CLAUDE.md.
+ * it, everything on this screen is safe to also drive by voice.
  *
  * A returning, already-logged-in user never sees this screen at all — see
  * VisorViewModel.startDestination.
@@ -60,12 +59,6 @@ fun TitleScreen(
     var showVoiceTip by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
 
-    // Speak the tip, not just show it — a low-vision user who just turned
-    // voice nav on this screen may not be able to read the dialog either.
-    // Routed through voiceNav.speakGuarded (not talk directly): the tip's
-    // own wording says "VISOR GO" out loud, and the KWS wake-word listener
-    // is always on, so without pausing it first, the app would hear its own
-    // voice say the wake phrase and immediately, audibly interrupt itself.
     LaunchedEffect(showVoiceTip) {
         if (showVoiceTip) {
             val tip = "Voice navigation is on. Say VISOR GO, then say what you'd like. " +
@@ -111,8 +104,6 @@ fun TitleScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Large, single interactive control — same ~64dp+ touch target every
-        // other on/off preference in the app uses (see SelectableChip).
         SelectableChip(
             label = if (profile.voiceNavigationEnabled) "Voice Navigation: On" else "Voice Navigation: Off",
             selected = profile.voiceNavigationEnabled,

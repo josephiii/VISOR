@@ -1,4 +1,4 @@
-package ucf.visor.voice
+package ucf.visor.ui.voice
 
 import ucf.visor.ui.profile.SpeechRate
 import ucf.visor.ui.profile.TextScale
@@ -27,6 +27,7 @@ object VoiceCommandParser {
             containsAny(text, "help") -> VoiceCommand.OpenHelp
             containsAny(text, "pair", "hardware", "connect my glasses", "connect glasses") ->
                 VoiceCommand.PairDevice
+
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
             containsAny(text, "start session", "end session", "stop session", "start", "stop") ->
@@ -36,10 +37,27 @@ object VoiceCommandParser {
             containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
             containsAny(text, "reader", "reading") -> VoiceCommand.SwitchMode(SessionMode.READER)
 
-            containsAny(text, "sign up", "signup", "register", "new account") -> VoiceCommand.GoToSignUp
+            containsAny(
+                text,
+                "sign up",
+                "signup",
+                "register",
+                "new account"
+            ) -> VoiceCommand.GoToSignUp
+
             containsAny(text, "log in", "login") -> VoiceCommand.GoToLogin
-            containsAny(text, "forgot password", "forgot my password") -> VoiceCommand.GoToForgotPassword
-            containsAny(text, "resend code", "resend the code", "send code again") -> VoiceCommand.ResendCode
+            containsAny(
+                text,
+                "forgot password",
+                "forgot my password"
+            ) -> VoiceCommand.GoToForgotPassword
+
+            containsAny(
+                text,
+                "resend code",
+                "resend the code",
+                "send code again"
+            ) -> VoiceCommand.ResendCode
 
             containsAny(text, "log out", "sign out", "logout") -> VoiceCommand.LogOut
             containsAny(text, "delete my account", "delete account") -> VoiceCommand.DeleteAccount
@@ -47,26 +65,52 @@ object VoiceCommandParser {
 
             containsAny(text, "slower", "speak slower", "talk slower") ->
                 VoiceCommand.SetSpeechRate(SpeechRate.SLOW)
+
             containsAny(text, "faster", "speak faster", "talk faster") ->
                 VoiceCommand.SetSpeechRate(SpeechRate.FAST)
+
             containsAny(text, "normal speed", "normal speech") ->
                 VoiceCommand.SetSpeechRate(SpeechRate.NORMAL)
 
             containsAny(text, "brief") -> VoiceCommand.SetVerbosity(Verbosity.BRIEF)
-            containsAny(text, "detailed", "more detail") -> VoiceCommand.SetVerbosity(Verbosity.DETAILED)
+            containsAny(
+                text,
+                "detailed",
+                "more detail"
+            ) -> VoiceCommand.SetVerbosity(Verbosity.DETAILED)
+
             containsAny(text, "standard detail", "standard verbosity") ->
                 VoiceCommand.SetVerbosity(Verbosity.STANDARD)
 
             containsAny(text, "extra large text", "extra large") ->
                 VoiceCommand.SetTextScale(TextScale.EXTRA_LARGE)
-            containsAny(text, "large text", "bigger text") -> VoiceCommand.SetTextScale(TextScale.LARGE)
-            containsAny(text, "standard text", "normal text") -> VoiceCommand.SetTextScale(TextScale.STANDARD)
 
-            containsAny(text, "confirm", "okay") || containsWord(text, "yes", "ok") -> VoiceCommand.Confirm
+            containsAny(
+                text,
+                "large text",
+                "bigger text"
+            ) -> VoiceCommand.SetTextScale(TextScale.LARGE)
+
+            containsAny(
+                text,
+                "standard text",
+                "normal text"
+            ) -> VoiceCommand.SetTextScale(TextScale.STANDARD)
+
+            containsAny(text, "confirm", "okay") || containsWord(
+                text,
+                "yes",
+                "ok"
+            ) -> VoiceCommand.Confirm
+
             containsAny(text, "cancel", "never mind", "nevermind") || containsWord(text, "no") ->
                 VoiceCommand.Cancel
+
             containsAny(text, "continue", "skip") || containsWord(text, "next") -> VoiceCommand.Next
-            containsAny(text, "say that again", "what did you say") || containsWord(text, "repeat") ->
+            containsAny(text, "say that again", "what did you say") || containsWord(
+                text,
+                "repeat"
+            ) ->
                 VoiceCommand.RepeatLast
 
             else -> VoiceCommand.Unrecognized

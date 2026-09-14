@@ -66,6 +66,8 @@ class Listener(
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,
         )
+
+        // FIXME?
         audioRecord = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             sampleRate,

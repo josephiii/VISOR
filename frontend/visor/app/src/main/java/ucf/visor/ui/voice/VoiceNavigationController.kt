@@ -1,8 +1,9 @@
-package ucf.visor.voice
+package ucf.visor.ui.voice
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -13,15 +14,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
 import ucf.visor.stt.CommandRecognizer
 
 /** What voice navigation is doing right now — surfaced to the UI as a small status indicator. */
 enum class VoiceNavState { IDLE, LISTENING, PROCESSING }
 
 /**
- * Owns the "VISOR GO" -> free-speech -> [VoiceCommand] pipeline described in
- * CLAUDE.md. Does not itself run the KWS wake-word engine (MainActivity keeps a
+ * Owns the "VISOR GO" -> free-speech -> [VoiceCommand] pipeline.
+ * Does not itself run the KWS wake-word engine (MainActivity keeps a
  * single [ucf.visor.stt.Listener] for both the OCR wake phrases and "VISOR GO",
  * so mic ownership has one clear home) — call [activate] when "VISOR GO" fires.
  *
@@ -70,10 +70,6 @@ class VoiceNavigationController(
     /** Call when the "VISOR GO" wake phrase is heard. No-ops if voice nav is off. */
     fun activate() {
         if (!enabled) return
-        // Only path that needs its own spoken cue: nothing else was just said,
-        // unlike ProfileCreationScreen's captureUtterance calls, which follow
-        // right after the wizard speaks its question (see captureUtterance's
-        // doc comment for why that path stays silent here).
         speak("Listening.")
         captureUtterance { text ->
             val command = text?.let(VoiceCommandParser::parse) ?: VoiceCommand.Unrecognized

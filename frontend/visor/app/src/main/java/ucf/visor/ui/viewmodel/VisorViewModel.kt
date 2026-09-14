@@ -28,20 +28,10 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     // VISOR
     private val sessionStore = SessionStore(application)
     private val profileStore = ProfileStore(application)
-
-    /**
-     * Which route VisorNavHost's NavHost should start on. Read once here (not
-     * a StateFlow — NavHost only ever consults its startDestination on first
-     * composition anyway), so a returning, already-logged-in user skips
-     * TitleScreen and LoginScreen entirely and lands directly on Home, while a
-     * new or logged-out user sees the title screen first. See SessionStore.
-     */
     val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
 
-    // isAuthComplete seeded from the same session flag, so a returning user's
-    // bottom navigation bar is visible immediately on that direct-to-Home
-    // landing, not just after actually calling home() in this process.
-    private val _uiState = MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
+    private val _uiState =
+        MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
     private val _session = MutableStateFlow(VisorSession())
@@ -201,11 +191,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun login() {
-        // Always represents "not authenticated" — whether that's the normal
-        // pre-auth navigation to the login form, or an explicit logout (see
-        // logout() below) landing back on it. isAuthComplete/the session flag
-        // should be false in both cases, so this covers it unconditionally
-        // rather than needing every caller to remember to reset them.
         _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isLoggingIn = true) }
         _uiState.update { it.copy(isAuthComplete = false) }
@@ -278,10 +263,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(goingHome = true) }
         _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
-        // Reaching Home is what "logged in" means today (see SessionStore) —
-        // this is the one place every real entry path (fresh login, password
-        // reset, completing onboarding, and just tapping the Home tab) funnels
-        // through, so it's also the one place that needs to record it.
         _uiState.update { it.copy(isAuthComplete = true) }
         sessionStore.setLoggedIn(true)
     }
@@ -307,10 +288,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atHelp = false) }
     }
 
-    // Both actions are hard to undo (logging out mid-session, or permanent
-    // deletion), so a spoken "log out"/"delete my account" only opens the same
-    // confirm dialog a tap would — the destructive action still needs an explicit
-    // second confirmation (spoken "yes" or a tap), never fired by one utterance.
     fun requestLogoutConfirm() {
         _uiState.update { it.copy(isLogoutConfirmVisible = true) }
     }

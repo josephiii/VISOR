@@ -36,7 +36,7 @@ import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceNavigationController
 import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
@@ -48,12 +48,6 @@ class MainActivity : ComponentActivity() {
         val PERMISSIONS: Array<String> =
             arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
 
-        // The 3 existing OCR wake phrases from assets/kws/keywords.txt, and the
-        // one new voice-navigation activation phrase ("VISOR GO" — see
-        // VoiceNavigationController / CLAUDE.md). Compared letters-only,
-        // case-insensitive: sherpa-onnx's exact keyword-string formatting
-        // (spacing/case) isn't part of its documented contract, so this is
-        // robust to how it actually comes back.
         private val OCR_WAKE_PHRASES = setOf(
             "VISORWHATDOESTHISSAY",
             "VISORREADTHIS",
@@ -114,20 +108,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // High Contrast and Text size are user preferences (Settings / onboarding),
-            // not just the OS light/dark setting — see AppTheme.forProfile.
             val profile by viewModel.userProfile.collectAsStateWithLifecycle()
             val appTheme = AppTheme.forProfile(profile, isSystemInDarkTheme())
 
-            // Voice navigation on/off is itself a saved profile preference (Settings,
-            // and the onboarding wizard for first-run) — see UserProfile.voiceNavigationEnabled.
             LaunchedEffect(profile.voiceNavigationEnabled) {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
             }
 
-            // Same idea for speech rate (Settings/onboarding slider) — this is
-            // what makes it actually affect the audio output, not just the
-            // stored preference. See UserProfile.SpeechRate.multiplier.
             LaunchedEffect(profile.speechRate) {
                 speaker.setSpeechRate(profile.speechRate.multiplier)
             }

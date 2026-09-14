@@ -1,4 +1,4 @@
-package ucf.visor.voice
+package ucf.visor.ui.voice
 
 import ucf.visor.ui.profile.SpeechRate
 import ucf.visor.ui.profile.TextScale

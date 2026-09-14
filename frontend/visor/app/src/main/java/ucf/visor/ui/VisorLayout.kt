@@ -56,9 +56,9 @@ import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.voice.VoiceCommand
-import ucf.visor.voice.VoiceNavState
-import ucf.visor.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceCommand
+import ucf.visor.ui.voice.VoiceNavState
+import ucf.visor.ui.voice.VoiceNavigationController
 
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions
@@ -106,13 +106,6 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
-    // Observe TitleScreen — the signed-out landing point, both at cold start
-    // (see VisorViewModel.startDestination) and after an explicit logout (see
-    // VisorViewModel.logout). popUpTo(0) clears the ENTIRE back stack, unlike
-    // the popUpTo(startDestinationId) used below for post-login destinations:
-    // logout must never leave anything from the ended session reachable by
-    // pressing back afterward, even on a process that happened to start
-    // already logged in (where startDestinationId is "home", not "title").
     LaunchedEffect(uiState.atTitle) {
         if (uiState.atTitle) {
             navController.navigate("title") {
@@ -229,13 +222,6 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Voice Navigation Observer
-    //
-    // Single dispatch point for every VoiceCommand (see voice/VoiceCommand.kt):
-    // this is where both the ViewModel (for the same state-flag navigation every
-    // on-screen button already uses) and the NavHostController (for "go back",
-    // which has no state-flag equivalent) are both in scope. Commands with no
-    // effect in the current context still get a short spoken response — silent
-    // no-ops read as "did it even hear me?" to a user who can't see a result.
     LaunchedEffect(voiceNav) {
         voiceNav?.commands?.collect { command ->
             when (command) {
