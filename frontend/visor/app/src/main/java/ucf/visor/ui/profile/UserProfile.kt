@@ -45,6 +45,10 @@ data class UserProfile(
     /** Say "VISOR GO" to navigate by voice. Defaults on, matching that TTS
      *  and the OCR wake-word listener are already always-on with no toggle. */
     val voiceNavigationEnabled: Boolean = false,
+    /** Tap-fallback navigation buttons rendered on the glasses' own display —
+     *  see GlassesNavigationController. Defaults on: unlike voice, it has no
+     *  privacy/noise trade-off, so it should just work once glasses are paired. */
+    val glassesTapNavigationEnabled: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About

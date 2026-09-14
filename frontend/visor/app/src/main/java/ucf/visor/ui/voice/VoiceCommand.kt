@@ -6,12 +6,15 @@ import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
 
 /**
- * Every voice-navigation intent VISOR understands, recognized from free-form
- * speech captured after the "VISOR GO" wake phrase (see VoiceNavigationController).
- * Kept as one flat sealed type so a single dispatcher (VisorLayout) can switch on
- * it with access to both the ViewModel and the NavHostController, regardless of
- * which screen the utterance was spoken on. Availability of a given command on
- * the current screen is decided by the dispatcher, not the parser.
+ * Every navigation intent VISOR understands. Most commonly recognized from
+ * free-form speech captured after the "VISOR GO" wake phrase (see
+ * VoiceNavigationController), but also emitted directly by
+ * GlassesNavigationController when a button on the glasses' own display is
+ * tapped/selected — one flat sealed type lets a single dispatcher (VisorLayout)
+ * handle both input methods identically, with access to both the ViewModel and
+ * the NavHostController, regardless of which screen the command came from.
+ * Availability of a given command on the current screen is decided by the
+ * dispatcher, not the parser or the glasses screen model.
  */
 sealed class VoiceCommand {
     object GoHome : VoiceCommand()

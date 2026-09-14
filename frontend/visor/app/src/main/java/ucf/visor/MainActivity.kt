@@ -33,6 +33,7 @@ import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -103,6 +104,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
+    private lateinit var glassesNav: GlassesNavigationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +115,10 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(profile.voiceNavigationEnabled) {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
+            }
+
+            LaunchedEffect(profile.glassesTapNavigationEnabled) {
+                glassesNav.setEnabled(profile.glassesTapNavigationEnabled)
             }
 
             LaunchedEffect(profile.speechRate) {
@@ -127,6 +133,7 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
                         voiceNav = voiceNav,
+                        glassesNav = glassesNav,
                     )
                 }
 
@@ -145,6 +152,8 @@ class MainActivity : ComponentActivity() {
             resumeWakeListening = { listener.start() },
             isSpeaking = { speaker.isSpeaking() },
         )
+
+        glassesNav = GlassesNavigationController(viewModel.deviceSelector)
 
         // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
         // running two overlapping AudioRecord/model instances would double up
@@ -170,5 +179,6 @@ class MainActivity : ComponentActivity() {
         speaker.shutdown()
         listener.shutdown()
         voiceNav.shutdown()
+        glassesNav.shutdown()
     }
 }

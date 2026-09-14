@@ -196,6 +196,21 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
 
+        SettingSection("Glasses tap navigation")
+        Text(
+            "When your glasses are connected, the same navigation shows up as " +
+                    "buttons on their display — tap or swipe on the temple arm or " +
+                    "Neural Band to select one, no phone or voice needed.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SelectableChip(
+            label = if (profile.glassesTapNavigationEnabled) "Glasses tap navigation: ON" else "Glasses tap navigation: OFF",
+            selected = profile.glassesTapNavigationEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            onProfileChange(profile.copy(glassesTapNavigationEnabled = !profile.glassesTapNavigationEnabled))
+        }
+
         Spacer(Modifier.height(24.dp))
         SettingSection("Support")
         SelectableChip(
