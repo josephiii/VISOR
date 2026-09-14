@@ -56,7 +56,8 @@ fun SignUpScreen(
             .verticalScroll(scrollState)
     ) {
 
-        VisorHeader()
+        // These screens pad only vertically, so the banner brings its own side margin.
+        VisorHeader(modifier = Modifier.padding(horizontal = 24.dp))
 
         Card(
             shape = VisorShapes.Control,
