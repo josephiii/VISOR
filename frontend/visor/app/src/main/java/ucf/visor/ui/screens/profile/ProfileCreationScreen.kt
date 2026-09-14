@@ -2,6 +2,7 @@ package ucf.visor.ui.screens.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +41,7 @@ import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.voice.VoiceNavigationController
+import kotlin.math.roundToInt
 
 
 /**
@@ -267,9 +271,32 @@ fun ProfileCreationScreen(
                 }
             }
 
-            Step.SPEECH_RATE -> SpeechRate.entries.forEach { r ->
-                BigChoiceButton(r.label(), profile.speechRate == r) {
-                    profile = profile.copy(speechRate = r); next()
+            // Slider, not a button per option — a set-then-tap-Continue
+            // interaction, unlike the other steps here, since immediately
+            // auto-advancing on the first drag would cut off adjusting it.
+            Step.SPEECH_RATE -> {
+                Text(
+                    text = profile.speechRate.label(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Slider(
+                    value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
+                    onValueChange = { position ->
+                        val rate = SpeechRate.entries[
+                            position.roundToInt().coerceIn(0, SpeechRate.entries.lastIndex)
+                        ]
+                        if (rate != profile.speechRate) profile = profile.copy(speechRate = rate)
+                    },
+                    valueRange = 0f..(SpeechRate.entries.lastIndex).toFloat(),
+                    steps = SpeechRate.entries.size - 2,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Speech rate: ${profile.speechRate.label()}" },
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Slower", style = MaterialTheme.typography.bodyMedium)
+                    Text("Faster", style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
@@ -344,10 +371,7 @@ private fun BigChoiceButton(
 }
 
 // Human-readable labels (also what voice commands should map to).
-private fun SpeechRate.label() = when (this) {
-    SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
-}
-
+// SpeechRate.label() now lives in UserProfile.kt, shared with SettingsScreen.
 private fun Verbosity.label() = when (this) {
     Verbosity.BRIEF -> "Brief"; Verbosity.STANDARD -> "Standard"; Verbosity.DETAILED -> "Detailed"
 }

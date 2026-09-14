@@ -14,8 +14,13 @@ enum class VisionType { CENTRAL_LOSS, PERIPHERAL_LOSS, BLUR_LOW_ACUITY, CONTRAST
 /** How much their vision affects daily life. */
 enum class Severity { MILD, MODERATE, SEVERE }
 
-/** TTS speaking speed. Maps to a notched slider in Settings later. */
-enum class SpeechRate { SLOW, NORMAL, FAST }
+/**
+ * TTS speaking speed, shown as a 3-notch slider in Settings and onboarding.
+ * [multiplier] is passed straight to `TextToSpeech.setSpeechRate()` — see
+ * `tts.Speaker.setSpeechRate` — so this is the one enum in this file that
+ * isn't just a label, it's the actual value the audio output uses.
+ */
+enum class SpeechRate(val multiplier: Float) { SLOW(0.75f), NORMAL(1.0f), FAST(1.35f) }
 
 /** How much detail VISOR gives when describing scenes. */
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
@@ -59,4 +64,10 @@ fun Severity.label(): String = when (this) {
     Severity.MILD -> "A little"
     Severity.MODERATE -> "A moderate amount"
     Severity.SEVERE -> "A lot"
+}
+
+fun SpeechRate.label(): String = when (this) {
+    SpeechRate.SLOW -> "Slower"
+    SpeechRate.NORMAL -> "Normal"
+    SpeechRate.FAST -> "Faster"
 }

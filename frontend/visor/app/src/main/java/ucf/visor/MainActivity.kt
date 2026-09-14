@@ -125,6 +125,13 @@ class MainActivity : ComponentActivity() {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
             }
 
+            // Same idea for speech rate (Settings/onboarding slider) — this is
+            // what makes it actually affect the audio output, not just the
+            // stored preference. See UserProfile.SpeechRate.multiplier.
+            LaunchedEffect(profile.speechRate) {
+                speaker.setSpeechRate(profile.speechRate.multiplier)
+            }
+
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(

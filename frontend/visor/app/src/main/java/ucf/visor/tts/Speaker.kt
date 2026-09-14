@@ -15,10 +15,16 @@ class Speaker (context: Context){
     var lastUtterance: String? = null
         private set
 
+    // The user's chosen rate (see UserProfile.SpeechRate), applied once the
+    // engine finishes initializing even if setSpeechRate() was called before
+    // then — same before/after-ready split as speak()'s own pending queue.
+    private var speechRate = 1.0f
+
     init {
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS){
                 tts?.language = Locale.US
+                tts?.setSpeechRate(speechRate)
                 isReady = true
                 pending.forEach {queueSpeaking(it)}
                 pending.clear()
@@ -27,6 +33,14 @@ class Speaker (context: Context){
             }
 
         }
+    }
+
+    // Called whenever UserProfile.speechRate changes (see MainActivity) —
+    // this is what actually makes the Settings/onboarding slider affect the
+    // audio output, not just the stored preference.
+    fun setSpeechRate(rate: Float) {
+        speechRate = rate
+        tts?.setSpeechRate(rate)
     }
 
     // this is called to use tts
