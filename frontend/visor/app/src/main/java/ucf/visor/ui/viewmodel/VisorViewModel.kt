@@ -19,18 +19,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucf.visor.auth.SessionStore
 import ucf.visor.ui.profile.ProfileStore
 import ucf.visor.ui.profile.UserProfile
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // VISOR
-    private val _uiState = MutableStateFlow(VisorUiState())
+    private val sessionStore = SessionStore(application)
+    private val profileStore = ProfileStore(application)
+    val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
+
+    private val _uiState =
+        MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
     private val _session = MutableStateFlow(VisorSession())
     val session: StateFlow<VisorSession> = _session.asStateFlow()
-    private val profileStore = ProfileStore(application)
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
@@ -188,6 +193,42 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     fun login() {
         _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isLoggingIn = true) }
+        _uiState.update { it.copy(isAuthComplete = false) }
+        sessionStore.setLoggedIn(false)
+    }
+
+    /** Explicit "log out" from Settings — returns all the way to TitleScreen
+     *  (not just the login form) and clears the whole back stack, so nothing
+     *  from the ended session stays reachable by pressing back afterward. */
+    fun logout() {
+        _uiState.update {
+            it.copy(
+                isLoggingIn = false,
+                isSigningUp = false,
+                goingHome = false,
+                atSettings = false,
+                atHelp = false,
+                isPairingHardware = false,
+                isAuthComplete = false,
+                isLogoutConfirmVisible = false,
+                isDeleteAccountConfirmVisible = false,
+                atTitle = true,
+            )
+        }
+        sessionStore.setLoggedIn(false)
+    }
+
+    /**
+     * Deleting the account is still frontend-only (no backend endpoint yet —
+     * see the TODO on SettingsScreen's onDeleteAccount), but it should still
+     * behave like account deletion locally: wipe the saved profile and end
+     * the session, landing back on TitleScreen same as logout().
+     */
+    fun confirmDeleteAccount() {
+        profileStore.clear()
+        _userProfile.value = UserProfile()
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
+        logout()
     }
 
     fun signUp() {
@@ -222,6 +263,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(goingHome = true) }
         _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
+        _uiState.update { it.copy(isAuthComplete = true) }
+        sessionStore.setLoggedIn(true)
     }
 
     fun hardwarePairing() {
@@ -235,6 +278,30 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(isPairingHardware = false) }
         _uiState.update { it.copy(atSettings = true) }
+    }
+
+    fun help() {
+        _uiState.update { it.copy(atHelp = true) }
+    }
+
+    fun closeHelp() {
+        _uiState.update { it.copy(atHelp = false) }
+    }
+
+    fun requestLogoutConfirm() {
+        _uiState.update { it.copy(isLogoutConfirmVisible = true) }
+    }
+
+    fun cancelLogoutConfirm() {
+        _uiState.update { it.copy(isLogoutConfirmVisible = false) }
+    }
+
+    fun requestDeleteAccountConfirm() {
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = true) }
+    }
+
+    fun cancelDeleteAccountConfirm() {
+        _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
     }
 
     fun onboard() {

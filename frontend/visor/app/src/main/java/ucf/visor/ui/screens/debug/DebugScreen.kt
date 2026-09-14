@@ -150,6 +150,15 @@ fun DebugScreen(
                 // Screen Selection
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_title_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("title")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
                     text = stringResource(R.string.debug_login_screen),
                     onClick = {
                         onDismiss()

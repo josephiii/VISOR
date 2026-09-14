@@ -1,4 +1,3 @@
-
 package ucf.visor.stt
 
 import android.content.res.AssetManager
@@ -24,7 +23,9 @@ class Listener(
     private var spotter: KeywordSpotter? = null
     private var stream: OnlineStream? = null
     private var audioRecord: AudioRecord? = null
-    @Volatile private var isRunning = false
+
+    @Volatile
+    private var isRunning = false
     private val mainHandler = Handler(Looper.getMainLooper())
     private val sampleRate = 16000
 
@@ -65,6 +66,8 @@ class Listener(
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,
         )
+
+        // FIXME?
         audioRecord = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             sampleRate,

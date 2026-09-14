@@ -13,14 +13,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +36,7 @@ import ucf.visor.ui.profile.VisionType
 import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
+import kotlin.math.roundToInt
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
@@ -51,9 +51,10 @@ fun SettingsScreen(
     onHelp: () -> Unit = {},
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
-    var showLogoutConfirm by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val showLogoutConfirm = uiState.isLogoutConfirmVisible
+    val showDeleteConfirm = uiState.isDeleteAccountConfirmVisible
 
     Column(
         modifier = Modifier
@@ -124,20 +125,28 @@ fun SettingsScreen(
         )
 
         SettingSection("How fast VISOR talks")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SpeechRate.entries.forEach { r ->
-                SelectableChip(
-                    label = when (r) {
-                        SpeechRate.SLOW -> "Slower"; SpeechRate.NORMAL -> "Normal"; SpeechRate.FAST -> "Faster"
-                    },
-                    selected = profile.speechRate == r,
-                    showCheckmark = false,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    onProfileChange(profile.copy(speechRate = r))
-                    speak("Speech ${if (r == SpeechRate.SLOW) "slower" else if (r == SpeechRate.FAST) "faster" else "normal"}.")
-                }
-            }
+        Text(
+            text = profile.speechRate.label(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Slider(
+            value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
+            onValueChange = { position ->
+                val rate = SpeechRate.entries[position.roundToInt()
+                    .coerceIn(0, SpeechRate.entries.lastIndex)]
+                if (rate != profile.speechRate) onProfileChange(profile.copy(speechRate = rate))
+            },
+            onValueChangeFinished = { speak("Speech ${profile.speechRate.label().lowercase()}.") },
+            valueRange = 0f..(SpeechRate.entries.lastIndex).toFloat(),
+            steps = SpeechRate.entries.size - 2, // notches between the endpoints, not counting them
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = "Speech rate: ${profile.speechRate.label()}" },
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Slower", style = MaterialTheme.typography.bodySmall)
+            Text("Faster", style = MaterialTheme.typography.bodySmall)
         }
 
         SettingSection("How much detail")
@@ -175,6 +184,18 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) }
 
+        SettingSection("Voice navigation")
+        Text(
+            "Say \"VISOR GO\" any time, then say where you'd like to go — " +
+                    "for example \"open settings\" or \"go home\".",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SelectableChip(
+            label = if (profile.voiceNavigationEnabled) "Voice navigation: ON" else "Voice navigation: OFF",
+            selected = profile.voiceNavigationEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
+
         Spacer(Modifier.height(24.dp))
         SettingSection("Support")
         SelectableChip(
@@ -193,7 +214,7 @@ fun SettingsScreen(
             vital = true,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
-            onClick = { showLogoutConfirm = true },
+            onClick = { viewModel.requestLogoutConfirm() },
         )
         SelectableChip(
             "Delete my account",
@@ -201,40 +222,42 @@ fun SettingsScreen(
             vital = true,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
-            onClick = { showDeleteConfirm = true },
+            onClick = { viewModel.requestDeleteAccountConfirm() },
         )
     }
 
     // Both actions are hard to undo (logging out mid-session, or permanent
     // deletion) so they get a confirm step rather than firing immediately.
+    // This state lives in VisorUiState (not local remember) so a spoken
+    // "log out"/"delete my account" can open the same dialog a tap would.
     if (showLogoutConfirm) {
         AlertDialog(
-            onDismissRequest = { showLogoutConfirm = false },
+            onDismissRequest = { viewModel.cancelLogoutConfirm() },
             title = { Text("Log out?") },
             text = { Text("You'll need to sign in again to use VISOR.") },
             confirmButton = {
-                TextButton(onClick = { showLogoutConfirm = false; onLogout() }) {
+                TextButton(onClick = { viewModel.cancelLogoutConfirm(); onLogout() }) {
                     Text("Log out")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.cancelLogoutConfirm() }) { Text("Cancel") }
             },
         )
     }
 
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
+            onDismissRequest = { viewModel.cancelDeleteAccountConfirm() },
             title = { Text("Delete your account?") },
             text = { Text("This permanently deletes your VISOR account and everything in it. This can't be undone.") },
             confirmButton = {
-                TextButton(onClick = { showDeleteConfirm = false; onDeleteAccount() }) {
+                TextButton(onClick = { viewModel.cancelDeleteAccountConfirm(); onDeleteAccount() }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.cancelDeleteAccountConfirm() }) { Text("Cancel") }
             },
         )
     }

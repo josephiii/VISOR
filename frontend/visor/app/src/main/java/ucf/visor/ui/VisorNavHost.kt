@@ -18,21 +18,36 @@ import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HomeScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
+import ucf.visor.ui.screens.title.TitleScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.VoiceNavigationController
 
 @Composable
 fun VisorNavHost(
     navController: NavHostController,
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {}
+    talk: (String) -> Unit = {},
+    voiceNav: VoiceNavigationController? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Each VISOR screen corresponds with a composable and a respective route string.
     NavHost(
         navController = navController,
-        startDestination = "login"
+        // A returning, already-logged-in user starts on "home" directly — see
+        // VisorViewModel.startDestination and SessionStore.
+        startDestination = viewModel.startDestination
     ) {
+
+        composable("title") {
+            TitleScreen(
+                viewModel = viewModel,
+                talk = talk,
+                voiceNav = voiceNav,
+                onLoginClick = { viewModel.login() },
+                onSignUpClick = { viewModel.signUp() },
+            )
+        }
 
         composable("login") {
             LoginScreen(
@@ -105,20 +120,27 @@ fun VisorNavHost(
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
+                speak = talk,
                 onProfileChange = { viewModel.updateProfile(it) },
-                onLogout = { viewModel.login() },
-                // onDeleteAccount: TODO wire to POST /auth/deleteAccount once Joseph's endpoint lands.
-                onHelp = { navController.navigate("help") },
+                onLogout = { viewModel.logout() },
+                // TODO: POST /auth/deleteAccount once it exists.
+                onDeleteAccount = { viewModel.confirmDeleteAccount() },
+                onHelp = { viewModel.help() },
             );
         }
 
         composable("help") {
-            HelpScreen(onBack = { navController.popBackStack() })
+            HelpScreen(onBack = {
+                viewModel.closeHelp()
+                navController.popBackStack()
+            })
         }
 
         composable("onboarding") {
-            ProfileFlowHost( // TODO: Add speak function parameter
+            ProfileFlowHost(
                 viewModel = viewModel,
+                speak = talk,
+                voiceNav = voiceNav,
                 onSetupComplete = { viewModel.home() }
             );
         }

@@ -69,6 +69,7 @@
     <string name="debug_screen_view_title" description="Title for the debug screen viewer">Quick Screen Viewer</string>
     <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
     <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>
+    <string name="debug_title_screen" description="title screen debug option">TITLE SCREEN</string>
     <string name="debug_login_screen" description="login screen debug option">LOGIN SCREEN</string>
     <string name="debug_sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
     <string name="debug_forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
