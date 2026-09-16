@@ -5,10 +5,13 @@ import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.selectors.DeviceSelector
 import com.meta.wearable.dat.core.session.DeviceSession
 import com.meta.wearable.dat.core.session.DeviceSessionState
+import com.meta.wearable.dat.core.types.RegistrationState
 import com.meta.wearable.dat.display.Display
 import com.meta.wearable.dat.display.addDisplay
 import com.meta.wearable.dat.display.removeDisplay
+import com.meta.wearable.dat.display.types.DisplayState
 import com.meta.wearable.dat.display.views.Direction
+import com.meta.wearable.dat.display.views.TextColor
 import com.meta.wearable.dat.display.views.TextStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +21,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -41,9 +46,15 @@ import ucf.visor.ui.voice.VoiceCommand
  * Connects reactively to [deviceSelector]'s active-device flow rather than
  * eagerly: on an emulator or phone with no glasses paired this never attempts
  * a session at all, so there's nothing to fail or log.
+ *
+ * [deviceSelector] is a provider, not a resolved instance, and nothing here
+ * touches it until [onWearablesReady]: constructing a DeviceSelector reaches
+ * into the SDK singleton, which throws WearablesException until
+ * `Wearables.initialize()` has run (MainActivity does that from its runtime
+ * permission callback, well after onCreate).
  */
 class GlassesNavigationController(
-    private val deviceSelector: DeviceSelector,
+    private val deviceSelector: () -> DeviceSelector,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -52,6 +63,8 @@ class GlassesNavigationController(
     private var deviceAvailabilityJob: Job? = null
     private var sessionStateJob: Job? = null
     private var sessionErrorJob: Job? = null
+    private var displayStateJob: Job? = null
+    private var displayStarted = false
 
     private var pendingScreen: GlassesNavScreen? = null
     private var lastSentScreen: GlassesNavScreen? = null
@@ -61,12 +74,32 @@ class GlassesNavigationController(
 
     @Volatile
     private var enabled = false
+    private var wearablesReady = false
 
     /** Turns the on-glasses nav UI on/off — see UserProfile.glassesTapNavigationEnabled. */
     fun setEnabled(isEnabled: Boolean) {
         if (enabled == isEnabled) return
         enabled = isEnabled
-        if (isEnabled) startWatchingForDevice() else teardown()
+        updateWatching()
+    }
+
+    /**
+     * Call once `Wearables.initialize()` has run and its permissions were
+     * granted — every SDK entry point below, starting with resolving the
+     * DeviceSelector itself, throws until then.
+     */
+    fun onWearablesReady() {
+        if (wearablesReady) return
+        wearablesReady = true
+        updateWatching()
+    }
+
+    private fun updateWatching() {
+        if (enabled && wearablesReady) {
+            if (deviceAvailabilityJob == null) startWatchingForDevice()
+        } else {
+            teardown()
+        }
     }
 
     /**
@@ -81,20 +114,38 @@ class GlassesNavigationController(
         sendPendingScreenIfReady()
     }
 
+    /**
+     * A session is only viable once the glasses are connected *and* the app has
+     * completed MWDAT's on-device registration handshake (the "Register" button
+     * on HardwarePairingScreen -> `Wearables.startRegistration`). Creating one
+     * while unregistered gets it accepted and then immediately terminated by the
+     * device (SESSION_ENDED_BY_DEVICE), which the wearer hears as a connect
+     * chime followed by a disconnect chime.
+     */
     private fun startWatchingForDevice() {
         deviceAvailabilityJob = scope.launch {
-            deviceSelector.activeDeviceFlow().collect { device ->
-                if (device != null) {
-                    if (session == null) createSession()
-                } else {
-                    tearDownSession()
+            combine(
+                deviceSelector().activeDeviceFlow(),
+                Wearables.registrationState,
+            ) { device, registration -> (device != null) to registration }
+                .distinctUntilChanged()
+                .collect { (hasDevice, registration) ->
+                    val ready = hasDevice && registration == RegistrationState.REGISTERED
+                    Log.i(
+                        TAG,
+                        "Glasses nav gate: device=$hasDevice registration=$registration ready=$ready"
+                    )
+                    if (ready) {
+                        if (session == null) createSession()
+                    } else {
+                        tearDownSession()
+                    }
                 }
-            }
         }
     }
 
     private fun createSession() {
-        Wearables.createSession(deviceSelector)
+        Wearables.createSession(deviceSelector())
             .onSuccess { created ->
                 session = created
                 sessionErrorJob = scope.launch {
@@ -120,7 +171,17 @@ class GlassesNavigationController(
         session.addDisplay()
             .onSuccess { attached ->
                 display = attached
-                sendPendingScreenIfReady()
+                Log.i(TAG, "Glasses display attached; waiting for it to start")
+                // Content sent before the display reports STARTED is dropped —
+                // attaching only allocates the capability, the glasses still
+                // have to bring the surface up.
+                displayStateJob = scope.launch {
+                    attached.state.collect { state ->
+                        Log.i(TAG, "Glasses display state: $state")
+                        displayStarted = state == DisplayState.STARTED
+                        if (displayStarted) sendPendingScreenIfReady()
+                    }
+                }
             }
             .onFailure { error, _ ->
                 Log.w(TAG, "Unable to attach glasses display: ${error.description}")
@@ -128,7 +189,7 @@ class GlassesNavigationController(
     }
 
     private fun sendPendingScreenIfReady() {
-        if (!enabled) return
+        if (!enabled || !displayStarted) return
         val screen = pendingScreen ?: return
         val activeDisplay = display ?: return
         if (screen == lastSentScreen) return
@@ -138,17 +199,31 @@ class GlassesNavigationController(
                 .sendContent {
                     flexBox(direction = Direction.COLUMN, gap = 16, padding = 24) {
                         text(screen.title, style = TextStyle.HEADING)
-                        buttonGroup {
-                            screen.items.forEach { item ->
-                                button(
-                                    item.label,
-                                    style = item.style,
-                                    iconName = item.icon,
-                                    onClick = { _commands.tryEmit(item.command) },
-                                )
+                        screen.subtitle?.let { subtitle ->
+                            text(subtitle, style = TextStyle.BODY, color = TextColor.SECONDARY)
+                        }
+                        // A buttonGroup with no buttons would put an empty
+                        // container on a 600x600 screen; the status line above
+                        // carries the screen on its own instead.
+                        if (screen.items.isNotEmpty()) {
+                            buttonGroup {
+                                screen.items.forEach { item ->
+                                    button(
+                                        item.label,
+                                        style = item.style,
+                                        iconName = item.icon,
+                                        onClick = { _commands.tryEmit(item.command) },
+                                    )
+                                }
                             }
                         }
                     }
+                }
+                .onSuccess {
+                    Log.i(
+                        TAG,
+                        "Rendered glasses screen '${screen.title}' (${screen.items.size} buttons)"
+                    )
                 }
                 .onFailure { error, _ ->
                     Log.w(TAG, "Failed to render glasses nav screen: ${error.description}")
@@ -163,6 +238,9 @@ class GlassesNavigationController(
         sessionStateJob = null
         sessionErrorJob?.cancel()
         sessionErrorJob = null
+        displayStateJob?.cancel()
+        displayStateJob = null
+        displayStarted = false
         session?.removeDisplay()
         display = null
         session?.stop()

@@ -22,10 +22,17 @@ data class GlassesNavItem(
     val style: ButtonStyle = ButtonStyle.PRIMARY,
 )
 
-/** The full on-glasses nav button set for one moment of the app's state. */
+/**
+ * The full on-glasses nav button set for one moment of the app's state.
+ * [subtitle] carries a status line for states that have no buttons to offer,
+ * so the glasses still show something the wearer can see — without it, a
+ * screen with no items would render blank and be indistinguishable from the
+ * display never having connected at all.
+ */
 data class GlassesNavScreen(
     val title: String,
     val items: List<GlassesNavItem>,
+    val subtitle: String? = null,
 )
 
 /**
@@ -41,7 +48,11 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
     if (!uiState.isAuthComplete) {
-        return GlassesNavScreen(title = "VISOR", items = emptyList())
+        return GlassesNavScreen(
+            title = "VISOR",
+            items = emptyList(),
+            subtitle = "Connected. Log in on your phone to continue.",
+        )
     }
 
     // Logout/delete-account confirmation is a modal step in front of Settings —

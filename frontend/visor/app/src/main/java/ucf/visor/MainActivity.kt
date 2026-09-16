@@ -71,6 +71,9 @@ class MainActivity : ComponentActivity() {
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
                 listener.start()
+                // Only now may the on-glasses nav touch the SDK — resolving
+                // viewModel.deviceSelector any earlier throws WearablesException.
+                glassesNav.onWearablesReady()
             }
         }
 
@@ -153,7 +156,7 @@ class MainActivity : ComponentActivity() {
             isSpeaking = { speaker.isSpeaking() },
         )
 
-        glassesNav = GlassesNavigationController(viewModel.deviceSelector)
+        glassesNav = GlassesNavigationController { viewModel.deviceSelector }
 
         // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
         // running two overlapping AudioRecord/model instances would double up
