@@ -120,7 +120,6 @@ fun VisorNavHost(
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
-                speak = talk,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
                 // TODO: POST /auth/deleteAccount once it exists.

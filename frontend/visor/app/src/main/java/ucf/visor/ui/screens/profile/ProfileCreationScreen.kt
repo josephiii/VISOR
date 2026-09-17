@@ -33,7 +33,7 @@ import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.profile.Severity
-import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.profile.VisionType
@@ -173,10 +173,14 @@ fun ProfileCreationScreen(
                 }
 
                 Step.SPEECH_RATE -> {
+                    // Onboarding stays on the three presets: a user meeting
+                    // VISOR for the first time is answering a spoken question,
+                    // not tuning a multiplier. The slider in Settings is where
+                    // the full range lives.
                     val match = when {
-                        heard.contains("slow") -> SpeechRate.SLOW
-                        heard.contains("fast") -> SpeechRate.FAST
-                        heard.contains("normal") -> SpeechRate.NORMAL
+                        heard.contains("slow") -> SpeechRates.Slow
+                        heard.contains("fast") -> SpeechRates.Fast
+                        heard.contains("normal") -> SpeechRates.Normal
                         else -> null
                     }
                     if (match != null) {
@@ -258,24 +262,22 @@ fun ProfileCreationScreen(
 
             Step.SPEECH_RATE -> {
                 Text(
-                    text = profile.speechRate.label(),
+                    text = SpeechRates.label(profile.speechRate),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Slider(
-                    value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
+                    value = profile.speechRate,
                     onValueChange = { position ->
-                        val rate = SpeechRate.entries[
-                            position.roundToInt().coerceIn(0, SpeechRate.entries.lastIndex)
-                        ]
+                        val rate = SpeechRates.snap(position)
                         if (rate != profile.speechRate) profile = profile.copy(speechRate = rate)
                     },
-                    valueRange = 0f..(SpeechRate.entries.lastIndex).toFloat(),
-                    steps = SpeechRate.entries.size - 2,
+                    valueRange = SpeechRates.Min..SpeechRates.Max,
+                    steps = SpeechRates.SliderSteps,
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics {
-                            contentDescription = "Speech rate: ${profile.speechRate.label()}"
+                            contentDescription = "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
                         },
                 )
                 Row(

@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.ui.components.AuthCodeInput
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -44,10 +43,6 @@ fun EnterCodeScreen(
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
             .verticalScroll(scrollState)
     ) {
-
-        // These screens pad only vertically, so the banner brings its own side margin.
-        VisorHeader(modifier = Modifier.padding(horizontal = 24.dp))
-
         Card(
             shape = VisorShapes.Control,
             modifier = Modifier

@@ -21,13 +21,10 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import ucf.visor.R
-import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorShapes
-import ucf.visor.ui.theme.VisorTheme
 
 // Tracking is expressed in em rather than sp so it stays proportional as the
 // wordmark grows with the user's text-size preference.
@@ -122,47 +119,6 @@ fun VisorHeader(
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
             )
-        }
-    }
-}
-
-@Preview(name = "Header - Clarity Light", showBackground = true, widthDp = 380)
-@Composable
-private fun VisorHeaderClarityLightPreview() {
-    PreviewPlate(AppTheme.ClarityLight)
-}
-
-@Preview(name = "Header - Clarity Dark", showBackground = true, widthDp = 380)
-@Composable
-private fun VisorHeaderClarityDarkPreview() {
-    PreviewPlate(AppTheme.ClarityDark)
-}
-
-@Preview(name = "Header - High Contrast Light", showBackground = true, widthDp = 380)
-@Composable
-private fun VisorHeaderHighContrastLightPreview() {
-    PreviewPlate(AppTheme.HighContrastLight)
-}
-
-@Preview(name = "Header - High Contrast Dark", showBackground = true, widthDp = 380)
-@Composable
-private fun VisorHeaderHighContrastDarkPreview() {
-    PreviewPlate(AppTheme.HighContrastDark)
-}
-
-// Worth previewing on its own: 200% is the text scale Section 508 asks the
-// layout to survive, and the wordmark is the first thing that would break.
-@Preview(name = "Header - Clarity Light at 200% text", showBackground = true, widthDp = 380)
-@Composable
-private fun VisorHeaderLargeTextPreview() {
-    PreviewPlate(AppTheme.ClarityLight, textScale = 2f)
-}
-
-@Composable
-private fun PreviewPlate(appTheme: AppTheme, textScale: Float = 1f) {
-    VisorTheme(appTheme = appTheme, textScale = textScale) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            VisorHeader(modifier = Modifier.padding(24.dp))
         }
     }
 }

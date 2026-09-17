@@ -53,6 +53,7 @@ import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.phase1.Phase1NavigationBar
 import ucf.visor.ui.screens.debug.DebugScreen
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -106,11 +107,18 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
+    //
+    // Each of these watches a one-shot navigation request and consumes it with
+    // onNavigationHandled() once the navigation has happened. The consume is
+    // not optional bookkeeping: a LaunchedEffect only re-runs when its key
+    // changes, so a flag left true would make that destination unreachable for
+    // the rest of the session. See VisorViewModel.onNavigationHandled.
     LaunchedEffect(uiState.atTitle) {
         if (uiState.atTitle) {
             navController.navigate("title") {
                 popUpTo(0) { inclusive = true }
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -118,6 +126,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isLoggingIn) {
         if (uiState.isLoggingIn) {
             navController.navigate("login") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -125,6 +134,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isSigningUp) {
         if (uiState.isSigningUp) {
             navController.navigate("sign_up") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -132,6 +142,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.hasForgottenPassword) {
         if (uiState.hasForgottenPassword) {
             navController.navigate("forgot_password") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -139,6 +150,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isEnteringCode) {
         if (uiState.isEnteringCode) {
             navController.navigate("enter_code") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -146,6 +158,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isVerifyingAccount) {
         if (uiState.isVerifyingAccount) {
             navController.navigate("verify_account") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -153,6 +166,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isResettingPassword) {
         if (uiState.isResettingPassword) {
             navController.navigate("reset_password") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -164,6 +178,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -175,6 +190,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -186,6 +202,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -193,6 +210,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isOnboarding) {
         if (uiState.isOnboarding) {
             navController.navigate("onboarding") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -204,6 +222,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -217,6 +236,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -294,6 +314,23 @@ fun VisorLayout(
 
                 is VoiceCommand.SetSpeechRate ->
                     viewModel.updateProfile(profile.copy(speechRate = command.rate))
+
+                // Spoken back, unlike the Settings slider: someone driving by
+                // voice may not be looking at the screen, so the words are the
+                // only confirmation the command landed. The new rate takes
+                // effect for the utterance after this one — MainActivity
+                // applies it on the next recomposition.
+                VoiceCommand.SpeakFaster -> {
+                    val rate = SpeechRates.faster(profile.speechRate)
+                    viewModel.updateProfile(profile.copy(speechRate = rate))
+                    talk("Faster. ${SpeechRates.spokenLabel(rate)}.")
+                }
+
+                VoiceCommand.SpeakSlower -> {
+                    val rate = SpeechRates.slower(profile.speechRate)
+                    viewModel.updateProfile(profile.copy(speechRate = rate))
+                    talk("Slower. ${SpeechRates.spokenLabel(rate)}.")
+                }
 
                 is VoiceCommand.SetVerbosity ->
                     viewModel.updateProfile(profile.copy(verbosity = command.verbosity))

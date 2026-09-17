@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -41,7 +40,6 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        VisorHeader()
         Spacer(modifier = Modifier.height(100.dp))
 
         SessionToggleButton(

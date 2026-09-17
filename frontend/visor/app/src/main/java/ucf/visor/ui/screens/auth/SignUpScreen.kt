@@ -27,7 +27,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
@@ -55,10 +54,6 @@ fun SignUpScreen(
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline, xPosPadding = -6.0f)
             .verticalScroll(scrollState)
     ) {
-
-        // These screens pad only vertically, so the banner brings its own side margin.
-        VisorHeader(modifier = Modifier.padding(horizontal = 24.dp))
-
         Card(
             shape = VisorShapes.Control,
             modifier = Modifier

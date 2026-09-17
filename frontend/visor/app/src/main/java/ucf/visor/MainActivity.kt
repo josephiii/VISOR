@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(profile.speechRate) {
-                speaker.setSpeechRate(profile.speechRate.multiplier)
+                speaker.setSpeechRate(profile.speechRate)
             }
 
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {

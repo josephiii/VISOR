@@ -1,6 +1,6 @@
 package ucf.visor.ui.voice
 
-import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.profile.TextScale
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
@@ -63,14 +63,17 @@ object VoiceCommandParser {
             containsAny(text, "delete my account", "delete account") -> VoiceCommand.DeleteAccount
             containsAny(text, "high contrast") -> VoiceCommand.ToggleHighContrast
 
+            // "normal speed" is checked first: it contains neither "slower"
+            // nor "faster", but keeping the absolute reset ahead of the
+            // relative nudges makes the ordering obvious to the next reader.
+            containsAny(text, "normal speed", "normal speech") ->
+                VoiceCommand.SetSpeechRate(SpeechRates.Normal)
+
             containsAny(text, "slower", "speak slower", "talk slower") ->
-                VoiceCommand.SetSpeechRate(SpeechRate.SLOW)
+                VoiceCommand.SpeakSlower
 
             containsAny(text, "faster", "speak faster", "talk faster") ->
-                VoiceCommand.SetSpeechRate(SpeechRate.FAST)
-
-            containsAny(text, "normal speed", "normal speech") ->
-                VoiceCommand.SetSpeechRate(SpeechRate.NORMAL)
+                VoiceCommand.SpeakFaster
 
             containsAny(text, "brief") -> VoiceCommand.SetVerbosity(Verbosity.BRIEF)
             containsAny(

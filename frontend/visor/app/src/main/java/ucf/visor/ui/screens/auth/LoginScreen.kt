@@ -23,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
@@ -48,8 +47,6 @@ fun LoginScreen(
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
             .verticalScroll(scrollState)
     ) {
-
-        VisorHeader()
         Spacer(modifier = modifier.height(20.dp))
 
         Card(

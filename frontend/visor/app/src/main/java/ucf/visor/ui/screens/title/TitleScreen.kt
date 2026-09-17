@@ -90,7 +90,7 @@ fun TitleScreen(
                 .semantics { heading() },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         VisorButton(
             text = stringResource(R.string.login_title),
@@ -102,7 +102,7 @@ fun TitleScreen(
             onClick = onSignUpClick,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         SelectableChip(
             label = if (profile.voiceNavigationEnabled) "Voice Navigation: On" else "Voice Navigation: Off",
