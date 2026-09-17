@@ -2,6 +2,7 @@ import torch
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 from PIL import Image
 import numpy as np
+from fastapi import HTTPException
 
 
 class Depth:
@@ -37,7 +38,7 @@ class Depth:
             shortSide = 518
         except Exception as error:
             print(error)
-        return error
+            raise HTTPException(status_code=500, detail=str(error)) 
     
     def runModel(self ,image):
         """
@@ -57,7 +58,7 @@ class Depth:
             
         except Exception as error:
             print(error)
-            return error
+            raise HTTPException(status_code=500, detail=str(error)) 
         
 if __name__ == "__main__":
     print("Starting download/cache of the model...")

@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, File, UploadFile
 from services.DepthEstService import Depth
+from PIL import Image
+
 
 depth_router= APIRouter(prefix="/depth", tags=["depth"])
 service= Depth()
 
 @depth_router.post("")
-async def beginDepthEst(image):
-    if not image:
+def beginDepthEst(image : UploadFile = File(...)):
+
+    image = Image.open(image.file).convert("RGB")
+    if image is None:
         raise HTTPException(status_code=400, detail="Missing image/frame")
-    response = await service.runModel(image)
-    if response:
-        return
-    else:
-        raise HTTPException(status_code=500, detail="Error running depth estimation model") 
+    response = service.runModel(image)
+    return "Success"
     
