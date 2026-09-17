@@ -16,7 +16,7 @@ class QwenVL(VLModel):
 
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.MODEL_ID,
-            device_map="cpu",
+            device_map="auto",
             dtype=torch.bfloat16
         )
 

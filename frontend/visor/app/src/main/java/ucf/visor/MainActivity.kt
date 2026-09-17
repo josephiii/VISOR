@@ -4,37 +4,34 @@ import android.Manifest.permission.BLUETOOTH
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
+import android.Manifest.permission.RECORD_AUDIO
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.Surface
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import kotlin.coroutines.resume
+import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
-// MWDAT
-import com.meta.wearable.dat.core.Wearables
-import com.meta.wearable.dat.core.types.Permission
-import com.meta.wearable.dat.core.types.PermissionStatus
-
-// VISOR
-import ucf.visor.ui.CameraAccessScaffold
-import ucf.visor.wearables.WearablesViewModel
 import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.tts.Listener
 import ucf.visor.tts.Speaker
+import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.theme.VisorTheme
-
-// For Debug Testing
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import kotlin.getValue
+import ucf.visor.ui.viewmodel.VisorViewModel
+import kotlin.coroutines.resume
+import android.util.Log
+import ucf.visor.capture.FakePhotoSource
+import ucf.visor.capture.ReadRequester
+import ucf.visor.capture.RealCapture
 
 class MainActivity : ComponentActivity() {
 
@@ -42,10 +39,10 @@ class MainActivity : ComponentActivity() {
     ///////////////////////////////////////////////////////////////////////////
     companion object {
         // Required Android permissions for the DAT SDK to function properly
-        val PERMISSIONS: Array<String> = arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET)
+        val PERMISSIONS: Array<String> = arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
     }
 
-    val viewModel: WearablesViewModel by viewModels()
+    val viewModel: VisorViewModel by viewModels()
 
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
@@ -53,6 +50,7 @@ class MainActivity : ComponentActivity() {
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
+                listener.start()
             }
         }
 
@@ -78,10 +76,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    ///////////////////////////////////////////////////////////////////////////
 
+    ///////////////////////////////////////////////////////////////////////////
+    // MAIN
     private lateinit var textReaderOCR: TextReaderOCR
     private lateinit var speaker: Speaker
+    private lateinit var listener: Listener
+    private lateinit var reader: ReadRequester
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,47 +90,35 @@ class MainActivity : ComponentActivity() {
         setContent {
             VisorTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    //RegisterScreen()
-                    //LoginScreen()
-                    //Commented out for login screen testing
-                    CameraAccessScaffold(
+                    VisorLayout(
                         viewModel = viewModel,
-                        onRequestWearablesPermission = ::requestWearablesPermission
+                        onRequestWearablesPermission = ::requestWearablesPermission,
                     )
                 }
 
             }
-
-
         }
         textReaderOCR = TextReaderOCR()
         speaker = Speaker(this)
+
+        // swap for RealPhoto once glasses session exists
+        reader = RealCapture(FakePhotoSource(this), textReaderOCR)
+
+        listener = Listener(assets) { phrase ->
+            Log.d("VISOR", "WAKE HEARD: $phrase")
+            reader.requestRead { text -> speaker.speak(text) }
+        }
     }
 
     override fun onStart() {
         super.onStart()
-        // First, ensure the app has necessary Android permissions
         permissionCheckLauncher.launch(PERMISSIONS)
     }
 
-    // make sure these are actaully destroyed
-    fun onDestory() {
+    override fun onDestroy() {
         super.onDestroy()
         textReaderOCR.close()
         speaker.shutdown()
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Insert the component here to view it with Visor Themes applied.
-// This will also work for components with parameters, just assign a dummy param to get it to work.
-@Preview
-@Composable
-fun PreviewWithTheme() {
-    VisorTheme {
-        Surface {
-            // Place component here.
-            //...
-        }
+        listener.shutdown()
     }
 }
