@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
@@ -21,11 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
+import ucf.visor.ui.components.scrollIndicator
+import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -40,17 +40,20 @@ fun ResetPasswordScreen(
     var password by remember { mutableStateOf("") }
     var confirmedPassword by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(vertical = 24.dp)
-            .verticalScroll(rememberScrollState())
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .verticalScroll(scrollState)
     ) {
 
         VisorHeader()
 
         Card(
+            shape = VisorShapes.Control,
             modifier = Modifier
                 .padding(
                     horizontal = 35.dp,
@@ -58,8 +61,8 @@ fun ResetPasswordScreen(
                 )
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    shape = CutCornerShape(8.dp)
+                    color = MaterialTheme.colorScheme.outline,
+                    shape = VisorShapes.Control
                 ),
         ) {
             Column(
@@ -70,7 +73,7 @@ fun ResetPasswordScreen(
 
                 Text(
                     text = stringResource(R.string.reset_password_title),
-                    fontSize = 30.sp,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
 

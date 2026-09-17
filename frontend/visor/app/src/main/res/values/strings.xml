@@ -69,6 +69,7 @@
     <string name="debug_screen_view_title" description="Title for the debug screen viewer">Quick Screen Viewer</string>
     <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
     <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>
+    <string name="debug_title_screen" description="title screen debug option">TITLE SCREEN</string>
     <string name="debug_login_screen" description="login screen debug option">LOGIN SCREEN</string>
     <string name="debug_sign_up_screen" description="sign up screen debug option">SIGN UP SCREEN</string>
     <string name="debug_forgot_password_screen" description="forgot password screen debug option">FORGOT PASSWORD SCREEN</string>
@@ -178,11 +179,50 @@
     <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
     <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
     <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode Configuration</string>
-    
+
     <!-- VISOR Session Modes -->
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
 
+    <!-- Script strings -->
+    <string-array name="hazard_awareness_scripts">
+        <item>A box is on the floor ahead, slightly to your right. It partially blocks the walkway.</item>
+        <item>A chair extends into the aisle on your left. It is pulled out from the table.</item>
+        <item>An electrical cord lies across the walkway ahead. It runs from left to right.</item>
+        <item>A cabinet door is open on your right. It projects outward above the counter.</item>
+        <item>A cleaning cart extends into the walkway ahead on your right</item>
+        <item>A cardboard box sits on the floor ahead on your left. It extends from the shelf into the aisle.</item>
+        <item>The floor mat ahead has a corner folded upward near the entrance doors.</item>
+        <item>A bag lies on the floor directly ahead, between the two tables.</item>
+        <item>A laundry basket sits on the floor directly ahead, in the center of the aisle.</item>
+        <item>An umbrella lies on the floor ahead on your left. Its handle extends into the space between the table and chairs.</item>
+    </string-array>
+
+    <string-array name="scene_description_scripts">
+        <item>A playground has a red slide near the center and a yellow bridge to the right. A picnic table is in the foreground on the right. Trees surround the play area.</item>
+        <item>A waiting room has chairs along the wall on your left. A reception desk is ahead, with a doorway to its right.</item>
+        <item>A plate is in the center of the table setting. A fork is to the left of the plate, and a cup is beyond it on the right.</item>
+        <item>A living room has a sofa on your left and an armchair on your right. A coffee table stands between them.</item>
+        <item>A hallway extends ahead, with doors along the left wall. A cleaning cart stands on the right, and a doorway is at the far end.</item>
+        <item>Grocery shelves line both sides of the aisle. Boxes of cereal fill the shelves on your left. An aisle sign hangs overhead.</item>
+        <item>Glass entrance doors are ahead. A floor mat lies in front of the doors, and a bench stands to the right.</item>
+        <item>A community room contains several tables surrounded by chairs. A refreshment table stands along the wall on your right.</item>
+        <item>Washing machines line the left wall, and dryers line the right wall. A laundry basket sits in the aisle between them.</item>
+        <item>A waiting area has chairs along the wall on your right and a small table on your left. A bell and a sign sit on the table.</item>
+    </string-array>
+
+    <string-array name="reading_assistance_scripts">
+        <item>The sign says: Reception. Please check in at the front desk.</item>
+        <item>The sign says: Room two hundred four. Vision Clinic.</item>
+        <item>Library hours. Monday through Friday, nine A.M. to five P.M. Saturday and Sunday, closed.</item>
+        <item>Drinks. Tea, two dollars. Coffee, three dollars. Water, one dollar.</item>
+        <item>The sign says: Rooms two hundred one through two hundred five. An arrow points left.</item>
+        <item>The sign says: Aisle four. Cereal. Oatmeal.</item>
+        <item>The door reads: Main entrance. Pull.</item>
+        <item>The notice says: Art group. Tuesday. Two P.M.</item>
+        <item>The sign says: Please remove clothes when cycle ends.</item>
+        <item>The sign says: Please ring bell for assistance.</item>
+    </string-array>
 
 </resources>

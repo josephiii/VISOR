@@ -1,6 +1,7 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -10,6 +11,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import ucf.visor.ui.theme.VisorShapes
 
 // Text fields to collect user input (e.g., auth credentials).
 // Can be used for usernames and passwords.
@@ -33,7 +36,10 @@ fun VisorTextField(
                 VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
-        modifier = modifier.fillMaxWidth(fraction = 0.9f)
+        shape = VisorShapes.Control,
+        modifier = modifier
+            .fillMaxWidth(fraction = 0.9f)
+            .heightIn(min = 56.dp)
     )
 }
 
