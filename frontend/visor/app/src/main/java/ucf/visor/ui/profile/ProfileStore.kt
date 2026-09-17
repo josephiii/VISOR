@@ -72,15 +72,21 @@ class ProfileStore(context: Context) {
      * old string sitting under the same name.
      */
     private fun speechRateOrDefault(default: Float): Float {
-        if (prefs.contains(KEY_SPEECH_RATE_MULTIPLIER)) {
-            return prefs.getFloat(KEY_SPEECH_RATE_MULTIPLIER, default)
+        val saved = if (prefs.contains(KEY_SPEECH_RATE_MULTIPLIER)) {
+            prefs.getFloat(KEY_SPEECH_RATE_MULTIPLIER, default)
+        } else {
+            when (prefs.getString(KEY_SPEECH_RATE, null)) {
+                "SLOW" -> SpeechRates.Slow
+                "NORMAL" -> SpeechRates.Normal
+                "FAST" -> SpeechRates.Fast
+                else -> default
+            }
         }
-        return when (prefs.getString(KEY_SPEECH_RATE, null)) {
-            "SLOW" -> SpeechRates.Slow
-            "NORMAL" -> SpeechRates.Normal
-            "FAST" -> SpeechRates.Fast
-            else -> default
-        }
+        // Clamped on the way in, not just on the way out: the ceiling has moved
+        // once already, and a profile saved under a higher one would otherwise
+        // keep feeding an out-of-range rate to the TTS engine while the slider
+        // showed it pinned at the top.
+        return saved.coerceIn(SpeechRates.Min, SpeechRates.Max)
     }
 
     private inline fun <reified T : Enum<T>> enumOrDefault(key: String, default: T): T {

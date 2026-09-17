@@ -37,16 +37,21 @@ object SpeechRates {
      */
     const val BaselineSyllablesPerSecond = 5f
 
-    /** The fastest VISOR offers: 25 syllables a second. */
-    const val MaxSyllablesPerSecond = 25f
-
     /** Slowest offered. Below this, TTS engines start to distort badly. */
     const val Min = 0.5f
 
     /** The slider's granularity, and the nudge voice control falls back to. */
     const val Step = 0.25f
 
-    val Max = MaxSyllablesPerSecond / BaselineSyllablesPerSecond
+    /**
+     * Fastest offered - about 15 syllables a second at [BaselineSyllablesPerSecond].
+     *
+     * The ceiling is a deliberate product decision rather than an engine limit:
+     * Android TTS engines clamp the rate themselves, at different values, and
+     * the clamp is not queryable. Holding the slider inside a range engines
+     * honour keeps its top notches from silently doing nothing.
+     */
+    const val Max = 3.0f
 
     // The speeds VISOR shipped before the slider went continuous.
     const val Slow = 0.75f

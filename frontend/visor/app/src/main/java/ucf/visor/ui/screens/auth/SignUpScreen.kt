@@ -3,6 +3,7 @@ package ucf.visor.ui.screens.auth
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -50,8 +51,9 @@ fun SignUpScreen(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .fillMaxSize()
             .padding(vertical = 24.dp)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline, xPosPadding = -6.0f)
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
             .verticalScroll(scrollState)
     ) {
         Card(
