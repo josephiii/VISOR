@@ -170,64 +170,71 @@ Changes by:josephiii
 - Added new dependencies to the `requirements.txt` file, including `numpy`, `transformers`, `accelerate`, `pillow`, `torchvision`, and `python-multipart`
 
 Changes by:josephiii
+
 ## July 10, 2026
-* Updated the `.github/workflows/summarizer.yaml` file to modify the prompt for the AI model, removing the phrase "At the end of each entry" to improve the clarity of the instructions.
-* Modified the `Add the author` step in the workflow file to add a newline character after the author's name.
-* No other code changes were made, but the workflow file was updated to reflect the changes in the instructions.
+
+- Updated the `.github/workflows/summarizer.yaml` file to modify the prompt for the AI model, removing the phrase "At the end of each entry" to improve the clarity of the instructions.
+- Modified the `Add the author` step in the workflow file to add a newline character after the author's name.
+- No other code changes were made, but the workflow file was updated to reflect the changes in the instructions.
 
 Changes by:josephiii
 
 ## July 14, 2026
-* Added the Google ML Kit Text Recognition library to the project by including `com.google.mlkit:text-recognition:16.0.1` in the `build.gradle.kts` file.
-* Created a new class `TextReaderOCR` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.ocr` package, which provides a method `readText` to recognize text from a bitmap image using the Google ML Kit Text Recognition library.
-* Added a new class `Speaker` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.tts` package, which provides methods to speak text using the Android Text-to-Speech (TTS) API.
-* Modified the `MainActivity` class to include instances of `TextReaderOCR` and `Speaker`, and to initialize and shut down the `Speaker` instance in the `onStart` and `onDestroy` methods respectively.
-* Implemented the `onDestroy` method in `MainActivity` to close the `TextReaderOCR` instance and shut down the `Speaker` instance when the activity is destroyed.
+
+- Added the Google ML Kit Text Recognition library to the project by including `com.google.mlkit:text-recognition:16.0.1` in the `build.gradle.kts` file.
+- Created a new class `TextReaderOCR` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.ocr` package, which provides a method `readText` to recognize text from a bitmap image using the Google ML Kit Text Recognition library.
+- Added a new class `Speaker` in `com.meta.wearable.dat.externalsampleapps.cameraaccess.tts` package, which provides methods to speak text using the Android Text-to-Speech (TTS) API.
+- Modified the `MainActivity` class to include instances of `TextReaderOCR` and `Speaker`, and to initialize and shut down the `Speaker` instance in the `onStart` and `onDestroy` methods respectively.
+- Implemented the `onDestroy` method in `MainActivity` to close the `TextReaderOCR` instance and shut down the `Speaker` instance when the activity is destroyed.
 
 Changes by:josephiii
 
 ## July 14, 2026
-* Modified the `.gitignore` file to include new ignore rules for Python, virtual environments, and cache directories, and removed some unnecessary ignores.
-* Updated the `backend/requirements.txt` file to add new dependencies, including `torch`, `torchvision`, `transformers`, `accelerate`, `pillow`, `qwen-vl-utils`, and `einops`.
-* Introduced a new class `Gemma` in `backend/services/vision_language_models/model_gemma.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
-* Introduced a new class `Moondream` in `backend/services/vision_language_models/model_moondream.py`, which inherits from the `VLModel` class and uses the `AutoModelForCausalLM` model from the `transformers` library.
-* Introduced a new class `QwenVL` in `backend/services/vision_language_models/model_qwen.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
-* Modified the `model_manager.py` file to import and use the new `Gemma` model instead of the old `Qwen2_VL` model.
-* Removed the `model_qwen2_vl.py` file as it is no longer needed.
+
+- Modified the `.gitignore` file to include new ignore rules for Python, virtual environments, and cache directories, and removed some unnecessary ignores.
+- Updated the `backend/requirements.txt` file to add new dependencies, including `torch`, `torchvision`, `transformers`, `accelerate`, `pillow`, `qwen-vl-utils`, and `einops`.
+- Introduced a new class `Gemma` in `backend/services/vision_language_models/model_gemma.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
+- Introduced a new class `Moondream` in `backend/services/vision_language_models/model_moondream.py`, which inherits from the `VLModel` class and uses the `AutoModelForCausalLM` model from the `transformers` library.
+- Introduced a new class `QwenVL` in `backend/services/vision_language_models/model_qwen.py`, which inherits from the `VLModel` class and uses the `AutoModelForImageTextToText` model from the `transformers` library.
+- Modified the `model_manager.py` file to import and use the new `Gemma` model instead of the old `Qwen2_VL` model.
+- Removed the `model_qwen2_vl.py` file as it is no longer needed.
 
 Changes by:josephiii
 
 ## July 14, 2026
-* Added a new implementation for the ProfileCreationScreen, which guides the user through a series of questions to help them set up their profile.
-* Implemented a new ProfileFlowHost composable function, which hosts the profile creation wizard and persists the result.
-* Added a new ProfileStore class, which handles local, on-device profile storage.
-* Implemented a new SettingsScreen, which allows users to modify their profile settings.
-* Added a new UserProfile data model, which represents the user's profile data.
-* Introduced a new VisorPalette class, which defines accessibility-first color palettes for the app. 
-* Added new dependencies to the build.gradle.kts file, including androidx.compose.ui:ui-tooling-preview and androidx.compose.ui:ui-tooling.
+
+- Added a new implementation for the ProfileCreationScreen, which guides the user through a series of questions to help them set up their profile.
+- Implemented a new ProfileFlowHost composable function, which hosts the profile creation wizard and persists the result.
+- Added a new ProfileStore class, which handles local, on-device profile storage.
+- Implemented a new SettingsScreen, which allows users to modify their profile settings.
+- Added a new UserProfile data model, which represents the user's profile data.
+- Introduced a new VisorPalette class, which defines accessibility-first color palettes for the app.
+- Added new dependencies to the build.gradle.kts file, including androidx.compose.ui:ui-tooling-preview and androidx.compose.ui:ui-tooling.
 
 Changes by:AMDev80
 
 ## July 17, 2026
-* Changed the model implementation in `VLMService.py` from `Qwen2_VL` to `QwenVL` to utilize a potentially more accurate vision language model.
-* Updated the model selection in `model_manager.py` to use `QwenVL` for testing purposes.
-* Modified the device map in `model_qwen.py` to utilize the CPU instead of automatic device mapping for the `QwenVL` model, potentially improving inference performance.
-* Added a new documentation file `VLM.md` to provide an overview of the vision language model, its components, and testing procedures.
-* Updated `AndroidManifest.xml` to allow cleartext traffic, which may be necessary for certain API requests, but should be removed in production.
-* Modified `MainActivity.kt` to comment out the `CameraAccessScaffold` and uncomment the `RegisterScreen`, potentially changing the default startup screen.
-* Changed the image compression format and quality in `SharePhotoDialog.kt` from JPEG with 80% quality to JPEG with 90% quality, potentially improving image quality.
-* Updated the API request in `SharePhotoDialog.kt` to use a multipart body with a JPEG image and a prompt, potentially simplifying the request process and improving performance.
+
+- Changed the model implementation in `VLMService.py` from `Qwen2_VL` to `QwenVL` to utilize a potentially more accurate vision language model.
+- Updated the model selection in `model_manager.py` to use `QwenVL` for testing purposes.
+- Modified the device map in `model_qwen.py` to utilize the CPU instead of automatic device mapping for the `QwenVL` model, potentially improving inference performance.
+- Added a new documentation file `VLM.md` to provide an overview of the vision language model, its components, and testing procedures.
+- Updated `AndroidManifest.xml` to allow cleartext traffic, which may be necessary for certain API requests, but should be removed in production.
+- Modified `MainActivity.kt` to comment out the `CameraAccessScaffold` and uncomment the `RegisterScreen`, potentially changing the default startup screen.
+- Changed the image compression format and quality in `SharePhotoDialog.kt` from JPEG with 80% quality to JPEG with 90% quality, potentially improving image quality.
+- Updated the API request in `SharePhotoDialog.kt` to use a multipart body with a JPEG image and a prompt, potentially simplifying the request process and improving performance.
 
 Changes by:LucSal6868
 
 ## July 21, 2026
-* Added user authentication to the `answer_question` method in `VLMService.py` using Supabase client, which checks if a user exists and raises an HTTP exception if the token is invalid or expired.
-* Modified the `answer_question` method to accept a token, prompt, and image bytes, and to use a temporary file for the image.
-* Updated the `model_manager.py` file to test the `describe_image` method with different images and prompts.
-* Added new images to the `vision_language_models/images` directory for testing purposes.
-* Created a new file `VLM tests.md` in the `documentation/testing` directory to document simple VLM tests, including descriptions of images and expected model outputs.
-* Added images to the `documentation/testing/images` directory to support the VLM tests documentation. 
-* [No code changed, but a commit was made] for the following files: 
+
+- Added user authentication to the `answer_question` method in `VLMService.py` using Supabase client, which checks if a user exists and raises an HTTP exception if the token is invalid or expired.
+- Modified the `answer_question` method to accept a token, prompt, and image bytes, and to use a temporary file for the image.
+- Updated the `model_manager.py` file to test the `describe_image` method with different images and prompts.
+- Added new images to the `vision_language_models/images` directory for testing purposes.
+- Created a new file `VLM tests.md` in the `documentation/testing` directory to document simple VLM tests, including descriptions of images and expected model outputs.
+- Added images to the `documentation/testing/images` directory to support the VLM tests documentation.
+- [No code changed, but a commit was made] for the following files:
   - backend/services/vision_language_models/images/dangerous.jpg
   - backend/services/vision_language_models/images/dog.jpg
   - backend/services/vision_language_models/images/edge.jpg
@@ -245,23 +252,14 @@ Changes by:LucSal6868
 
 Changes by:Jaurelus
 
-null
+## July 09, 2026
 
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
+- Refactored the `Depth` class to include a `chooseDevice` method that determines the device type to run the model in, either GPU (cuda), Apple Silicon (mps), or CPU.
+- Added an `__init__` method to the `Depth` class that loads the pre-trained model and image processor once, improving efficiency.
+- Modified the `runModel` method to use the pre-loaded model and image processor, and to run the inference part of the model on the chosen device.
+- Changed the `compressImage` method to be an instance method, but the implementation remains the same.
+- Removed unnecessary code and improved error handling in the `runModel` method.
+- Updated the model and image processor to use the `torch_dtype` and `device` attributes for more efficient processing.
 
 Changes by:Jaurelus
 
@@ -292,24 +290,3 @@ Changes by:Jaurelus
 null
 
 Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
-null
-
-Changes by:AMDev80
-
