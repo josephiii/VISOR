@@ -74,3 +74,10 @@ python-multipart
 qwen-vl-utils
 
 einops
+<<<<<<< HEAD
+=======
+
+sherpa-onnx
+sentencepiece
+pypinyin
+>>>>>>> main

@@ -24,6 +24,10 @@ android {
         compose = true
     }
 
+    androidResources {
+        noCompress += listOf("onnx", "bin", "tflite", "ort")
+    }
+
     defaultConfig {
         applicationId = "ucf.visor"
         minSdk = 31
@@ -94,6 +98,7 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.k2fsa.sherpa.onnx:sherpa-onnx-android:1.13.5")
 
     // MWDAT
     implementation(libs.mwdat.core)

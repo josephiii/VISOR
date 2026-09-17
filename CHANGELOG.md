@@ -262,3 +262,31 @@ Changes by:Jaurelus
 - Updated the model and image processor to use the `torch_dtype` and `device` attributes for more efficient processing.
 
 Changes by:Jaurelus
+
+null
+
+Changes by:AMDev80
+
+null
+
+Changes by:LucSal6868
+
+null
+
+Changes by:LucSal6868
+
+null
+
+Changes by:LucSal6868
+
+null
+
+Changes by:AMDev80
+
+null
+
+Changes by:Jaurelus
+
+null
+
+Changes by:AMDev80

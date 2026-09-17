@@ -81,6 +81,8 @@ fun DebugScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        ///////////////////////////////////////////////////////////////////////
+        // PHASE 1 TEST
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -95,50 +97,31 @@ fun DebugScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.mock_device_kit_title),
+                        text = stringResource(R.string.p1_test_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        text = stringResource(
-                            R.string.devices_paired_count,
-                            uiState.pairedDevices.size
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                    )
                 }
                 Text(
-                    text = stringResource(R.string.mock_device_kit_description),
+                    text = stringResource(R.string.p1_test_description),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 HorizontalDivider()
 
-                if (uiState.isEnabled) {
-                    ActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.disable_mock_device_kit),
-                        onClick = { debugViewModel.disable() },
-                    )
-                } else {
-                    ActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.enable_mock_device_kit),
-                        onClick = { debugViewModel.enable() },
-                    )
-                }
-
-                if (uiState.isEnabled) {
-                    ActionButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(R.string.pair_rayban_meta),
-                        onClick = { debugViewModel.pairRaybanMeta() },
-                        enabled = uiState.pairedDevices.size < 3,
-                    )
-                }
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.p1_initiate_button),
+                    onClick = {
+                        onDismiss()
+                        visorViewModel.initiatePhase1()
+                        visorViewModel.home()
+                    }
+                )
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+        // SCREEN VIEWER
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -262,6 +245,66 @@ fun DebugScreen(
                         visorViewModel.toggleNavigationBar()
                     }
                 )
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // MOCK DEVICE KIT
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.mock_device_kit_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.devices_paired_count,
+                            uiState.pairedDevices.size
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.mock_device_kit_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                HorizontalDivider()
+
+                if (uiState.isEnabled) {
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.disable_mock_device_kit),
+                        onClick = { debugViewModel.disable() },
+                    )
+                } else {
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.enable_mock_device_kit),
+                        onClick = { debugViewModel.enable() },
+                    )
+                }
+
+                if (uiState.isEnabled) {
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.pair_rayban_meta),
+                        onClick = { debugViewModel.pairRaybanMeta() },
+                        enabled = uiState.pairedDevices.size < 3,
+                    )
+                }
             }
         }
 

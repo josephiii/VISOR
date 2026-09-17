@@ -31,7 +31,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.camera.Stream
-import com.meta.wearable.dat.camera.addStream
+import com.meta.wearable.dat.camera.addCamera
 import com.meta.wearable.dat.camera.types.PhotoData
 import com.meta.wearable.dat.camera.types.StreamConfiguration
 import com.meta.wearable.dat.camera.types.StreamError
@@ -160,14 +160,14 @@ class StreamViewModel(
                     stream?.stop()
                     stream = null
                     session
-                        ?.addStream(
+                        ?.addCamera(
                             StreamConfiguration(
                                 videoQuality = VideoQuality.MEDIUM,
                                 frameRate = 24
                             )
                         )
-                        ?.onSuccess { addedStream ->
-                            stream = addedStream
+                        ?.onSuccess { addedCamera ->
+                            stream = addedCamera.stream
                             videoJob = viewModelScope.launch {
                                 Log.d(TAG, "Collecting video frames from stream")
                                 stream?.videoStream?.collect { handleVideoFrame(it) }

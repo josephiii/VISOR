@@ -5,32 +5,24 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,7 +38,8 @@ import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.BuildConfig
-import ucf.visor.R
+import ucf.visor.ui.components.VisorNavigationBar
+import ucf.visor.ui.phase1.Phase1NavigationBar
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -79,6 +71,7 @@ fun VisorLayout(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // OBSERVERS
+    ///////////////////////////////////////////////////////////////////////////
     // General State Observers:
     // Observe recent errors and show snackbar.
     LaunchedEffect(uiState.recentError) {
@@ -88,6 +81,7 @@ fun VisorLayout(
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
     // Observe LoginScreen
     LaunchedEffect(uiState.isLoggingIn) {
@@ -133,7 +127,7 @@ fun VisorLayout(
 
     // Observe HomeScreen
     LaunchedEffect(uiState.goingHome) {
-        if (uiState.goingHome && uiState.isAuthComplete) {
+        if (uiState.goingHome) { // FIXME: for PHASE 1, remove "&& uiState.isAuthComplete"
             navController.navigate("home") {
                 launchSingleTop = true
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -171,6 +165,20 @@ fun VisorLayout(
         }
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Phase 1 Observers
+
+    LaunchedEffect(uiState.isConfiguring) {
+        if (uiState.isConfiguring) {
+            navController.navigate("p1_test_mode_config") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
+        }
+    }
+
+
     // This is the Active Screen Surface!
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -207,7 +215,7 @@ fun VisorLayout(
             },
             floatingActionButton = {
                 // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
-                if (BuildConfig.DEBUG) {
+                if (BuildConfig.DEBUG && !uiState.phase1Initiated) {
                     FloatingActionButton(
                         onClick = { viewModel.showDebugMenu() },
                     ) {
@@ -233,62 +241,30 @@ fun VisorLayout(
             content = { innerPadding ->
                 Column(
                     modifier = Modifier
-                        .padding(innerPadding)
                         .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     // Sets the routes for the screens and is where the observers direct their uiState traffic
-                    Box(modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(innerPadding)
+                    ) {
                         VisorNavHost(
                             navController = navController,
                             viewModel = viewModel
                         )
                     }
 
-                    // Once the user is fully logged in and directed home.
-                    if (uiState.isAuthComplete) {
-                        // Bottom Navigation Bar
-                        NavigationBar(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentColor = MaterialTheme.colorScheme.contentColorFor(
-                                NavigationBarDefaults.containerColor
-                            )
-                        ) {
-                            NavigationBarItem(
-                                selected = currentRoute == "home",
-                                onClick = { viewModel.home() },
-                                icon = {
-                                    Icon(
-                                        Icons.Default.Home,
-                                        contentDescription = "Home"
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.home_screen_title)) }
+                    // Once the user is fully logged in...
+                    if (uiState.navigationBarEnabled) {
+                        // Bottom Navigation Bar for VISOR
+                        VisorNavigationBar(currentRoute, viewModel)
+                    }
 
-                            )
-                            NavigationBarItem(
-                                selected = currentRoute == "settings",
-                                onClick = { viewModel.settings() },
-                                icon = {
-                                    Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = "Profile Settings"
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.user_profile_navbar_title)) }
-                            )
-                            NavigationBarItem(
-                                selected = currentRoute == "hardware_pairing",
-                                onClick = { viewModel.hardwarePairing() },
-                                icon = {
-                                    Icon(
-                                        Icons.Default.Bluetooth,
-                                        contentDescription = "Hardware"
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.hardware_pairing_navbar_title)) }
-                            )
-                        }
+                    // FOR PHASE 1
+                    if (uiState.phase1Initiated) {
+                        Phase1NavigationBar(currentRoute, viewModel)
                     }
                 }
             }
