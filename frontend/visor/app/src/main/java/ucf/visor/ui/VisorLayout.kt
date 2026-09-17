@@ -175,8 +175,17 @@ fun VisorLayout(
         if (uiState.goingHome) { // FIXME: for PHASE 1, remove "&& uiState.isAuthComplete"
             navController.navigate("home") {
                 launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
+                if (uiState.phase1Initiated) {
+                    // Phase 1 replaces the signed-out flow outright, so nothing
+                    // from it stays reachable. Popping only as far as the start
+                    // destination left TitleScreen sitting under Phase 1's home:
+                    // one press of back and a tester was looking at Log In /
+                    // Sign Up again, with the Phase 1 bar still on screen.
+                    popUpTo(0) { inclusive = true }
+                } else {
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    restoreState = true
+                }
             }
             viewModel.onNavigationHandled()
         }

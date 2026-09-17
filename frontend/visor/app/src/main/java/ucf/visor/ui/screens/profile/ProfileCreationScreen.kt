@@ -68,8 +68,9 @@ private enum class Step(val title: String, val spokenPrompt: String) {
     VOICE_NAV(
         "Navigate VISOR by voice?",
         "You can navigate VISOR by voice, any time, by saying \"VISOR GO\" followed by " +
-                "a command, like \"open settings\" or \"go home\". This is on by default. " +
-                "Say yes to keep it on, or no to turn it off — you can always change this later in Settings."
+                "a command, like \"open settings\" or \"go home\". It stays off unless you " +
+                "turn it on. Say yes to turn it on, or no to leave it off — you can always " +
+                "change this later in Settings."
     ),
     VISION(
         "Which of these describe what you experience?",
@@ -116,9 +117,17 @@ fun ProfileCreationScreen(
 
     // VOICE NAVIGATION
     LaunchedEffect(step) {
+        // Speaking is gated on the same preference as listening. Onboarding used
+        // to read every prompt aloud whether or not the user had asked for voice
+        // at all, which meant a user who deliberately left it off on the title
+        // screen still got talked at the moment they signed up.
+        //
+        // Read fresh on each step rather than captured once: the VOICE_NAV step
+        // below can turn it on mid-wizard, and the steps after it should start
+        // speaking when it does.
+        if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         speak(step.spokenPrompt)
         val askedStep = step
-        if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()
             if (heard.isNullOrEmpty()) return@captureUtterance

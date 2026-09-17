@@ -2,8 +2,11 @@ package ucf.visor.ui.screens.auth
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -30,59 +33,73 @@ fun VerifyAccountScreen(
 ) {
     val scrollState = rememberScrollState()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(vertical = 24.dp)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState)
-    ) {
-        Card(
-            shape = VisorShapes.Control,
+    // Centred on the screen: the card is the only thing here, so anchoring it to
+    // the top left it stranded under a band of empty space.
+    //
+    // The minimum height is what makes the centring work at all: inside a
+    // verticalScroll the height is unbounded, so a centre arrangement has nothing
+    // to centre against and the content just stacks from the top. Given a floor of
+    // one screenful the arrangement has something to work with, and the column
+    // still grows and scrolls when a large text size overflows it.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val viewportHeight = maxHeight
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             modifier = Modifier
-                .padding(
-                    horizontal = 35.dp,
-                    vertical = 20.dp
-                )
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = VisorShapes.Control
-                ),
+                .fillMaxWidth()
+                .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+                .verticalScroll(scrollState)
+                .heightIn(min = viewportHeight)
+                .padding(vertical = 24.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(vertical = 20.dp)
+            Card(
+                shape = VisorShapes.Control,
+                modifier = Modifier
+                    .padding(
+                        horizontal = 35.dp,
+                        vertical = 20.dp
+                    )
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.outline,
+                        shape = VisorShapes.Control
+                    ),
             ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(vertical = 20.dp)
+                ) {
 
-                Text(
-                    text = stringResource(R.string.verify_account_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .padding(15.dp)
-                )
+                    Text(
+                        text = stringResource(R.string.verify_account_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .padding(15.dp)
+                    )
 
-                Text(
-                    text = stringResource(R.string.verify_account_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                    Text(
+                        text = stringResource(R.string.verify_account_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
 
-                Text(
-                    text = "test@email.com", // TODO: add user email here.
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                    Text(
+                        text = "test@email.com", // TODO: add user email here.
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                VisorButton(
-                    text = stringResource(R.string.send_code_button_text),
-                    width = 0.5f,
-                    onClick = {
-                        onSendCodeClick()
-                    }
-                )
+                    VisorButton(
+                        text = stringResource(R.string.send_code_button_text),
+                        width = 0.5f,
+                        onClick = {
+                            onSendCodeClick()
+                        }
+                    )
+                }
             }
         }
     }

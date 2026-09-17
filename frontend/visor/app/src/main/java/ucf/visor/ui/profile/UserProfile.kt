@@ -153,8 +153,11 @@ data class UserProfile(
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
-    /** Say "VISOR GO" to navigate by voice. Defaults on, matching that TTS
-     *  and the OCR wake-word listener are already always-on with no toggle. */
+    /**
+     * Say "VISOR GO" to navigate by voice. Off until the user asks for it, from
+     * the toggle on TitleScreen or the one in Settings — VISOR does not start
+     * listening, or talking through onboarding, on someone's behalf.
+     */
     val voiceNavigationEnabled: Boolean = false,
 )
 
