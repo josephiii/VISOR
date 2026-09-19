@@ -62,11 +62,27 @@ class MainActivity : ComponentActivity() {
 
     val viewModel: VisorViewModel by viewModels()
 
+    // onStart() re-runs the permission check on every foreground transition
+    // (including the OS permission dialog's own return trip on first launch,
+    // which re-enters onStart() before the user ever leaves this screen) so
+    // this callback fires far more than once per process. Wearables.initialize()
+    // and listener.start() are one-time setup, not idempotent no-ops: calling
+    // them again mid-session restarts the SDK's internal BLE device-detection
+    // provider (visible in logcat as "BluetoothDeviceDetectionProvider already
+    // started" / "Wearables SDK already initialized"), and any DAT session
+    // opened in the ~150ms the BLE stack takes to settle after that restart
+    // gets rejected as START_ERROR_DEVICE_UNAVAILABLE — which is exactly the
+    // connect-chime-then-disconnect-chime the user hears with no glasses UI
+    // ever appearing. Guard so the one-time init actually runs once.
+    private var wearablesInitialized = false
+
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
             viewModel.onPermissionsResult(permissionsResult) @androidx.annotation.RequiresPermission(
                 android.Manifest.permission.RECORD_AUDIO
             ) {
+                if (wearablesInitialized) return@onPermissionsResult
+                wearablesInitialized = true
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)

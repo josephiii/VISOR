@@ -5,6 +5,7 @@ import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.selectors.DeviceSelector
 import com.meta.wearable.dat.core.session.DeviceSession
 import com.meta.wearable.dat.core.session.DeviceSessionState
+import com.meta.wearable.dat.core.types.LinkState
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.meta.wearable.dat.display.Display
 import com.meta.wearable.dat.display.addDisplay
@@ -15,6 +16,7 @@ import com.meta.wearable.dat.display.views.TextColor
 import com.meta.wearable.dat.display.views.TextStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -23,6 +25,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -115,25 +120,38 @@ class GlassesNavigationController(
     }
 
     /**
-     * A session is only viable once the glasses are connected *and* the app has
-     * completed MWDAT's on-device registration handshake (the "Register" button
-     * on HardwarePairingScreen -> `Wearables.startRegistration`). Creating one
-     * while unregistered gets it accepted and then immediately terminated by the
-     * device (SESSION_ENDED_BY_DEVICE), which the wearer hears as a connect
-     * chime followed by a disconnect chime.
+     * A session is only viable once the glasses' own transport is up
+     * ([LinkState.CONNECTED]) *and* the app has completed MWDAT's on-device
+     * registration handshake (the "Register" button on HardwarePairingScreen ->
+     * `Wearables.startRegistration`). Starting one any earlier gets it accepted
+     * and then immediately terminated by the device, which the wearer hears as a
+     * connect chime followed by a disconnect chime, with no glasses UI.
+     *
+     * Device presence alone is not that signal: `activeDeviceFlow()` goes
+     * non-null the moment AutoDeviceSelector *picks* a device, which happens
+     * while the SDK's BLE/socket handshake to it is still in flight. A session
+     * created against that half-open link is accepted, then `start()` is refused
+     * with START_ERROR_DEVICE_UNAVAILABLE -> SESSION_ENDED_BY_DEVICE ->
+     * NO_ELIGIBLE_DEVICE. Only `Device.linkState` reports the transport itself,
+     * so that is what gates the session here.
      */
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun startWatchingForDevice() {
         deviceAvailabilityJob = scope.launch {
             combine(
-                deviceSelector().activeDeviceFlow(),
+                deviceSelector().activeDeviceFlow().flatMapLatest { deviceId ->
+                    deviceId?.let { id -> Wearables.devicesMetadata[id]?.map { it.linkState } }
+                        ?: flowOf<LinkState?>(null)
+                },
                 Wearables.registrationState,
-            ) { device, registration -> (device != null) to registration }
+            ) { linkState, registration -> linkState to registration }
                 .distinctUntilChanged()
-                .collect { (hasDevice, registration) ->
-                    val ready = hasDevice && registration == RegistrationState.REGISTERED
+                .collect { (linkState, registration) ->
+                    val ready = linkState == LinkState.CONNECTED &&
+                        registration == RegistrationState.REGISTERED
                     Log.i(
                         TAG,
-                        "Glasses nav gate: device=$hasDevice registration=$registration ready=$ready"
+                        "Glasses nav gate: link=$linkState registration=$registration ready=$ready"
                     )
                     if (ready) {
                         if (session == null) createSession()
@@ -150,13 +168,22 @@ class GlassesNavigationController(
                 session = created
                 sessionErrorJob = scope.launch {
                     created.errors.collect { error ->
-                        Log.w(TAG, "Glasses display session error: ${error.description}")
+                        Log.w(TAG, "Glasses display session error: ${error.name} (${error.description})")
                     }
                 }
                 sessionStateJob = scope.launch {
+                    var hasStarted = false
                     created.state.collect { state ->
-                        if (state == DeviceSessionState.STARTED && display == null) {
-                            attachDisplay(created)
+                        Log.i(TAG, "Glasses session state: $state")
+                        if (state == DeviceSessionState.STARTED) {
+                            hasStarted = true
+                            if (display == null) attachDisplay(created)
+                        }
+                        // A session the device tore down never restarts itself, so
+                        // release it rather than leaving a dead handle that makes
+                        // startWatchingForDevice skip every future createSession().
+                        if (state == DeviceSessionState.STOPPED && hasStarted) {
+                            tearDownSession()
                         }
                     }
                 }

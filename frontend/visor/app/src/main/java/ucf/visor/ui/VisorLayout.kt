@@ -270,12 +270,18 @@ fun VisorLayout(
                 VoiceCommand.ToggleSession -> {
                     if (!uiState.isAuthComplete) {
                         talk("Log in first to start a session.")
-                    } else if (currentRoute == "home") {
+                    } else {
+                        // Actually starts/ends the session from wherever the command
+                        // came from — Settings, Hardware Pairing, or a glasses-tap
+                        // fired while the phone is showing any other screen — rather
+                        // than just telling the wearer to go find the button
+                        // themselves. home() is a safe, idempotent state-setter (see
+                        // VoiceCommand.GoHome above) so it's fine to call even when
+                        // already on "home".
+                        if (currentRoute != "home") viewModel.home()
                         val startingUp = !uiState.isSessionActive
                         viewModel.toggleSession()
                         talk(if (startingUp) "Starting session" else "Ending session")
-                    } else {
-                        talk("Go to Home to start or end a session.")
                     }
                 }
 
