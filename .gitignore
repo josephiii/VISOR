@@ -18,6 +18,12 @@ frontend/visor/build/
 frontend/visor/local.properties
 **/.idea/
 
+# Vercel
+**/.vercel/
+
+# Node
+**/node_modules/
+
 # Obsidian
 **/.obsidian/
 **/*.sync-conflict-*
