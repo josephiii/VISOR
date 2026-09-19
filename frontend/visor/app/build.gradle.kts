@@ -91,6 +91,9 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.uiautomator)
     androidTestImplementation(libs.androidx.test.rules)
+    // Compose Tooling & Preview Support (for dev purposes)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 
     // Compose Tooling & Preview Support (for dev purposes)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -98,8 +101,7 @@ dependencies {
 
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
-    implementation("com.k2fsa.sherpa.onnx:sherpa-onnx-android:1.13.5")
-
+    implementation(files("lib/sherpa-onnx-1.13.5.aar"))
     // MWDAT
     implementation(libs.mwdat.core)
     implementation(libs.mwdat.camera)

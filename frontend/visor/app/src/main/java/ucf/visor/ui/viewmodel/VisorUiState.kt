@@ -26,6 +26,7 @@ data class VisorUiState(
     val recentError: String? = null,
 
     // Screen States.
+    val atTitle: Boolean = false,
     val isLoggingIn: Boolean = false,
     val isSigningUp: Boolean = false,
     val hasForgottenPassword: Boolean = false,
@@ -35,11 +36,14 @@ data class VisorUiState(
     val goingHome: Boolean = false,
     val isPairingHardware: Boolean = false,
     val atSettings: Boolean = false,
+    val atHelp: Boolean = false,
     val isOnboarding: Boolean = false,
 
     // Component States.
     val isAuthComplete: Boolean = false,
     val isSessionActive: Boolean = false,
+    val isLogoutConfirmVisible: Boolean = false,
+    val isDeleteAccountConfirmVisible: Boolean = false,
 
     // PHASE 1 States.
     val phase1Initiated: Boolean = false,

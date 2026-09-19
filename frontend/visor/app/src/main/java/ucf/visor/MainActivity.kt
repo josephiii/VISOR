@@ -6,14 +6,19 @@ import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
 import android.Manifest.permission.RECORD_AUDIO
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
@@ -21,17 +26,18 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import ucf.visor.ocr.TextReaderOCR
-import ucf.visor.tts.Listener
-import ucf.visor.tts.Speaker
-import ucf.visor.ui.VisorLayout
-import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.VisorViewModel
-import kotlin.coroutines.resume
-import android.util.Log
 import ucf.visor.capture.FakePhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.RealCapture
+import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.stt.Listener
+import ucf.visor.tts.Speaker
+import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.theme.AppTheme
+import ucf.visor.ui.theme.VisorTheme
+import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.VoiceNavigationController
+import kotlin.coroutines.resume
 
 class MainActivity : ComponentActivity() {
 
@@ -39,14 +45,27 @@ class MainActivity : ComponentActivity() {
     ///////////////////////////////////////////////////////////////////////////
     companion object {
         // Required Android permissions for the DAT SDK to function properly
-        val PERMISSIONS: Array<String> = arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
+        val PERMISSIONS: Array<String> =
+            arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
+
+        private val OCR_WAKE_PHRASES = setOf(
+            "VISORWHATDOESTHISSAY",
+            "VISORREADTHIS",
+            "VISORWHATISTHIS",
+        )
+        private const val NAV_WAKE_PHRASE = "VISORGO"
+
+        private fun normalizeKeyword(phrase: String): String =
+            phrase.uppercase().filter { it.isLetter() }
     }
 
     val viewModel: VisorViewModel by viewModels()
 
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
-            viewModel.onPermissionsResult(permissionsResult) {
+            viewModel.onPermissionsResult(permissionsResult) @androidx.annotation.RequiresPermission(
+                android.Manifest.permission.RECORD_AUDIO
+            ) {
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
@@ -83,16 +102,31 @@ class MainActivity : ComponentActivity() {
     private lateinit var speaker: Speaker
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
+    private lateinit var voiceNav: VoiceNavigationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            VisorTheme {
+            val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+            val appTheme = AppTheme.forProfile(profile, isSystemInDarkTheme())
+
+            LaunchedEffect(profile.voiceNavigationEnabled) {
+                voiceNav.setEnabled(profile.voiceNavigationEnabled)
+            }
+
+            LaunchedEffect(profile.speechRate) {
+                speaker.setSpeechRate(profile.speechRate.multiplier)
+            }
+
+            VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
+                        talk = { speaker.speak(it) },
+                        lastSpoken = { speaker.lastUtterance },
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
+                        voiceNav = voiceNav,
                     )
                 }
 
@@ -104,9 +138,24 @@ class MainActivity : ComponentActivity() {
         // swap for RealPhoto once glasses session exists
         reader = RealCapture(FakePhotoSource(this), textReaderOCR)
 
+        voiceNav = VoiceNavigationController(
+            context = this,
+            speak = { speaker.speak(it) },
+            pauseWakeListening = { listener.stop() },
+            resumeWakeListening = { listener.start() },
+            isSpeaking = { speaker.isSpeaking() },
+        )
+
+        // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
+        // running two overlapping AudioRecord/model instances would double up
+        // on the microphone and CPU for no benefit, so this callback routes by
+        // which phrase actually fired instead of owning a second Listener.
         listener = Listener(assets) { phrase ->
             Log.d("VISOR", "WAKE HEARD: $phrase")
-            reader.requestRead { text -> speaker.speak(text) }
+            when (normalizeKeyword(phrase)) {
+                in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
+                NAV_WAKE_PHRASE -> voiceNav.activate()
+            }
         }
     }
 
@@ -120,5 +169,6 @@ class MainActivity : ComponentActivity() {
         textReaderOCR.close()
         speaker.shutdown()
         listener.shutdown()
+        voiceNav.shutdown()
     }
 }

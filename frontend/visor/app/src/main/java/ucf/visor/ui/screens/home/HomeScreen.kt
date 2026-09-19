@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
@@ -26,6 +26,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 @Composable
 fun HomeScreen(
     viewModel: VisorViewModel,
+    talk: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -45,17 +46,25 @@ fun HomeScreen(
 
         SessionToggleButton(
             isSessionActive = uiState.isSessionActive,
-            onToggle = { viewModel.toggleSession() }
+            onToggle = {
+                viewModel.toggleSession()
+                if (uiState.isSessionActive) {
+                    talk("Ending Session")
+                } else {
+                    talk("Starting Session")
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(40.dp))
         Text(
             text =
-                if (uiState.isSessionActive)
+                if (uiState.isSessionActive) {
                     stringResource(R.string.end_session)
-                else
-                    stringResource(R.string.start_session),
-            fontSize = 25.sp
+                } else {
+                    stringResource(R.string.start_session)
+                },
+            style = MaterialTheme.typography.headlineSmall
         )
     }
 }
