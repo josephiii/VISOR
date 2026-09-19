@@ -30,6 +30,7 @@ class ProfileStore(context: Context) {
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_TEXT_SCALE, p.textScale.name)
             .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
+            .putBoolean(KEY_GLASSES_TAP_NAV, p.glassesTapNavigationEnabled)
             .apply()
     }
 
@@ -53,6 +54,10 @@ class ProfileStore(context: Context) {
             voiceNavigationEnabled = prefs.getBoolean(
                 KEY_VOICE_NAV,
                 defaults.voiceNavigationEnabled
+            ),
+            glassesTapNavigationEnabled = prefs.getBoolean(
+                KEY_GLASSES_TAP_NAV,
+                defaults.glassesTapNavigationEnabled
             ),
         )
     }
@@ -78,5 +83,6 @@ class ProfileStore(context: Context) {
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_TEXT_SCALE = "textScale"
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
+        const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
     }
 }

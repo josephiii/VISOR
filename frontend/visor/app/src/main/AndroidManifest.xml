@@ -35,7 +35,10 @@
         android:usesCleartextTraffic="true"><!--REMOVE LINE LATER ONLY FOR HTTP REQUST -->
 
         <!-- Meta Wearables Device Access Toolkit Setup -->
-        <!-- Without Developer Mode, these values need to be set with credentials from the app registered in Wearables Developer Center -->
+        <!-- Required, not optional: Developer Mode does not replace these. Supply them
+             via local.properties (mwdat_application_id / mwdat_client_token) - see the
+             manifestPlaceholders block in app/build.gradle.kts. Empty values make the
+             glasses end every device session immediately. -->
         <meta-data
             android:name="com.meta.wearable.mwdat.APPLICATION_ID"
             android:value="${mwdat_application_id}" />

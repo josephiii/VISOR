@@ -33,6 +33,7 @@ import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -61,15 +62,34 @@ class MainActivity : ComponentActivity() {
 
     val viewModel: VisorViewModel by viewModels()
 
+    // onStart() re-runs the permission check on every foreground transition
+    // (including the OS permission dialog's own return trip on first launch,
+    // which re-enters onStart() before the user ever leaves this screen) so
+    // this callback fires far more than once per process. Wearables.initialize()
+    // and listener.start() are one-time setup, not idempotent no-ops: calling
+    // them again mid-session restarts the SDK's internal BLE device-detection
+    // provider (visible in logcat as "BluetoothDeviceDetectionProvider already
+    // started" / "Wearables SDK already initialized"), and any DAT session
+    // opened in the ~150ms the BLE stack takes to settle after that restart
+    // gets rejected as START_ERROR_DEVICE_UNAVAILABLE — which is exactly the
+    // connect-chime-then-disconnect-chime the user hears with no glasses UI
+    // ever appearing. Guard so the one-time init actually runs once.
+    private var wearablesInitialized = false
+
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
             viewModel.onPermissionsResult(permissionsResult) @androidx.annotation.RequiresPermission(
                 android.Manifest.permission.RECORD_AUDIO
             ) {
+                if (wearablesInitialized) return@onPermissionsResult
+                wearablesInitialized = true
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
                 listener.start()
+                // Only now may the on-glasses nav touch the SDK — resolving
+                // viewModel.deviceSelector any earlier throws WearablesException.
+                glassesNav.onWearablesReady()
             }
         }
 
@@ -103,6 +123,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
+    private lateinit var glassesNav: GlassesNavigationController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +134,10 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(profile.voiceNavigationEnabled) {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
+            }
+
+            LaunchedEffect(profile.glassesTapNavigationEnabled) {
+                glassesNav.setEnabled(profile.glassesTapNavigationEnabled)
             }
 
             LaunchedEffect(profile.speechRate) {
@@ -127,6 +152,7 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
                         voiceNav = voiceNav,
+                        glassesNav = glassesNav,
                     )
                 }
 
@@ -145,6 +171,8 @@ class MainActivity : ComponentActivity() {
             resumeWakeListening = { listener.start() },
             isSpeaking = { speaker.isSpeaking() },
         )
+
+        glassesNav = GlassesNavigationController { viewModel.deviceSelector }
 
         // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
         // running two overlapping AudioRecord/model instances would double up
@@ -170,5 +198,6 @@ class MainActivity : ComponentActivity() {
         speaker.shutdown()
         listener.shutdown()
         voiceNav.shutdown()
+        glassesNav.shutdown()
     }
 }
