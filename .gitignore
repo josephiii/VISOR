@@ -18,6 +18,12 @@ frontend/visor/build/
 frontend/visor/local.properties
 **/.idea/
 
+# IMU session data — raw recordings and generated analysis artifacts.
+# Synthetic sessions are reproducible from analysis/make_synthetic.py (fixed seed).
+data/imu-sessions/
+data/imu-sessions-synthetic/
+data/imu-analysis/
+
 # Vercel
 **/.vercel/
 
