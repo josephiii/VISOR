@@ -1,9 +1,8 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   Foreground layer of VISOR's adaptive launcher icon, and the icon shown on the
   Android 12+ splash screen (see values/themes.xml).
 
-  The VISOR mark: a visor band with an aperture cut through its centre and a nose
+  The VISOR mark: a visor band with an aperture cut through its center and a nose
   bridge swept up out of its lower edge, so the silhouette reads as a pair of
   glasses. Every shape sits inside the 66dp circle that adaptive icon masks are
   guaranteed to leave visible, so nothing is clipped on a round launcher.
@@ -14,7 +13,7 @@
 
   Geometry, in this 108x108 grid:
     band     x 23..85, y 34..74, corner radius 14
-    bridge   swept up into the lower edge, 28 wide and 6 deep, centred on x 54
+    bridge   swept up into the lower edge, 28 wide and 6 deep, centered on x 54
     aperture circle at (54,54), radius 11
     iris     circle at (54,54), radius 6
 

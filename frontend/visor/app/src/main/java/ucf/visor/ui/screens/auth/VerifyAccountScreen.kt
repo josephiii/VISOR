@@ -32,15 +32,7 @@ fun VerifyAccountScreen(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-
-    // Centred on the screen: the card is the only thing here, so anchoring it to
-    // the top left it stranded under a band of empty space.
-    //
-    // The minimum height is what makes the centring work at all: inside a
-    // verticalScroll the height is unbounded, so a centre arrangement has nothing
-    // to centre against and the content just stacks from the top. Given a floor of
-    // one screenful the arrangement has something to work with, and the column
-    // still grows and scrolls when a large text size overflows it.
+    
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
 

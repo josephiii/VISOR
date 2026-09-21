@@ -39,9 +39,7 @@ private const val MarkHeightToWordmark = 1.15f
 
 /**
  * VISOR's banner: the brand mark, the wordmark, and the acronym the name stands
- * for, framed as one plate. Used across the title, onboarding, login and home
- * screens, so it is the thing that tells a user at a glance which app they are
- * in and which screen family they are on.
+ * for, framed as one plate.
  *
  * Everything here is real text and real vector drawing rather than a bitmap
  * logo, which is what lets it hold up for the users VISOR is built for:
@@ -51,7 +49,7 @@ private const val MarkHeightToWordmark = 1.15f
  *    sized from that same type scale so the lockup keeps its proportions all the
  *    way to 200% (Section 508). [AutoSizeText] catches the point where an
  *    extreme scale would otherwise push the wordmark off the edge.
- *  - It recolours. The plate uses the primaryContainer/onPrimaryContainer pair,
+ *  - It recolors. The plate uses the primaryContainer/onPrimaryContainer pair,
  *    which is contrast-checked in all four VISOR themes (see ui/theme/Color.kt),
  *    so High Contrast users get a solid plate rather than a tinted one.
  *  - It reads as one thing. The mark carries no separate description; the whole
@@ -72,11 +70,7 @@ fun VisorHeader(
     )
 
     val density = LocalDensity.current
-    // The mark is sized from the wordmark rather than from a fixed dp value, so
-    // the lockup keeps its proportions at every text scale.
     val markHeight = with(density) { (wordmarkStyle.fontSize * MarkHeightToWordmark).toDp() }
-    // Tracking also lands after the final R, so a centred wordmark sits half a
-    // letter-space to the left. Matching padding on the other side undoes that.
     val trackingCompensation = with(density) {
         (wordmarkStyle.fontSize * WordmarkTracking).toDp()
     }

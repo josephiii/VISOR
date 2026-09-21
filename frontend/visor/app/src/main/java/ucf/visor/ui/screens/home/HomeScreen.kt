@@ -31,16 +31,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Start the session control in the middle of the screen. It is the only thing
-    // a user comes to this screen to do, and the one control they may be hunting
-    // for with very little usable field of view, so it belongs where the eye and
-    // the thumb both land first rather than pinned under a fixed top spacer.
-    //
-    // Centring and scrolling fight each other: inside a verticalScroll the height
-    // is unbounded, so a Center arrangement has nothing to centre against and the
-    // content just stacks from the top. Giving the column a minimum height of one
-    // viewport resolves it - the arrangement centres within that screenful, and
-    // the column still grows and scrolls when a large text size overflows it.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
 

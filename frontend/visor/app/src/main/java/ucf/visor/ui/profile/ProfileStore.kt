@@ -62,15 +62,6 @@ class ProfileStore(context: Context) {
 
     fun clear() = prefs.edit().clear().apply()   // for logout / delete account
 
-    /**
-     * Reads the speech rate, migrating anyone who last saved under the old
-     * three-value enum.
-     *
-     * The enum wrote its name ("SLOW") to [KEY_SPEECH_RATE]; the multiplier
-     * writes a float to a separate key. They have to be separate keys —
-     * SharedPreferences would throw ClassCastException if getFloat found the
-     * old string sitting under the same name.
-     */
     private fun speechRateOrDefault(default: Float): Float {
         val saved = if (prefs.contains(KEY_SPEECH_RATE_MULTIPLIER)) {
             prefs.getFloat(KEY_SPEECH_RATE_MULTIPLIER, default)
@@ -82,10 +73,6 @@ class ProfileStore(context: Context) {
                 else -> default
             }
         }
-        // Clamped on the way in, not just on the way out: the ceiling has moved
-        // once already, and a profile saved under a higher one would otherwise
-        // keep feeding an out-of-range rate to the TTS engine while the slider
-        // showed it pinned at the top.
         return saved.coerceIn(SpeechRates.Min, SpeechRates.Max)
     }
 
@@ -100,6 +87,7 @@ class ProfileStore(context: Context) {
         const val KEY_VISION_TYPES = "visionTypes"
         const val KEY_DESCRIPTION = "visionDescription"
         const val KEY_SEVERITY = "severity"
+
         // Legacy key: the pre-slider enum name. Read for migration, never written.
         const val KEY_SPEECH_RATE = "speechRate"
         const val KEY_SPEECH_RATE_MULTIPLIER = "speechRateMultiplier"

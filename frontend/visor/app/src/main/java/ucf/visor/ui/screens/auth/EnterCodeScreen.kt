@@ -47,16 +47,6 @@ fun EnterCodeScreen(
     var code by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
-    // Centred within the top two thirds rather than the whole screen. The card is
-    // the only thing here, so anchoring it to the top left it stranded under a band
-    // of empty space - but centring it on the full screen would drop it into the
-    // space the keyboard takes when the code field is focused.
-    //
-    // The minimum height is what makes the centring work at all: inside a
-    // verticalScroll the height is unbounded, so a centre arrangement has nothing
-    // to centre against and the content just stacks from the top. Given a floor of
-    // one screenful the arrangement has something to work with, and the column
-    // still grows and scrolls when a large text size overflows it.
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
 

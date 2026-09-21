@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   Monochrome layer of VISOR's adaptive launcher icon: the mark as a flat
   silhouette so Android 13+ themed icons can tint it to the user's wallpaper
-  palette. The system supplies the colour, so the fill here is only a placeholder.
+  palette. The system supplies the color, so the fill here is only a placeholder.
 
   Same geometry as drawable/ic_launcher_foreground.xml - the aperture stays a
-  real hole rather than a second colour, which is what lets the mark survive
+  real hole rather than a second color, which is what lets the mark survive
   being flattened to one tone.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"

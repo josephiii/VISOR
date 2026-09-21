@@ -62,10 +62,6 @@ object VoiceCommandParser {
             containsAny(text, "log out", "sign out", "logout") -> VoiceCommand.LogOut
             containsAny(text, "delete my account", "delete account") -> VoiceCommand.DeleteAccount
             containsAny(text, "high contrast") -> VoiceCommand.ToggleHighContrast
-
-            // "normal speed" is checked first: it contains neither "slower"
-            // nor "faster", but keeping the absolute reset ahead of the
-            // relative nudges makes the ordering obvious to the next reader.
             containsAny(text, "normal speed", "normal speech") ->
                 VoiceCommand.SetSpeechRate(SpeechRates.Normal)
 

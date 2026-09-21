@@ -52,8 +52,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.phase1.Phase1NavigationBar
-import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.profile.SpeechRates
+import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -107,12 +107,6 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
-    //
-    // Each of these watches a one-shot navigation request and consumes it with
-    // onNavigationHandled() once the navigation has happened. The consume is
-    // not optional bookkeeping: a LaunchedEffect only re-runs when its key
-    // changes, so a flag left true would make that destination unreachable for
-    // the rest of the session. See VisorViewModel.onNavigationHandled.
     LaunchedEffect(uiState.atTitle) {
         if (uiState.atTitle) {
             navController.navigate("title") {
@@ -176,11 +170,6 @@ fun VisorLayout(
             navController.navigate("home") {
                 launchSingleTop = true
                 if (uiState.phase1Initiated) {
-                    // Phase 1 replaces the signed-out flow outright, so nothing
-                    // from it stays reachable. Popping only as far as the start
-                    // destination left TitleScreen sitting under Phase 1's home:
-                    // one press of back and a tester was looking at Log In /
-                    // Sign Up again, with the Phase 1 bar still on screen.
                     popUpTo(0) { inclusive = true }
                 } else {
                     popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -324,11 +313,6 @@ fun VisorLayout(
                 is VoiceCommand.SetSpeechRate ->
                     viewModel.updateProfile(profile.copy(speechRate = command.rate))
 
-                // Spoken back, unlike the Settings slider: someone driving by
-                // voice may not be looking at the screen, so the words are the
-                // only confirmation the command landed. The new rate takes
-                // effect for the utterance after this one — MainActivity
-                // applies it on the next recomposition.
                 VoiceCommand.SpeakFaster -> {
                     val rate = SpeechRates.faster(profile.speechRate)
                     viewModel.updateProfile(profile.copy(speechRate = rate))

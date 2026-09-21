@@ -128,10 +128,6 @@ fun SettingsScreen(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
-        // Deliberately silent while dragging. A user reaching for this slider
-        // has already decided they want faster or slower speech, so speaking
-        // every notch talks over the very thing they are trying to tune — and
-        // the next thing VISOR says demonstrates the new rate anyway.
         Slider(
             value = profile.speechRate,
             onValueChange = { position ->
@@ -142,7 +138,10 @@ fun SettingsScreen(
             steps = SpeechRates.SliderSteps,
             modifier = Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}" },
+                .semantics {
+                    contentDescription =
+                        "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
+                },
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Slower", style = MaterialTheme.typography.bodySmall)

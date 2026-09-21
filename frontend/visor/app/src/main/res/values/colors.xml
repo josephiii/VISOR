@@ -1,6 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  Framework-level colours only - anything Compose draws comes from
+<?xml version="1.0" encoding="utf-8"?><!--
+  Framework-level colors only - anything Compose draws comes from
   ui/theme/Color.kt instead. These cover the window and the Android 12+ splash
   screen, which are painted before the Compose theme exists.
 

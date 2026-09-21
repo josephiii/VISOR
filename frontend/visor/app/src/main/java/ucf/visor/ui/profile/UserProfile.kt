@@ -1,5 +1,9 @@
 package ucf.visor.ui.profile
 
+import ucf.visor.ui.profile.SpeechRates.BaselineSyllablesPerSecond
+import ucf.visor.ui.profile.SpeechRates.Fast
+import ucf.visor.ui.profile.SpeechRates.Normal
+import ucf.visor.ui.profile.SpeechRates.Step
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -14,16 +18,6 @@ enum class Severity { MILD, MODERATE, SEVERE }
  * `TextToSpeech.setSpeechRate()` — see `tts.Speaker.setSpeechRate`. This is
  * the one value in this file that isn't just a label; it is what the audio
  * output actually uses.
- *
- * This was a three-value enum (0.75 / 1.0 / 1.35). It is a plain multiplier
- * now because those three notches serve the middle of VISOR's audience and
- * nobody else: practised screen-reader users among the low-vision community
- * routinely listen far faster than any "Faster" preset, and users who are new
- * to synthetic speech often need to go slower than the slowest one.
- *
- * The three old values survive as [Slow], [Normal] and [Fast] — voice control
- * still moves between them, so "speak faster" stays one predictable jump
- * rather than a 0.25 nudge a user listening rather than looking cannot detect.
  */
 object SpeechRates {
 
@@ -48,12 +42,9 @@ object SpeechRates {
      *
      * The ceiling is a deliberate product decision rather than an engine limit:
      * Android TTS engines clamp the rate themselves, at different values, and
-     * the clamp is not queryable. Holding the slider inside a range engines
-     * honour keeps its top notches from silently doing nothing.
+     * the clamp is not queryable.
      */
     const val Max = 3.0f
-
-    // The speeds VISOR shipped before the slider went continuous.
     const val Slow = 0.75f
     const val Normal = 1.0f
     const val Fast = 1.35f
@@ -103,14 +94,10 @@ object SpeechRates {
 
     /**
      * What a screen reader announces, and what voice control says back.
-     *
-     * Written to be spoken rather than read: "1.25 times", not "1.25x", which
-     * TTS engines render as a literal letter x. It carries the syllable rate
-     * as well, because a user who cannot read the slider still needs to know
-     * where in the range they have landed.
      */
     fun spokenLabel(rate: Float): String {
-        val speed = if (band(rate) == "Normal") "normal speed" else "${number(rate)} times normal speed"
+        val speed =
+            if (band(rate) == "Normal") "normal speed" else "${number(rate)} times normal speed"
         return "$speed, about ${syllablesPerSecond(rate)} syllables a second"
     }
 
@@ -154,9 +141,7 @@ data class UserProfile(
     val appHighContrast: Boolean = false,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
     /**
-     * Say "VISOR GO" to navigate by voice. Off until the user asks for it, from
-     * the toggle on TitleScreen or the one in Settings — VISOR does not start
-     * listening, or talking through onboarding, on someone's behalf.
+     * Say "VISOR GO" to navigate by voice.
      */
     val voiceNavigationEnabled: Boolean = false,
 )

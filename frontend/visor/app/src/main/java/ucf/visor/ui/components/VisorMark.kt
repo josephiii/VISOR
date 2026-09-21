@@ -20,9 +20,6 @@ import androidx.compose.ui.unit.dp
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 
-// The mark is laid out on the same 108x108 grid the launcher icon is drawn on
-// (res/drawable/ic_launcher_foreground.xml), then cropped to the ink itself so
-// it carries no dead space into a Compose layout. Change one, change the other.
 private const val BandLeft = 23f
 private const val BandTop = 34f
 private const val BandRight = 85f
@@ -38,8 +35,6 @@ private const val IrisRadius = 6f
 private const val CenterX = (BandLeft + BandRight) / 2f
 private const val CenterY = 54f
 
-// The ink's bounding box. The bridge is swept up out of the band's lower edge
-// rather than hung below it, so the band alone bounds the mark.
 private const val InkLeft = BandLeft
 private const val InkTop = BandTop
 private const val InkWidth = BandRight - BandLeft
@@ -47,13 +42,13 @@ private const val InkHeight = BandBottom - BandTop
 private const val MarkAspectRatio = InkWidth / InkHeight
 
 /**
- * VISOR's brand mark - a visor band with an aperture cut through its centre and
+ * VISOR's brand mark - a visor band with an aperture cut through its center and
  * a nose bridge swept up out of its lower edge, so the silhouette reads as a
  * pair of glasses. The same silhouette the launcher icon and the splash screen
  * use, so the mark a user taps is the mark that greets them.
  *
  * Drawn in a single [color] on purpose. A two-tone mark would need its own
- * contrast check against each of VISOR's four themes, whereas one colour taken
+ * contrast check against each of VISOR's four themes, whereas one color taken
  * from the surrounding [LocalContentColor] is guaranteed to clear 4.5:1
  * wherever it is placed - and the aperture stays legible because it is a real
  * hole showing the surface behind it, not a second fill.
@@ -89,7 +84,7 @@ fun VisorMark(
 /**
  * The band, its bridge, and the aperture as one path. [PathFillType.EvenOdd]
  * turns the aperture into a hole rather than a second filled disc, which is what
- * lets the mark flatten to a single tone without losing its centre.
+ * lets the mark flatten to a single tone without losing its center.
  */
 private fun buildBandPath() = Path().apply {
     fillType = PathFillType.EvenOdd
@@ -136,23 +131,3 @@ private fun bridgeBounds() = Rect(
     right = CenterX + BridgeHalfWidth,
     bottom = BandBottom + BridgeDepth,
 )
-
-@Preview(name = "Mark - Clarity Light", showBackground = true)
-@Composable
-private fun VisorMarkClarityLightPreview() {
-    VisorTheme(appTheme = AppTheme.ClarityLight) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            VisorMark(modifier = Modifier.height(48.dp))
-        }
-    }
-}
-
-@Preview(name = "Mark - High Contrast Dark", showBackground = true)
-@Composable
-private fun VisorMarkHighContrastDarkPreview() {
-    VisorTheme(appTheme = AppTheme.HighContrastDark) {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            VisorMark(modifier = Modifier.height(48.dp))
-        }
-    }
-}

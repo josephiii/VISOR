@@ -41,7 +41,6 @@ import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
-import kotlin.math.roundToInt
 
 
 /**
@@ -117,14 +116,6 @@ fun ProfileCreationScreen(
 
     // VOICE NAVIGATION
     LaunchedEffect(step) {
-        // Speaking is gated on the same preference as listening. Onboarding used
-        // to read every prompt aloud whether or not the user had asked for voice
-        // at all, which meant a user who deliberately left it off on the title
-        // screen still got talked at the moment they signed up.
-        //
-        // Read fresh on each step rather than captured once: the VOICE_NAV step
-        // below can turn it on mid-wizard, and the steps after it should start
-        // speaking when it does.
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         speak(step.spokenPrompt)
         val askedStep = step
@@ -182,10 +173,6 @@ fun ProfileCreationScreen(
                 }
 
                 Step.SPEECH_RATE -> {
-                    // Onboarding stays on the three presets: a user meeting
-                    // VISOR for the first time is answering a spoken question,
-                    // not tuning a multiplier. The slider in Settings is where
-                    // the full range lives.
                     val match = when {
                         heard.contains("slow") -> SpeechRates.Slow
                         heard.contains("fast") -> SpeechRates.Fast
@@ -286,7 +273,8 @@ fun ProfileCreationScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics {
-                            contentDescription = "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
+                            contentDescription =
+                                "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
                         },
                 )
                 Row(
