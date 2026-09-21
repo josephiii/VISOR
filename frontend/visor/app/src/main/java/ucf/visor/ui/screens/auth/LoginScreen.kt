@@ -4,6 +4,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -23,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
@@ -44,13 +44,12 @@ fun LoginScreen(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .fillMaxSize()
             .padding(24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
             .verticalScroll(scrollState)
     ) {
-
-        VisorHeader()
-        Spacer(modifier = modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Card(
             shape = VisorShapes.Control,
@@ -99,7 +98,7 @@ fun LoginScreen(
             }
         }
 
-        Spacer(modifier = modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(10.dp))
         Text("Trouble logging in?")
         VisorButton(
             text = stringResource(R.string.forgot_password_title),
@@ -109,7 +108,7 @@ fun LoginScreen(
             }
         )
 
-        Spacer(modifier = modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text("New users register here")
         VisorButton(
             text = stringResource(R.string.sign_up_title),

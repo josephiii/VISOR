@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark-mode counterparts of the window and splash colours in values/colors.xml. -->
+<resources>
+    <!-- ClarityDark's background, so the handoff from splash to Compose is seamless. -->
+    <color name="visor_window_background">#FF0B1220</color>
+    <color name="visor_splash_background">#FF0B1220</color>
+
+    <!-- A lighter navy than the light-mode circle so the icon still separates from
+         the near-black splash field. White-on-navy stays above 9:1 either way. -->
+    <color name="visor_splash_icon_background">#FF16345E</color>
+</resources>

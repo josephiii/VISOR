@@ -1,6 +1,5 @@
 package ucf.visor.ui.voice
 
-import ucf.visor.ui.profile.SpeechRate
 import ucf.visor.ui.profile.TextScale
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
@@ -34,7 +33,9 @@ sealed class VoiceCommand {
     object LogOut : VoiceCommand()
     object DeleteAccount : VoiceCommand()
     object ToggleHighContrast : VoiceCommand()
-    data class SetSpeechRate(val rate: SpeechRate) : VoiceCommand()
+    data class SetSpeechRate(val rate: Float) : VoiceCommand()
+    object SpeakFaster : VoiceCommand()
+    object SpeakSlower : VoiceCommand()
     data class SetVerbosity(val verbosity: Verbosity) : VoiceCommand()
     data class SetTextScale(val scale: TextScale) : VoiceCommand()
 

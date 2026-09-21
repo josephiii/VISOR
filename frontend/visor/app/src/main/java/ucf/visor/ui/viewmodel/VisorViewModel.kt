@@ -190,6 +190,45 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isDebugMenuVisible = false) }
     }
 
+    /**
+     * Clears every pending navigation request.
+     *
+     * The screen flags in [VisorUiState] are one-shot *events*, not state:
+     * VisorLayout watches each with a `LaunchedEffect` keyed on the flag, and a
+     * `LaunchedEffect` only re-runs when its key changes. So a flag left true
+     * after its navigation has happened silently disables that destination —
+     * asking for it again re-sets a flag that is already true, the key never
+     * changes, and nothing moves.
+     *
+     * That is what made the navigation bar go dead after a system back press:
+     * back pops the NavController without telling this ViewModel, leaving the
+     * flag for the screen the user just left still true, so its bar item did
+     * nothing. Consuming the flag the moment VisorLayout has acted on it keeps
+     * every request a genuine false -> true transition.
+     *
+     * Only navigation intents are cleared here. Session state such as
+     * `isAuthComplete` is real state and must survive.
+     */
+    fun onNavigationHandled() {
+        _uiState.update {
+            it.copy(
+                atTitle = false,
+                isLoggingIn = false,
+                isSigningUp = false,
+                hasForgottenPassword = false,
+                isEnteringCode = false,
+                isVerifyingAccount = false,
+                isResettingPassword = false,
+                goingHome = false,
+                isPairingHardware = false,
+                atSettings = false,
+                atHelp = false,
+                isOnboarding = false,
+                isConfiguring = false,
+            )
+        }
+    }
+
     fun login() {
         _uiState.update { it.copy(isSigningUp = false) }
         _uiState.update { it.copy(isLoggingIn = true) }

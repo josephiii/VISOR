@@ -185,44 +185,142 @@
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
 
-    <!-- Script strings -->
+    <!-- Script strings
+         The spoken response VISOR gives for each demo image, taken verbatim from
+         the Glasses line of each entry in "VISOR Demo Scripts Reviewed". The ID and
+         title on each item are that document's, so a tester can match the on-screen
+         "Script N" button back to the photo it was written against — the IDs are not
+         contiguous because the reviewed document drops some candidates.
+
+         Phase1ModeConfigurationScreen renders one button per item, so adding or
+         removing entries here is all that is needed to change the demo. -->
     <string-array name="hazard_awareness_scripts">
-        <item>A box is on the floor ahead, slightly to your right. It partially blocks the walkway.</item>
-        <item>A chair extends into the aisle on your left. It is pulled out from the table.</item>
-        <item>An electrical cord lies across the walkway ahead. It runs from left to right.</item>
-        <item>A cabinet door is open on your right. It projects outward above the counter.</item>
-        <item>A cleaning cart extends into the walkway ahead on your right</item>
-        <item>A cardboard box sits on the floor ahead on your left. It extends from the shelf into the aisle.</item>
-        <item>The floor mat ahead has a corner folded upward near the entrance doors.</item>
-        <item>A bag lies on the floor directly ahead, between the two tables.</item>
-        <item>A laundry basket sits on the floor directly ahead, in the center of the aisle.</item>
-        <item>An umbrella lies on the floor ahead on your left. Its handle extends into the space between the table and chairs.</item>
+        <!-- HA 01 — Discarded bedding on sidewalk -->
+        <item>Mattresses lean across the sidewalk ahead. Bags and bedding sit at their base, taking up much of the walking space.</item>
+        <!-- HA 02 — Low round bollards -->
+        <item>Three low, black, ball-shaped barriers stand on the paved walkway. The nearest is on the right, with two more farther ahead toward the left.</item>
+        <!-- HA 03 — Debris across a footpath -->
+        <item>A pile of branches and debris blocks the path directly ahead, beside the metal gate on the right.</item>
+        <!-- HA 04 — Planter in a narrow sidewalk -->
+        <item>A large white planter blocks much of the narrow sidewalk ahead. It stands between the building wall on the left and the street on the right.</item>
+        <!-- HA 06 — Bicycles beside parked cars -->
+        <item>Parked bicycles extend into the left side of the sidewalk. Their wheels project into the walking area beside the parked cars.</item>
+        <!-- HA 07 — Shop entrance steps -->
+        <item>Steps lead up to the shop door ahead, with handrails on both sides. Two narrow yellow tracks run over the left side of the steps.</item>
+        <!-- HA 08 — Planters before entrance steps -->
+        <item>Low concrete planters stand across the paved area ahead. Behind them, steps lead up to the entrance on the left.</item>
+        <!-- HA 09 — Pole in a confined sidewalk -->
+        <item>A concrete pole stands directly ahead in the narrow sidewalk. Bushes on the left and parked motorcycles on the right further narrow the walking space.</item>
+        <!-- HA 11 — Stored goods in a covered passage -->
+        <item>A motorcycle and a red chair occupy part of the covered walkway ahead, toward the right. Stacks of coiled tubing and other materials narrow both sides.</item>
+        <!-- HA 12 — Furniture and a cable in a covered walkway -->
+        <item>A fan and a stool extend into the walkway on the left. A cable lies on the floor beside the fan, and a food cart narrows the right side.</item>
+        <!-- HA 15 — Steps at a street corner -->
+        <item>A short set of steps leads up to the sidewalk directly ahead. A second staircase descends beside it on the right, behind a metal railing.</item>
+        <!-- HA 16 — Outdoor steps with a handrail -->
+        <item>Uneven concrete steps rise along the path ahead. A metal handrail runs along the left side, and a wall borders the right.</item>
+        <!-- HA 18 — Snow on outdoor stairs -->
+        <item>Outdoor steps rise ahead, with snow covering parts of the steps and their edges. A metal handrail runs along the right side.</item>
+        <!-- HA 19 — Tree roots lifting pavement -->
+        <item>The pavement rises unevenly around a tree directly ahead. Large roots protrude from its base, and a raised slab sits to the right of the trunk.</item>
+        <!-- HA 20 — Buckled concrete slab -->
+        <item>A broken section of concrete forms a raised edge across the sidewalk ahead. Cracks and loose pieces surround the raised section.</item>
+        <!-- HA 21 — Broken pavement at a corner -->
+        <item>Broken concrete slabs surround an open gap in the sidewalk ahead, near the curb on the right. A metal pole stands beside the gap.</item>
+        <!-- HA 22 — Pole beside curbside water -->
+        <item>A concrete pole stands ahead near the left edge of the narrow sidewalk. Standing water fills the street beside the curb on the left.</item>
+        <!-- HA 24 — Missing sidewalk tiles -->
+        <item>A wide patch of paving is missing from the sidewalk ahead, beside the tree on the right. Exposed ground and broken tile edges interrupt the walking surface.</item>
+        <!-- HA 25 — Broken brick sidewalk -->
+        <item>Loose bricks and gaps interrupt the sidewalk ahead. The paving is broken and uneven beside the grassy edge on the right.</item>
+        <!-- HA 27 — Hole in a snowy sidewalk -->
+        <item>An open hole interrupts the snow-covered sidewalk ahead, slightly to the right. A branch sticks out of the hole.</item>
     </string-array>
 
     <string-array name="scene_description_scripts">
-        <item>A playground has a red slide near the center and a yellow bridge to the right. A picnic table is in the foreground on the right. Trees surround the play area.</item>
-        <item>A waiting room has chairs along the wall on your left. A reception desk is ahead, with a doorway to its right.</item>
-        <item>A plate is in the center of the table setting. A fork is to the left of the plate, and a cup is beyond it on the right.</item>
-        <item>A living room has a sofa on your left and an armchair on your right. A coffee table stands between them.</item>
-        <item>A hallway extends ahead, with doors along the left wall. A cleaning cart stands on the right, and a doorway is at the far end.</item>
-        <item>Grocery shelves line both sides of the aisle. Boxes of cereal fill the shelves on your left. An aisle sign hangs overhead.</item>
-        <item>Glass entrance doors are ahead. A floor mat lies in front of the doors, and a bench stands to the right.</item>
-        <item>A community room contains several tables surrounded by chairs. A refreshment table stands along the wall on your right.</item>
-        <item>Washing machines line the left wall, and dryers line the right wall. A laundry basket sits in the aisle between them.</item>
-        <item>A waiting area has chairs along the wall on your right and a small table on your left. A bell and a sign sit on the table.</item>
+        <!-- SD 04 — Modern transit waiting room -->
+        <item>A waiting room has rows of blue seats in the center, facing toward you. Large windows line the right wall, and glass doors and vending machines are at the far end.</item>
+        <!-- SD 05 — Small station room with vending machine -->
+        <item>A small waiting room has a wooden bench along the left wall and a drinks vending machine on the right. A blue bin stands between the bench and the machine.</item>
+        <!-- SD 07 — Wood-paneled waiting hall -->
+        <item>A narrow hall has wood-paneled walls and a high sloping ceiling. Chairs and a curved wooden partition are on the left; windows line the right, with an open doorway at the far end.</item>
+        <!-- SD 09 — Cafe window seating -->
+        <item>A cafe seating area faces a large street-facing window. Small tables stand among armchairs and wooden chairs, with a cushioned bench along the brick wall on the left.</item>
+        <!-- SD 10 — Cafe tables and counter -->
+        <item>A cafe has wooden tables and chairs on the left. A high table with stools stands against the windows ahead, and a small counter sits beside the glass door on the right.</item>
+        <!-- SD 11 — Cafe with customers -->
+        <item>A cafe has a service counter on the left and rows of tables and wooden chairs ahead. People sit at a table in the center, and another person stands at the counter.</item>
+        <!-- SD 14 — Open-sided pavilion cafe -->
+        <item>An open-sided seating area has long wooden tables and benches beneath a roof. People sit at the tables, with patterned wooden screens behind them and trees visible outside.</item>
+        <!-- SD 15 — Library shelves and search terminal -->
+        <item>A library has rows of white bookshelves with aisles between them. A computer on a stand labeled Search is in front on the left.</item>
+        <!-- SD 16 — Library table beside book aisles -->
+        <item>A library has a rectangular table and wooden chairs in front on the right. Rows of tall bookshelves fill the space behind it, with an aisle along the left.</item>
+        <!-- SD 18 — Narrow library aisle -->
+        <item>Tall bookshelves line both sides of a narrow carpeted aisle. The aisle leads straight ahead to a wall beneath a row of ceiling lights.</item>
+        <!-- SD 20 — Library media shelves -->
+        <item>A library has rows of low white shelves filled with media cases. A green-carpeted aisle runs down the center, with windows along the right wall.</item>
+        <!-- SD 23 — Hotel reception with paired desks -->
+        <item>A reception area has two wooden desks against the back wall, each with two chairs in front. A table lamp sits on each desk, with tall doorways on either side of the room.</item>
+        <!-- SD 40 — Traditional dining room -->
+        <item>A dining room has a table set with plates and glasses beneath a chandelier. Wooden chairs surround the table, with tall curtained windows behind it and an orange wall on the left.</item>
+        <!-- SD 41 — Supermarket bottle displays -->
+        <item>A supermarket aisle has tall shelves of bottles on both sides. A bottle display stands ahead on the right, with the aisle continuing to its left.</item>
+        <!-- SD 44 — Supermarket with shoppers -->
+        <item>A supermarket aisle has product shelves on both sides and freestanding displays down the middle. Several shoppers stand ahead, beneath a large banner celebrating the coronation.</item>
+        <!-- SD 45 — Store pet-food shelves -->
+        <item>Store shelves hold bags, boxes, and cans of pet food. Large bags fill the bottom shelf, with smaller packages above and a tiled aisle in front.</item>
+        <!-- SD 46 — Grocery store display cases -->
+        <item>A grocery store has low display cases in the center and taller refrigerated cases along the sides. A wide aisle runs along the left, with shoppers farther ahead.</item>
+        <!-- SD 55 — Laundromat with folding table -->
+        <item>A laundromat has washing machines along the left wall and stacked machines at the far end. A long folding table is on the right, with blue seats behind it against the wall.</item>
+        <!-- SD 67 — Wooded park path and bench -->
+        <item>A gravel path runs through dense trees and shrubs. A wooden bench sits beside the path on the right, and the path curves to the left farther ahead.</item>
+        <!-- SD 69 — Home kitchen with peninsula -->
+        <item>A kitchen has a dark counter with a sink across the front. A cooktop and range hood are at the back left; a refrigerator, microwave, and oven are on the right.</item>
     </string-array>
 
     <string-array name="reading_assistance_scripts">
-        <item>The sign says: Reception. Please check in at the front desk.</item>
-        <item>The sign says: Room two hundred four. Vision Clinic.</item>
-        <item>Library hours. Monday through Friday, nine A.M. to five P.M. Saturday and Sunday, closed.</item>
-        <item>Drinks. Tea, two dollars. Coffee, three dollars. Water, one dollar.</item>
-        <item>The sign says: Rooms two hundred one through two hundred five. An arrow points left.</item>
-        <item>The sign says: Aisle four. Cereal. Oatmeal.</item>
-        <item>The door reads: Main entrance. Pull.</item>
-        <item>The notice says: Art group. Tuesday. Two P.M.</item>
-        <item>The sign says: Please remove clothes when cycle ends.</item>
-        <item>The sign says: Please ring bell for assistance.</item>
+        <!-- RA 01 — Shop business hours -->
+        <item>The sign lists Saturday, twelve to four, and Sunday, twelve to four. It does not specify a.m. or p.m.</item>
+        <!-- RA 02 — Church service sign -->
+        <item>The sign says: Service in Greek and English.</item>
+        <!-- RA 03 — Garden opening times -->
+        <item>The summer hours say: April first to September thirtieth. Daily and weekends, including bank holidays. Ten a.m. to six p.m.</item>
+        <!-- RA 04 — Museum hours and admission -->
+        <item>The sign says: Tuesday to Saturday, ten a.m. to four forty-five p.m. Closed Monday. Admission free.</item>
+        <!-- RA 05 — Station entrance -->
+        <item>The entrance sign says: Shoreditch Station.</item>
+        <!-- RA 06 — Handwritten post office notice -->
+        <item>The notice says: Post office open Monday and Friday, a.m. It does not give exact opening or closing times.</item>
+        <!-- RA 08 — Coffee menu board -->
+        <item>Under Hot, the menu includes espresso, macchiato, cappuccino, latte, and mocha. The note at the bottom says: All espresso shots double.</item>
+        <!-- RA 09 — Cafe breakfast menu -->
+        <item>The menu says: Sausage, egg, and melted cheddar on a toasted English muffin.</item>
+        <!-- RA 11 — Library entrance marker -->
+        <item>The sign says: Enter. Library and community centre. An arrow points to the left.</item>
+        <!-- RA 12 — Library name sign -->
+        <item>The sign says: John Marshall Library. Fairfax County Public Library.</item>
+        <!-- RA 13 — Indoor smoking notice -->
+        <item>The notice says: Smoking is prohibited in the rooms. Use designated smoking areas.</item>
+        <!-- RA 15 — Restaurant door notices -->
+        <item>The notices say: Cash only. The left door says Pull. The right door says Please do not push this door.</item>
+        <!-- RA 16 — Push door signs -->
+        <item>The English instruction on both doors is Push.</item>
+        <!-- RA 18 — Footpath gate notice -->
+        <item>The sign says: Please close gate. Footpath.</item>
+        <!-- RA 20 — Composting toilet instructions -->
+        <item>The reminder says: Please remember. There is no flush. Take all rubbish home with you.</item>
+        <!-- RA 21 — Handwritten toilet closure -->
+        <item>The notice says: Female and unisex toilets closed due to vandalism. Apologies for the closure. Nearest toilets at boat hire, just over bridge.</item>
+        <!-- RA 22 — Reception direction sign -->
+        <item>The sign says: H W M. Reception. An arrow points upward.</item>
+        <!-- RA 23 — Hospital reception sign -->
+        <item>The sign lists: In-patient reception. Guy Barrett Wing. Sir Roland Smith Wing. Rebecca House.</item>
+        <!-- RA 24 — National park visitor centre -->
+        <item>The English text says: Torngat Mountains National Park of Canada. Administration and Visitor Reception Centre.</item>
+        <!-- RA 25 — Keep off grass notice -->
+        <item>The notice says: Please keep off grass.</item>
     </string-array>
 
 </resources>

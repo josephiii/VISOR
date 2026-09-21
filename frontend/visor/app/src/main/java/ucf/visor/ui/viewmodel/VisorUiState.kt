@@ -57,7 +57,5 @@ data class VisorUiState(
 
     val canStartRegistration: Boolean = canRegister && !isRegistering
 
-    val finishedOnboarding: Boolean = goingHome
-
     val navigationBarEnabled: Boolean = isAuthComplete
 }
