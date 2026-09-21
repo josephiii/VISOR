@@ -39,15 +39,6 @@ android {
         vectorDrawables { useSupportLibrary = true }
 
         // Meta Wearables Device Access Toolkit Setup
-        //
-        // These come from the app registered in the Wearables Developer Center, and
-        // they are NOT optional: Developer Mode only enables the developer surface on
-        // the glasses, it does not let an app skip identifying itself. Meta's own
-        // DisplayAccess sample requires both (see its README). With them empty, the
-        // SDK logs "the app might be misconfigured" on every launch and the glasses
-        // terminate each session the instant it opens (SESSION_ENDED_BY_DEVICE),
-        // which the wearer hears as a connect chime followed by a disconnect chime.
-        //
         // Set them in local.properties — which is gitignored, so they stay out of
         // version control the same way github_token does:
         //   mwdat_application_id=<from Wearables Developer Center>

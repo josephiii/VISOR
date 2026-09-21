@@ -90,9 +90,7 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
 
     // The session toggle is offered from every screen, not just Home:
     // VisorLayout's VoiceCommand.ToggleSession handler navigates home on its
-    // own before starting/ending the session, so this button is genuinely
-    // actionable regardless of what the phone happens to be showing — it no
-    // longer just tells the wearer to go find the button on the phone.
+    // own before starting/ending the session.
     items += if (uiState.isSessionActive) {
         GlassesNavItem("End Session", IconName.X, VoiceCommand.ToggleSession)
     } else {

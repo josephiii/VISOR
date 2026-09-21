@@ -123,17 +123,7 @@ class GlassesNavigationController(
      * A session is only viable once the glasses' own transport is up
      * ([LinkState.CONNECTED]) *and* the app has completed MWDAT's on-device
      * registration handshake (the "Register" button on HardwarePairingScreen ->
-     * `Wearables.startRegistration`). Starting one any earlier gets it accepted
-     * and then immediately terminated by the device, which the wearer hears as a
-     * connect chime followed by a disconnect chime, with no glasses UI.
-     *
-     * Device presence alone is not that signal: `activeDeviceFlow()` goes
-     * non-null the moment AutoDeviceSelector *picks* a device, which happens
-     * while the SDK's BLE/socket handshake to it is still in flight. A session
-     * created against that half-open link is accepted, then `start()` is refused
-     * with START_ERROR_DEVICE_UNAVAILABLE -> SESSION_ENDED_BY_DEVICE ->
-     * NO_ELIGIBLE_DEVICE. Only `Device.linkState` reports the transport itself,
-     * so that is what gates the session here.
+     * `Wearables.startRegistration`).
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun startWatchingForDevice() {
@@ -148,7 +138,7 @@ class GlassesNavigationController(
                 .distinctUntilChanged()
                 .collect { (linkState, registration) ->
                     val ready = linkState == LinkState.CONNECTED &&
-                        registration == RegistrationState.REGISTERED
+                            registration == RegistrationState.REGISTERED
                     Log.i(
                         TAG,
                         "Glasses nav gate: link=$linkState registration=$registration ready=$ready"
@@ -168,7 +158,10 @@ class GlassesNavigationController(
                 session = created
                 sessionErrorJob = scope.launch {
                     created.errors.collect { error ->
-                        Log.w(TAG, "Glasses display session error: ${error.name} (${error.description})")
+                        Log.w(
+                            TAG,
+                            "Glasses display session error: ${error.name} (${error.description})"
+                        )
                     }
                 }
                 sessionStateJob = scope.launch {

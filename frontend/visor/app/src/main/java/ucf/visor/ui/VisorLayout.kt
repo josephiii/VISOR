@@ -227,21 +227,17 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    // Pushes the current screen's button set to the glasses display any time
-    // navigation-relevant state changes (route, auth, session, confirm dialogs)
-    // — see glassesNavScreenFor. GlassesNavigationController itself no-ops
-    // when disabled or no display is attached, so this is safe to call always.
     LaunchedEffect(glassesNav, currentRoute, uiState) {
         glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Voice + Glasses-Tap Navigation Observer
-    // Both controllers emit the same VoiceCommand type (see its KDoc), so a
-    // single merged collector dispatches a spoken command and an on-glasses
-    // button tap identically — no glasses-specific cases needed below.
     LaunchedEffect(voiceNav, glassesNav) {
-        merge(voiceNav?.commands ?: emptyFlow(), glassesNav?.commands ?: emptyFlow()).collect { command ->
+        merge(
+            voiceNav?.commands ?: emptyFlow(),
+            glassesNav?.commands ?: emptyFlow()
+        ).collect { command ->
             when (command) {
                 // Home/Settings/Help/Pairing/sessions are all post-login-only —
                 // none of them have a touch equivalent before uiState.isAuthComplete
@@ -271,13 +267,6 @@ fun VisorLayout(
                     if (!uiState.isAuthComplete) {
                         talk("Log in first to start a session.")
                     } else {
-                        // Actually starts/ends the session from wherever the command
-                        // came from — Settings, Hardware Pairing, or a glasses-tap
-                        // fired while the phone is showing any other screen — rather
-                        // than just telling the wearer to go find the button
-                        // themselves. home() is a safe, idempotent state-setter (see
-                        // VoiceCommand.GoHome above) so it's fine to call even when
-                        // already on "home".
                         if (currentRoute != "home") viewModel.home()
                         val startingUp = !uiState.isSessionActive
                         viewModel.toggleSession()
