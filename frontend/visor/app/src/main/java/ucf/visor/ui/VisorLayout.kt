@@ -49,8 +49,12 @@ import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
+import ucf.visor.ui.glasses.GlassesNavigationController
+import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.phase1.Phase1NavigationBar
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
@@ -71,6 +75,7 @@ fun VisorLayout(
     talk: (String) -> Unit = {},
     lastSpoken: () -> String? = { null },
     voiceNav: VoiceNavigationController? = null,
+    glassesNav: GlassesNavigationController? = null,
     modifier: Modifier = Modifier,
 ) {
 
@@ -221,9 +226,18 @@ fun VisorLayout(
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Voice Navigation Observer
-    LaunchedEffect(voiceNav) {
-        voiceNav?.commands?.collect { command ->
+    // On-Glasses Tap Navigation Observer
+    LaunchedEffect(glassesNav, currentRoute, uiState) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Voice + Glasses-Tap Navigation Observer
+    LaunchedEffect(voiceNav, glassesNav) {
+        merge(
+            voiceNav?.commands ?: emptyFlow(),
+            glassesNav?.commands ?: emptyFlow()
+        ).collect { command ->
             when (command) {
                 // Home/Settings/Help/Pairing/sessions are all post-login-only —
                 // none of them have a touch equivalent before uiState.isAuthComplete
@@ -252,12 +266,11 @@ fun VisorLayout(
                 VoiceCommand.ToggleSession -> {
                     if (!uiState.isAuthComplete) {
                         talk("Log in first to start a session.")
-                    } else if (currentRoute == "home") {
+                    } else {
+                        if (currentRoute != "home") viewModel.home()
                         val startingUp = !uiState.isSessionActive
                         viewModel.toggleSession()
                         talk(if (startingUp) "Starting session" else "Ending session")
-                    } else {
-                        talk("Go to Home to start or end a session.")
                     }
                 }
 

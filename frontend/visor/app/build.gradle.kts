@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "ucf.visor"
+        applicationId = "edu.ucf.visor"
         minSdk = 31
         targetSdk = 34
         versionCode = 1
@@ -39,10 +39,16 @@ android {
         vectorDrawables { useSupportLibrary = true }
 
         // Meta Wearables Device Access Toolkit Setup
-        // Without Developer Mode, these values need to be set with credentials from the app registered
-        // in Wearables Developer Center
-        manifestPlaceholders["mwdat_application_id"] = ""
-        manifestPlaceholders["mwdat_client_token"] = ""
+        // Set them in local.properties — which is gitignored, so they stay out of
+        // version control the same way github_token does:
+        //   mwdat_application_id=<from Wearables Developer Center>
+        //   mwdat_client_token=<from Wearables Developer Center>
+        manifestPlaceholders["mwdat_application_id"] =
+            providers.gradleProperty("mwdat_application_id").orNull
+                ?: localProperties.getProperty("mwdat_application_id", "")
+        manifestPlaceholders["mwdat_client_token"] =
+            providers.gradleProperty("mwdat_client_token").orNull
+                ?: localProperties.getProperty("mwdat_client_token", "")
     }
 
     buildTypes {
