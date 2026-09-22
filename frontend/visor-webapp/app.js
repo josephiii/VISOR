@@ -234,13 +234,16 @@
         lastTier = t.tier;
       }
       html += '<button class="list-item focusable" data-action="pick-trial" data-trial="' + t.id + '">' +
+        '<span class="list-item-icon">' + (t.worn ? '◉' : '▭') + '</span>' +
         '<span class="list-item-content">' +
         '<span class="list-item-title">' + t.title + '</span>' +
-        '<span class="list-item-meta">' + formatDuration(t.durationSec) + '</span>' +
+        '<span class="list-item-meta">' + formatDuration(t.durationSec) +
+        ' · ' + (t.worn ? 'worn' : 'on a table') + '</span>' +
         '</span></button>';
     });
     container.innerHTML = html;
-    setText('trials-status', VisorProtocol.TRIALS.length + ' trials');
+    setText('trials-status', VisorProtocol.TRIALS.length + ' trials · ' +
+            formatDuration(VisorProtocol.totalSeconds()) + ' total');
   }
 
   function formatDuration(sec) {
@@ -255,6 +258,12 @@
     state.pendingTrial = t;
     setText('brief-title', t.title);
     setText('brief-duration', formatDuration(t.durationSec));
+    setText('brief-worn', t.worn ? 'Worn on your head' : 'NOT worn — on a table');
+    setText('brief-prep', t.worn
+      ? formatDuration(t.prepSec) + ' to get into position before recording starts.'
+      : formatDuration(t.prepSec) + ' to take the glasses off and lay them down '
+        + 'before recording starts. Listen for the chimes — you will not be able '
+        + 'to see the display.');
     setText('brief-setup', t.setup);
     setText('brief-purpose', t.purpose);
     navigateTo('brief');
@@ -277,18 +286,30 @@
     };
 
     setText('run-trial', t.title);
-    setText('run-cue', t.cue ? 'GET READY' : 'RECORDING');
+    setText('run-phase', 'GET READY');
+    setText('run-cue', String(t.prepSec));
+    setText('run-hint', t.worn ? 'Get into position' : 'Take the glasses off and lay them flat');
     setText('run-clock', '0 / ' + t.durationSec + ' s');
+    setText('run-counts', '');
     el('run-progress').style.width = '0%';
     navigateTo('run');
 
     state.runner = new VisorProtocol.Runner(state.recorder, {
+      onPrep: function(remaining) {
+        setText('run-cue', String(remaining));
+      },
+      onRecordingStart: function(trial) {
+        setText('run-phase', 'RECORDING');
+        setText('run-cue', trial.cue ? '—' : 'HOLD');
+        setText('run-hint', trial.worn ? '' : 'Do not touch until the end chime');
+      },
       onCue: function(label) { setText('run-cue', label); },
       onTick: function(elapsed, total, counts) {
         setText('run-clock', Math.floor(elapsed) + ' / ' + total + ' s');
         el('run-progress').style.width = ((elapsed / total) * 100).toFixed(1) + '%';
         setText('run-counts', 'motion ' + counts.motion + ' · orient ' + counts.orientation);
       },
+      onPrepAbort: function() { navigateTo('trials'); },
       onFinish: onTrialFinish,
     });
 
@@ -473,14 +494,18 @@
       }
     });
 
-    // A trial must not keep recording once the app is backgrounded: the sample
-    // stream pauses there, which would silently corrupt the rate statistics.
+    // Backgrounding marks the recording rather than aborting it. The static
+    // trials require the glasses to sit face-down on a table for minutes, where
+    // the display sleeps — aborting there would make those trials impossible to
+    // complete. The sample stream does pause while hidden, so the transition is
+    // recorded as a mark and the analysis flags the resulting gap in QC.
     document.addEventListener('visibilitychange', function() {
       if (document.hidden) {
         stopReadout();
-        if (state.runner && state.runner.running) state.runner.abort();
-      } else if (state.screen === 'readout') {
-        startReadout();
+        if (state.recorder.recording) state.recorder.mark('visibility_hidden');
+      } else {
+        if (state.recorder.recording) state.recorder.mark('visibility_visible');
+        if (state.screen === 'readout') startReadout();
       }
     });
   }

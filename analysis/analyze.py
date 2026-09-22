@@ -25,8 +25,15 @@ DEFAULT_ASSETS = REPO_ROOT / "documentation" / "assets" / "imu"
 DEFAULT_REPORT = REPO_ROOT / "documentation" / "testing" / "imu-characterization-report.md"
 DEFAULT_SUMMARY = REPO_ROOT / "data" / "imu-analysis" / "summary.json"
 
-# Trials whose recordings are stationary, so bias/noise/Allan statistics are valid.
-STATIC_TRIALS = {"A1_static_rest", "A2_static_extended", "A3_six_position", "B5_impulse_taps"}
+# Trials recorded with the glasses at rest on a surface, so bias/noise/Allan
+# statistics are valid. Kept as a set of ids rather than a tier prefix because
+# not every Tier A trial is necessarily stationary in future revisions.
+STATIC_TRIALS = {"A1_static_rest", "A2_static_extended"}
+
+# Retired trials. Both required the glasses to be unworn while responding to
+# on-screen cues, which is impossible: the display is not visible on a table.
+# Sessions recorded before their removal still load and analyze normally.
+RETIRED_TRIALS = {"A3_six_position", "B5_impulse_taps"}
 
 
 def analyze_session(session: loader.Session) -> dict[str, Any]:
@@ -71,6 +78,19 @@ def analyze_session(session: loader.Session) -> dict[str, Any]:
         qc["violations"].append(f"dropout fraction {timing.dropout_fraction*100:.2f}% exceeds 1%")
     if timing and timing.longest_gap_ms > 250:
         qc["violations"].append(f"longest gap {timing.longest_gap_ms:.0f} ms exceeds 250 ms")
+
+    # The app keeps recording when backgrounded but marks the transition. The
+    # sample stream really does pause while hidden, so any such interval is a
+    # genuine hole in the data rather than a quiet stretch of signal.
+    hidden = sum(1 for m in session.marks if m.get("label") == "visibility_hidden")
+    if hidden:
+        qc["visibility_interruptions"] = hidden
+        qc["violations"].append(
+            f"app was backgrounded {hidden} time(s) during recording; "
+            "sampling pauses while hidden")
+
+    if session.trial_id in RETIRED_TRIALS:
+        qc["retired_trial"] = True
 
     # Bias, noise and Allan statistics are only meaningful on a stationary trial.
     if session.trial_id in STATIC_TRIALS:

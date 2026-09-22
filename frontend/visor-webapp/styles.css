@@ -263,6 +263,19 @@ html, body {
   text-align: center;
 }
 .run-trial { font-size: 15px; color: var(--text-secondary); }
+.run-phase {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+}
+.run-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  max-width: 520px;
+}
 /* Read at a glance while the head is in motion — large, bright, high contrast. */
 .run-cue {
   font-size: 68px;

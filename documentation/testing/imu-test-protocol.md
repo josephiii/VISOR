@@ -11,6 +11,11 @@
 
 ---
 
+> Running a session? Use the
+> **[Tester Guide](./imu-tester-guide.md)** instead — it is the
+> plain-language, step-by-step version written for test runners and testers.
+> This document is the formal methodology behind it.
+
 ## Purpose
 
 Establish, with reproducible evidence, what the Meta Ray-Ban Display (MRBD)
@@ -51,23 +56,52 @@ Before the first session of a day:
 
 ## Trial battery
 
-Fifteen trials in four tiers. Tier A establishes what the instrument is; B
+Thirteen trials in four tiers. Tier A establishes what the instrument is; B
 establishes its dynamic limits; C tests VISOR-relevant behaviour; D tests
 sustained operation.
 
-### Tier A — Instrument characterization
+### Preparation countdown
+
+Every trial opens with a **preparation countdown** during which nothing is
+recorded. Recording begins only when the countdown ends. This exists because
+the Tier A trials are performed with the glasses off: without it, the act of
+removing the glasses and setting them down was captured as though it were the
+static measurement, and the resulting noise and bias figures described the
+tester's hands rather than the sensor.
+
+| Trial type | Preparation |
+|---|---|
+| Static (A1, A2) | 20 s — remove the glasses and lay them flat |
+| Worn, stationary | 8 s — get into position and settle |
+| Worn, moving (C3, C4) | 12 s — reach a clear path or a stable chair |
+
+### Audio cues
+
+The app plays four distinct sounds. These are not decoration: during a static
+trial the glasses are face down on a table, so sound is the only channel that
+can tell the tester what is happening.
+
+| Sound | Meaning |
+|---|---|
+| Single short blips | Final three seconds of the countdown |
+| Two rising tones | Recording has started |
+| Three falling tones | Trial finished normally — safe to pick the glasses up |
+| Two low tones | Trial aborted |
+| Soft high blip | A cue changed (worn trials) |
+
+### Tier A — Instrument characterization (glasses NOT worn)
 
 | ID | Trial | Duration | Measures |
 |---|---|---|---|
 | A1 | Static rest | 2 min | Noise floor, accel bias, gyro zero-rate offset, Allan deviation |
 | A2 | Static extended | 5 min | Bias instability, low-frequency drift at longer averaging times |
-| A3 | Six-position static | 2.5 min | Per-axis bias and scale factor (standard six-position method) |
 
 Tier A trials are performed with the glasses **resting on a solid surface, not
 worn**. A worn "still" recording contains physiological tremor and is not a
-valid noise-floor measurement.
+valid noise-floor measurement. Neither trial uses cues, so nothing needs to be
+read from the display while the glasses are on the table.
 
-### Tier B — Dynamic response
+### Tier B — Dynamic response (worn)
 
 | ID | Trial | Duration | Measures |
 |---|---|---|---|
@@ -75,20 +109,19 @@ valid noise-floor measurement.
 | B2 | Pitch sweeps (paced) | 1 min | Pitch response, nod detection feasibility |
 | B3 | Roll sweeps (paced) | 1 min | Roll response, axis cross-coupling |
 | B4 | Rapid head turns | 30 s | Angular-rate range, saturation, aliasing |
-| B5 | Impulse taps | 45 s | Impulse response, event-timestamp fidelity |
 
-### Tier C — Rehabilitation-relevant behaviour
+### Tier C — Rehabilitation-relevant behaviour (worn)
 
 | ID | Trial | Duration | Measures |
 |---|---|---|---|
-| C1 | Stillness hold (worn) | 1 min | Dwell threshold for gating capture |
+| C1 | Stillness hold | 1 min | Dwell threshold for gating capture |
 | C2 | Compensatory scanning | 1.5 min | Scan amplitude, rate, left/right symmetry |
 | C3 | Walking gait | 1 min | Step cadence, head-bob amplitude |
 | C4 | Sit-to-stand cycles | 1.25 min | Postural-transition signature |
 | C5 | Reading posture | 1 min | Sustained near-task pose, context classification |
 | C6 | Unstructured baseline | 5 min | Realistic mixed activity, false-positive estimation |
 
-### Tier D — System constraints
+### Tier D — System constraints (worn)
 
 | ID | Trial | Duration | Measures |
 |---|---|---|---|
@@ -107,10 +140,12 @@ signal cannot be distinguished from noise that happens to resemble one.
 Standard run order for a full session:
 
 ```
-A1 → A2 → A3 → B1 → B2 → B3 → B4 → B5 → C1 → C2 → C3 → C4 → C5 → C6 → D1
+A1 → A2 → B1 → B2 → B3 → B4 → C1 → C2 → C3 → C4 → C5 → C6 → D1
 ```
 
-Total wall time is roughly 35 minutes plus setup. Tiers may be run on separate
+Total wall time is roughly 34 minutes including preparation countdowns, plus
+setup. Running the two Tier A trials first gets the glasses-off work out of the
+way in one block rather than interleaving it. Tiers may be run on separate
 days; each trial is self-contained and independently analyzable.
 
 **Safety.** B4 (rapid turns) and C3/C4 (walking, sit-to-stand) involve movement
@@ -160,7 +195,15 @@ A session is **valid** for characterization only if all of the following hold.
 | Longest gap | < 250 ms |
 | Trial outcome | `completed`, not `aborted` |
 | Duration | Within 2% of the planned trial duration |
-| Tier A only — motion present | Gravity-vector SD below the worn-still figure from C1 |
+| Backgrounding | No `visibility_hidden` marks during recording |
+| Tier A only — stationarity | Peak gyro SD < 2 °/s and accel peak-to-peak < 1 m/s² |
+
+The app does **not** stop recording when it is backgrounded, because the
+glasses display sleeps during a table-top trial and aborting there would make
+Tier A impossible to complete. Sampling really does pause while hidden, so the
+transition is written into the recording as a mark and the analysis counts it
+as a QC violation — the data is kept and flagged rather than silently lost or
+silently trusted.
 
 A session failing any criterion is retained but excluded from pooled
 statistics, with the exclusion recorded. Discarding data silently is not
