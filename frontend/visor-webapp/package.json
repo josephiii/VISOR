@@ -1,0 +1,11 @@
+{
+  "name": "visor-webapp",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  }
+}
