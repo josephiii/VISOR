@@ -30,6 +30,8 @@ import ucf.visor.capture.FakePhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.RealCapture
 import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.ocr.ObjectDetector
+import ucf.visor.capture.DescribeObject
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
@@ -52,6 +54,12 @@ class MainActivity : ComponentActivity() {
             "VISORWHATDOESTHISSAY",
             "VISORREADTHIS",
             "VISORWHATISTHIS",
+        )
+
+        private val SCENE_WAKE_PHRASES = setOf(
+            "VISORWHATDOYOUSEE",
+            "VISORWHATSINFRONTOFME",
+            "VISORWHATAMIHOLDING"
         )
         private const val NAV_WAKE_PHRASE = "VISORGO"
 
@@ -103,6 +111,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
+    private lateinit var sceneReader: ReadRequester
+    private lateinit var objectDetector: ObjectDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -133,10 +143,20 @@ class MainActivity : ComponentActivity() {
             }
         }
         textReaderOCR = TextReaderOCR()
+        objectDetector = ObjectDetector()
         speaker = Speaker(this)
 
-        // swap for RealPhoto once glasses session exists
-        reader = RealCapture(FakePhotoSource(this), textReaderOCR)
+        // OCR reads the label image (swap for RealPhoto source once session exists)
+        reader = RealCapture(
+            FakePhotoSource(this, "photo_test/sample_pill_bottle.jpg"),
+            textReaderOCR,
+        )
+
+        // object detector reads the objects image (swap for RealPhoto source once session exists)
+        sceneReader = DescribeObject(
+            FakePhotoSource(this, "photo_test/living_room.png"),
+            objectDetector,
+        )
 
         voiceNav = VoiceNavigationController(
             context = this,
@@ -154,6 +174,7 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
                 in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
+                in SCENE_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
@@ -167,6 +188,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         textReaderOCR.close()
+        objectDetector.close()
         speaker.shutdown()
         listener.shutdown()
         voiceNav.shutdown()
