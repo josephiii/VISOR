@@ -24,6 +24,10 @@ data/imu-sessions/
 data/imu-sessions-synthetic/
 data/imu-analysis/
 
+documentation/assets/imu
+documentation/testing/imu-characterization-report.md
+
+
 # Vercel
 **/.vercel/
 
