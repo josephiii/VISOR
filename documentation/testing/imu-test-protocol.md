@@ -240,8 +240,7 @@ Stated here so they are not mistaken for findings:
   — only self-consistency, noise, and repeatability. Claims requiring absolute
   accuracy need a calibrated reference.
 - **Absolute latency is not measured.** Sensor-to-event latency requires a
-  synchronized external trigger. B5 (impulse taps) bounds the *relative* timing
-  behaviour only.
+  synchronized external trigger.
 - **Browser-mediated access.** Everything measured is what the Web API exposes,
   which may be filtered, fused, or rate-limited relative to the raw hardware.
   Findings characterize *the platform as available to a Web App*, which is the
