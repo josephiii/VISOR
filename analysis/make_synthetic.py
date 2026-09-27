@@ -206,12 +206,222 @@ def walking(rng, duration_s=60.0, fs=60.0) -> dict:
                     "Step cadence from head-mounted IMU.", t, gyro, accel, marks, fs)
 
 
+# ============================ native (MWDAT) sessions ============================
+#
+# visor.imu.session/2, as the Android head-motion lab writes it: raw MWDAT
+# MotionSamples plus per-frame image shifts. The camera sees the head's own
+# rotation through a known scale and latency, so vor.py's recovery of lag,
+# scale, axis mapping and residual can be checked against the truth.
+
+NATIVE_TRUTH = {
+    "motion_rate_hz": 60.0,
+    "video_fps": 30.0,
+    "scale_px_per_deg": 6.0,
+    # Image content of a frame stamped t shows the head as it was at t - latency.
+    "sensor_to_image_latency_ms": 35.0,
+    # Turning left (+yaw about +Y) slides the scene right (+x); nodding up
+    # (+pitch about +X) slides it down (+y is down the image).
+    "axis_mapping": "image x = +scale*yaw rate (glasses Y); image y = -scale*pitch rate (glasses X)",
+    "image_noise_px_sd": 0.4,
+    "motion_delivery_ms": [20, 60],
+    "video_delivery_ms": [45, 95],
+    "blurred_frame_fraction": 0.03,
+    "skipped_analysis_fraction": 0.02,
+    # With a shared clock the lag is measured directly; with separate clocks it
+    # is measured on the phone clock, offset by min video delay - min motion delay.
+    "expected_lag_ms_shared_clock": 35.0,
+    "expected_lag_ms_separate_clocks": 35.0 + 45 - 20,
+    # Image-shift noise of 0.4 px per frame at 30 fps, over 6 px/deg.
+    "expected_residual_dps": 0.4 * 30 / 6.0,
+}
+
+
+def _quat_yaw_pitch(yaw: np.ndarray, pitch: np.ndarray) -> np.ndarray:
+    """(w, x, y, z) for a yaw about +Y followed by a pitch about +X."""
+    cy, sy = np.cos(yaw / 2), np.sin(yaw / 2)
+    cp, sp = np.cos(pitch / 2), np.sin(pitch / 2)
+    # q_yaw = (cy, 0, sy, 0); q_pitch = (cp, sp, 0, 0); q = q_yaw * q_pitch
+    return np.array([cy * cp, cy * sp, sy * cp, -sy * sp])
+
+
+def native_session(rng, trial_id: str, title: str, purpose: str, duration_s: float,
+                   yaw_deg, pitch_deg, cue: dict | None, shared_clock: bool) -> dict:
+    """One synthetic head-motion lab trial with a known camera model."""
+    truth = NATIVE_TRUTH
+    fs, fps = truth["motion_rate_hz"], truth["video_fps"]
+    scale = truth["scale_px_per_deg"]
+    latency = truth["sensor_to_image_latency_ms"] / 1000.0
+    rad = np.pi / 180
+
+    # --- motion: sampled on the glasses clock, with ~0.4 ms timing jitter ----
+    t_m = np.arange(0.0, duration_s, 1.0 / fs)
+    t_m = np.sort(t_m + rng.normal(0, 0.0004, t_m.size))
+    h = 1e-4
+    yaw = yaw_deg(t_m) * rad
+    pitch = pitch_deg(t_m) * rad
+    yaw_rate = (yaw_deg(t_m + h) - yaw_deg(t_m - h)) / (2 * h) * rad
+    pitch_rate = (pitch_deg(t_m + h) - pitch_deg(t_m - h)) / (2 * h) * rad
+    n = t_m.size
+    gyro = np.array([pitch_rate + rng.normal(0, 0.003, n),
+                     yaw_rate + rng.normal(0, 0.003, n),
+                     rng.normal(0, 0.003, n)])
+    accel = np.array([rng.normal(0, 0.05, n),
+                      GRAVITY * np.cos(pitch) + rng.normal(0, 0.05, n),
+                      -GRAVITY * np.sin(pitch) + rng.normal(0, 0.05, n)])
+    quat = _quat_yaw_pitch(yaw, pitch)
+    m_delay = rng.uniform(*truth["motion_delivery_ms"], n)
+    motion_origin_ns = 5_000_000_000_000  # ~83 min of glasses uptime
+    t_device_ms = t_m * 1000.0
+
+    # --- video: frames stamped on either the same clock or their own --------
+    t_f = np.arange(0.0, duration_s, 1.0 / fps)
+    nf = t_f.size
+    content_t = t_f - latency
+    yaw_img = yaw_deg(content_t)
+    pitch_img = pitch_deg(content_t)
+    v_delay = rng.uniform(*truth["video_delivery_ms"], nf)
+    shift_x = np.full(nf, np.nan)
+    shift_y = np.full(nf, np.nan)
+    peak = np.full(nf, np.nan)
+    texture = np.full(nf, np.nan)
+    ref = np.full(nf, np.nan)
+    last = 0
+    for k in range(1, nf):
+        if rng.random() < truth["skipped_analysis_fraction"]:
+            continue  # recorded, not analyzed; the next frame spans the gap
+        shift_x[k] = scale * (yaw_img[k] - yaw_img[last]) + rng.normal(0, truth["image_noise_px_sd"])
+        shift_y[k] = -scale * (pitch_img[k] - pitch_img[last]) + rng.normal(0, truth["image_noise_px_sd"])
+        peak[k] = rng.uniform(0.35, 0.9)
+        texture[k] = rng.uniform(18, 40)
+        if rng.random() < truth["blurred_frame_fraction"]:
+            peak[k] = rng.uniform(0.02, 0.1)  # below the gate: must be ignored
+            shift_x[k] += rng.normal(0, 25)
+        ref[k] = last
+        last = k
+
+    # Phone clock: recording starts at t = 0 on both streams' true time.
+    t_phone_m = t_device_ms + m_delay
+    t_phone_v = t_f * 1000.0 + v_delay
+    if shared_clock:
+        video_origin_us = motion_origin_ns // 1000  # same monotonic clock
+    else:
+        video_origin_us = 123_456  # a media clock of its own
+
+    marks = [{"t": 0.0, "label": "trial_start", "extra": {"trialId": trial_id}}]
+    if cue:
+        for i in range(int(duration_s * 1000 / cue["intervalMs"])):
+            marks.append({"t": i * cue["intervalMs"], "label": "cue",
+                          "extra": {"index": i, "label": cue["steps"][i % 2]}})
+    marks.append({"t": duration_s * 1000.0, "label": "trial_end",
+                  "extra": {"outcome": "completed", "reason": None}})
+
+    def col(a, p=6):
+        return _round(np.asarray(a, dtype="float64"), p)
+
+    nan_m = np.full(n, np.nan)
+    return {
+        "schema": "visor.imu.session/2",
+        "startedAt": "2026-09-25T12:00:00.000Z",
+        "t0Epoch": 1790340000000,
+        "durationMs": duration_s * 1000.0,
+        "meta": {
+            "sessionId": f"SYNTH_{trial_id}_{'shared' if shared_clock else 'separate'}",
+            "participant": "SYNTHETIC",
+            "trialId": trial_id,
+            "trialTitle": title,
+            "tier": "V",
+            "worn": True,
+            "purpose": purpose,
+            "camera": True,
+            "cue": cue,
+            "platform": "android-mwdat",
+            "sdk": {"name": "Meta Wearables Device Access Toolkit", "version": "1.0.0"},
+            "glassesAtStart": {"model": "Ray-Ban Meta"},
+            "outcome": "completed",
+            "synthetic": True,
+            "consent": "synthetic-not-human-data",
+            "groundTruth": {**truth, "shared_clock": shared_clock},
+            "clocks": {
+                "phoneClock": "SystemClock.elapsedRealtimeNanos",
+                "phoneOriginNs": "900000000000",
+                "motionDeviceOriginNs": str(motion_origin_ns),
+                "videoPtsOriginUs": str(video_origin_us),
+            },
+            "motionSourceCodes": {"0": "GLASSES", "1": "NEURAL_BAND", "2": "UNKNOWN"},
+        },
+        "marks": marks,
+        "streams": {
+            "dat_motion": {
+                "n": n,
+                "nullCounts": {"mx": n, "my": n, "mz": n},
+                "columns": {
+                    "tPhone": col(t_phone_m, 4), "tDevice": col(t_device_ms, 4),
+                    "ax": col(accel[0]), "ay": col(accel[1]), "az": col(accel[2]),
+                    "gx": col(gyro[0]), "gy": col(gyro[1]), "gz": col(gyro[2]),
+                    "mx": col(nan_m), "my": col(nan_m), "mz": col(nan_m),
+                    "qw": col(quat[0]), "qx": col(quat[1]), "qy": col(quat[2]), "qz": col(quat[3]),
+                    "source": col(np.zeros(n), 0),
+                },
+            },
+            "dat_video": {
+                "n": nf,
+                "nullCounts": {"shiftX": int(np.isnan(shift_x).sum())},
+                "columns": {
+                    "tPhone": col(t_phone_v, 4), "tPts": col(t_f * 1000.0, 4),
+                    "width": col(np.full(nf, 360), 0), "height": col(np.full(nf, 640), 0),
+                    "shiftX": col(shift_x, 4), "shiftY": col(shift_y, 4),
+                    "peak": col(peak, 4), "textureSd": col(texture, 3),
+                    "refIndex": col(ref, 0), "analysisMs": col(np.full(nf, 8.0), 3),
+                },
+            },
+        },
+    }
+
+
+def vor_yaw(rng, shared_clock=True) -> dict:
+    return native_session(
+        rng, "V1_vor_yaw_paced", "Side-to-side head turns, eyes on a target",
+        "Yaw rotation vs. image shift at a paced 1 Hz.", 45.0,
+        yaw_deg=lambda t: 15.0 * np.sin(2 * np.pi * 1.0 * t),
+        pitch_deg=lambda t: 1.0 * np.sin(2 * np.pi * 0.2 * t),
+        cue={"intervalMs": 500, "steps": ["LEFT", "RIGHT"], "style": "METRONOME"},
+        shared_clock=shared_clock)
+
+
+def vor_pitch(rng) -> dict:
+    return native_session(
+        rng, "V2_vor_pitch_paced", "Up-and-down nods, eyes on a target",
+        "Pitch rotation vs. vertical image shift at 1 Hz.", 45.0,
+        yaw_deg=lambda t: 1.0 * np.sin(2 * np.pi * 0.15 * t),
+        pitch_deg=lambda t: 10.0 * np.sin(2 * np.pi * 1.0 * t),
+        cue={"intervalMs": 500, "steps": ["UP", "DOWN"], "style": "METRONOME"},
+        shared_clock=True)
+
+
+def slow_pan(rng) -> dict:
+    return native_session(
+        rng, "V4_slow_pan", "Slow look-around (camera calibration)",
+        "Slow yaw for pixels-per-degree calibration.", 45.0,
+        yaw_deg=lambda t: 30.0 * np.sin(2 * np.pi * t / 6.0),
+        pitch_deg=lambda t: 1.5 * np.sin(2 * np.pi * 0.1 * t),
+        cue={"intervalMs": 3000, "steps": ["LEFT", "RIGHT"], "style": "SPOKEN"},
+        shared_clock=True)
+
+
 BUILDERS = {
     "A1_static_rest": static_rest,
     "B1_yaw_paced": yaw_paced,
     "C1_stillness_hold": stillness_hold,
     "C2_scanning_pattern": scanning,
     "C3_walk_straight": walking,
+}
+
+# Native builders, keyed by the file name they write.
+NATIVE_BUILDERS = {
+    "V1_vor_yaw_paced_shared": lambda rng: vor_yaw(rng, shared_clock=True),
+    "V1_vor_yaw_paced_separate": lambda rng: vor_yaw(rng, shared_clock=False),
+    "V2_vor_pitch_paced": vor_pitch,
+    "V4_slow_pan": slow_pan,
 }
 
 
@@ -235,7 +445,19 @@ def main() -> None:
         print(f"  + {dest.relative_to(out_root)}  "
               f"({dest.stat().st_size/1024:.0f} KB, {session['streams']['devicemotion']['n']} samples)")
 
-    print(f"\nWrote {len(BUILDERS)} synthetic sessions -> {out_root}")
+    print(f"Native ground truth: {json.dumps(NATIVE_TRUTH)}")
+    for name, build in NATIVE_BUILDERS.items():
+        session = build(rng)
+        trial_id = session["meta"]["trialId"]
+        dest = out_root / "SYNTHETIC" / trial_id / f"SYNTH_{name}.json.gz"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with gzip.open(dest, "wt", encoding="utf-8") as fh:
+            json.dump(session, fh)
+        print(f"  + {dest.relative_to(out_root)}  "
+              f"({dest.stat().st_size/1024:.0f} KB, {session['streams']['dat_motion']['n']} motion samples, "
+              f"{session['streams']['dat_video']['n']} frames)")
+
+    print(f"\nWrote {len(BUILDERS) + len(NATIVE_BUILDERS)} synthetic sessions -> {out_root}")
     print("These are NOT measurements. Never cite them as results.")
 
 

@@ -18,7 +18,9 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.meta.wearable.dat.core.types.ThermalLevel
 import com.meta.wearable.dat.mockdevice.MockDeviceKit
+import com.meta.wearable.dat.mockdevice.api.GlassesModel
 import com.meta.wearable.dat.mockdevice.api.MockGlasses
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +28,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
+import ucf.visor.motionlab.SyntheticMotion
+
+/** The model name a tester recognizes, for the mock device list. */
+fun GlassesModel.displayName(): String = when (this) {
+    GlassesModel.RAYBAN_META -> "Ray-Ban Meta (mock)"
+    GlassesModel.META_RAYBAN_DISPLAY -> "Meta Ray-Ban Display (mock)"
+    GlassesModel.OAKLEY_META_HSTN -> "Oakley Meta HSTN (mock)"
+    GlassesModel.OAKLEY_META_VANGUARD -> "Oakley Meta Vanguard (mock)"
+    GlassesModel.RAYBAN_META_OPTICS -> "Ray-Ban Meta Optics (mock)"
+    GlassesModel.META_GLASSES -> "Meta glasses (mock)"
+}
 
 class DebugViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -36,7 +48,7 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
 
     private val mockDeviceKit = MockDeviceKit.getInstance(application.applicationContext)
 
-    private val _uiState = MutableStateFlow(DebugUiState())
+    private val _uiState = MutableStateFlow(DebugUiState(isEnabled = mockDeviceKit.isEnabled))
     val uiState: StateFlow<DebugUiState> = _uiState.asStateFlow()
 
     fun enable() {
@@ -49,27 +61,74 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isEnabled = false, pairedDevices = emptyList()) }
     }
 
-    // Create a simulated Ray-Ban Meta glasses device
-    fun pairRaybanMeta() {
+    /**
+     * Pairs a simulated pair of glasses. MWDAT 0.8 replaced `pairRaybanMeta()`
+     * with this one factory; 1.0 adds [GlassesModel.META_RAYBAN_DISPLAY], whose
+     * mock renders the Display capability on the phone (MockDisplayKit).
+     */
+    fun pairGlasses(model: GlassesModel) {
         viewModelScope.launch {
-            try {
-                Log.d(TAG, "Pairing RayBan Meta device")
-                val mockDevice = mockDeviceKit.pairedDevices // uses collection now...
-                val deviceName = "RayBan Meta Glasses"
-                val deviceInfo =
-                    MockDeviceInfo(
-                        device = mockDevice.first() as MockGlasses,
-                        deviceId = UUID.randomUUID().toString(),
-                        deviceName = deviceName,
+            mockDeviceKit.pairGlasses(model)
+                .onSuccess { glasses ->
+                    val deviceInfo = MockDeviceInfo(
+                        device = glasses,
+                        model = model,
+                        deviceId = glasses.deviceIdentifier.toString(),
+                        deviceName = model.displayName(),
                     )
-                _uiState.update { currentState ->
-                    currentState.copy(pairedDevices = currentState.pairedDevices + deviceInfo)
+                    _uiState.update { currentState ->
+                        currentState.copy(pairedDevices = currentState.pairedDevices + deviceInfo)
+                    }
+                    Log.d(TAG, "Paired mock $model: ${deviceInfo.deviceId}")
                 }
-                Log.d(TAG, "Successfully paired RayBan Meta device: ${deviceInfo.deviceId}")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to pair RayBan Meta device", e)
-            }
+                .onFailure { error, _ ->
+                    Log.e(TAG, "Failed to pair mock $model: ${error.description}")
+                    _uiState.update { it.copy(lastAction = "Could not pair: ${error.description}") }
+                }
         }
+    }
+
+    /**
+     * Replays a synthetic 1 Hz, ±15° head-shake on the mock glasses' IMU
+     * (MWDAT 1.0 MockMotionKit), looped, so the head-motion lab has motion
+     * data to record without hardware.
+     */
+    fun startSyntheticHeadMotion(deviceInfo: MockDeviceInfo) {
+        executeMockDeviceOperation(deviceInfo, "Loading synthetic head motion", deviceInfo.copy(hasMotionFeed = true)) { device ->
+            device.services.motion.setMotionFeed(SyntheticMotion.yawOscillation(), loop = true)
+        }
+    }
+
+    /** MWDAT 1.0 device state simulation: battery level on the mock pair. */
+    fun setBatteryLevel(deviceInfo: MockDeviceInfo, level: Int) {
+        executeMockDeviceOperation(deviceInfo, "Setting battery to $level%", deviceInfo) { device ->
+            device.setBatteryLevel(level)
+        }
+    }
+
+    /** MWDAT 1.0 device state simulation: glasses temperature. */
+    fun setThermalLevel(deviceInfo: MockDeviceInfo, level: ThermalLevel) {
+        executeMockDeviceOperation(deviceInfo, "Setting thermal level to $level", deviceInfo) { device ->
+            device.setThermalLevel(level)
+        }
+    }
+
+    /**
+     * Simulates "Hey Meta, start VISOR" (MWDAT 1.0 MockVoiceInvocationKit).
+     * Only reaches VISOR while its voice-invocation stream is connected; a null
+     * request id means nothing was listening, not that the launch failed.
+     */
+    fun simulateVoiceLaunch(deviceInfo: MockDeviceInfo) {
+        val kit = deviceInfo.device.services.voiceInvocation
+        val message = if (!kit.hasConnectedApps()) {
+            "VISOR's voice-invocation stream is not connected yet."
+        } else {
+            kit.simulateLaunchAppAction()
+                ?.let { "Sent \"Hey Meta, start VISOR\" (request $it)." }
+                ?: "No app was listening for voice invocations."
+        }
+        Log.d(TAG, message)
+        _uiState.update { it.copy(lastAction = message) }
     }
 
     fun unpairDevice(deviceInfo: MockDeviceInfo) {

@@ -291,6 +291,39 @@ Detect sit-to-stand events.
 
 ---
 
+## The native path (MWDAT 1.0)
+
+> **Status: implemented and validated on synthetic and MockDeviceKit data;
+> no hardware measurements yet.** Nothing in this section is a result.
+
+MWDAT 1.0 (2026-09-24) added an experimental **Motion** capability, which
+brings the IMU into the Android app. VISOR's head-motion lab
+(Settings → Research) records it. Compared with the Web Apps path above:
+
+| | Web Apps (DeviceMotion) | MWDAT 1.0 Motion |
+|---|---|---|
+| Rate | ~60 Hz delivered | 5–60 Hz requested (lab uses 60) |
+| Timestamps | Arrival time in the browser | The glasses' own monotonic clock, plus phone arrival |
+| Gyroscope | °/s, W3C device axes | rad/s, glasses body frame |
+| Orientation | α/β/γ, `absolute = true` | Fused quaternion (nullable); magnetometer null on Ray-Ban Meta |
+| Source | — | Glasses vs. Neural Band per sample |
+| **Camera in the same session** | **No camera access** | **Yes**: the lab's Tier V records per-frame image shift |
+
+The last row is the reason the lab exists. It makes the second half of the
+research goal measurable: the discrepancy between IMU-measured head movement
+and the image shift the head-fixed camera sees
+(`analysis/visor_imu/vor.py`; limits stated there). It also removes the
+foreground-only constraint below for anything built on the native path, though
+MWDAT's raw video stream still pauses in the background.
+
+Open questions only hardware can close: whether video timestamps share the
+motion clock (the analysis tests it per session), whether the SDK pauses Motion
+when the glasses are taken off (it would affect the static trials), and the
+glasses' body-frame axis convention (taken from Meta's BirdSpotter sample; each
+V-trial reports its dominant axis so it can be checked).
+
+---
+
 ## Platform constraints
 
 These bound any production integration regardless of how the measurements come

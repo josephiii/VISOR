@@ -18,7 +18,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from visor_imu import loader, metrics, rehab, report  # noqa: E402
+from visor_imu import loader, metrics, rehab, report, vor  # noqa: E402
 
 DEFAULT_IN = REPO_ROOT / "data" / "imu-sessions"
 DEFAULT_ASSETS = REPO_ROOT / "documentation" / "assets" / "imu"
@@ -44,12 +44,28 @@ def analyze_session(session: loader.Session) -> dict[str, Any]:
         "trial_id": session.trial_id,
         "tier": session.tier,
         "participant": session.participant,
+        "platform": session.platform,
         "started_at": session.started_at,
         "duration_s": session.duration_s,
         "fully_null_columns": session.fully_null_columns("devicemotion"),
         "orientation_samples": int(len(session.orientation)),
         "orientation_null_columns": session.fully_null_columns("deviceorientation"),
     }
+    if session.is_native:
+        # What MWDAT delivered, in its own terms: which fields the glasses left
+        # null (magnetometer on Ray-Ban Meta, for one), and how many samples came
+        # from something other than the glasses.
+        dm = session.dat_motion
+        result["native_null_columns"] = session.fully_null_columns("dat_motion")
+        result["non_glasses_samples"] = (
+            int((dm["source"] != loader.SOURCE_GLASSES).sum()) if "source" in dm else 0)
+        arrival = metrics.timing_stats(
+            session.motion.rename(columns={"tPerf": "_device", "tEvent": "tPerf"}))
+        result["arrival_timing"] = arrival.as_dict() if arrival else None
+        if not session.dat_video.empty:
+            video_timing = metrics.timing_stats(
+                session.dat_video.rename(columns={"tPts": "tPerf"}).drop(columns=["tPhone"]))
+            result["video_timing"] = video_timing.as_dict() if video_timing else None
 
     timing = metrics.timing_stats(df)
     result["timing"] = timing.as_dict() if timing else None
@@ -88,6 +104,20 @@ def analyze_session(session: loader.Session) -> dict[str, Any]:
         qc["violations"].append(
             f"app was backgrounded {hidden} time(s) during recording; "
             "sampling pauses while hidden")
+
+    # Native sessions mark the glasses' own interruptions: a Motion capability
+    # the SDK stopped (and the lab restarted), a paused session, a camera error.
+    if session.is_native:
+        revives = sum(1 for m in session.marks if m.get("label") == "motion_revive")
+        paused = sum(1 for m in session.marks
+                     if (m.get("extra") or {}).get("state") == "PAUSED")
+        if revives:
+            qc["motion_revivals"] = revives
+            qc["violations"].append(
+                f"the glasses stopped the Motion capability mid-trial ({revives} restart attempt(s))")
+        if paused:
+            qc["pauses"] = paused
+            qc["violations"].append(f"the glasses paused a capability {paused} time(s)")
 
     if session.trial_id in RETIRED_TRIALS:
         qc["retired_trial"] = True
@@ -137,6 +167,12 @@ def analyze_session(session: loader.Session) -> dict[str, Any]:
     if session.trial_id.startswith("C3"):
         result["gait"] = rehab.gait_cadence(session)
 
+    # The measurement only the native path can make: head rotation against the
+    # head-fixed camera's image shift. See visor_imu/vor.py for what it does and
+    # does not claim.
+    if session.is_native and not session.dat_video.empty:
+        result["image_motion"] = vor.analyze(session)
+
     segments = rehab.segment_by_cues(session)
     if len(segments):
         result["cue_segments"] = {
@@ -180,6 +216,11 @@ def build_figures(session: loader.Session, analysis: dict[str, Any],
     if gait:
         figures["Gait spectrum"] = report.fig_gait(session, assets / f"{stem}_gait.png", gait)
 
+    image_motion = analysis.get("image_motion") or {}
+    if image_motion.get("reliable"):
+        figures["Head rotation vs. camera image"] = report.fig_image_motion(
+            session, image_motion, assets / f"{stem}_image_motion.png")
+
     return {k: v for k, v in figures.items() if v is not None}
 
 
@@ -187,6 +228,11 @@ def platform_summary(results: list[dict[str, Any]]) -> str:
     """Cross-session findings — the part a reviewer reads first."""
     if not results:
         return "_No sessions analyzed._\n"
+
+    native = [r for r in results if r.get("platform") == "android-mwdat"]
+    results = [r for r in results if r.get("platform") != "android-mwdat"]
+    if not results:
+        return native_summary(native)
 
     motion_rates = [r["timing"]["effective_hz"] for r in results if r.get("timing")]
     orient_counts = [r["orientation_samples"] for r in results]
@@ -197,7 +243,7 @@ def platform_summary(results: list[dict[str, Any]]) -> str:
     for r in results:
         null_union.update(r.get("fully_null_columns") or [])
 
-    lines = ["| Finding | Value |", "|---|---|"]
+    lines = ["**Web IMU Lab (DeviceMotion API)**", "", "| Finding | Value |", "|---|---|"]
     lines.append(f"| Sessions analyzed | {len(results)} |")
     lines.append(f"| Trials represented | {len({r['trial_id'] for r in results})} |")
     if motion_rates:
@@ -232,7 +278,38 @@ def platform_summary(results: list[dict[str, Any]]) -> str:
                 "This is a documented-versus-actual gap worth citing directly.\n\n"
             )
 
-    return out
+    return out + native_summary(native)
+
+
+def native_summary(native: list[dict[str, Any]]) -> str:
+    """Cross-session findings for the Android head-motion lab (MWDAT Motion)."""
+    if not native:
+        return ""
+    lines = ["**Android head-motion lab (MWDAT 1.0 Motion)**", "", "| Finding | Value |", "|---|---|"]
+    lines.append(f"| Sessions analyzed | {len(native)} |")
+    rates = [r["timing"]["effective_hz"] for r in native if r.get("timing")]
+    if rates:
+        lines.append(f"| Motion rate on the glasses' clock, range | {min(rates):.1f} – {max(rates):.1f} Hz |")
+    arrival = [r["arrival_timing"]["dt_p99_ms"] for r in native if r.get("arrival_timing")]
+    if arrival:
+        lines.append(f"| Worst p99 phone-arrival interval | {max(arrival):.1f} ms |")
+    nulls: set[str] = set()
+    for r in native:
+        nulls.update(r.get("native_null_columns") or [])
+    if nulls:
+        lines.append(f"| Motion fields null in every session | `{'`, `'.join(sorted(nulls))}` |")
+    attempted = [r["image_motion"] for r in native if (r.get("image_motion") or {}).get("analyzed")]
+    camera = [c for c in attempted if c.get("reliable")]
+    if attempted:
+        lines.append(f"| Camera trials with a reliable IMU-image fit | {len(camera)} of {len(attempted)} |")
+    if camera:
+        lags = [c["lag_ms"] for c in camera]
+        scales = [c["scale_px_per_deg"] for c in camera]
+        lines.append(f"| IMU-to-image lag, range | {min(lags):.0f} – {max(lags):.0f} ms |")
+        lines.append(f"| Image scale, range | {min(scales):.2f} – {max(scales):.2f} px/° |")
+        bases = sorted({c['clocks']['basis'] for c in camera})
+        lines.append(f"| Clock basis used | {', '.join(bases)} |")
+    return "\n".join(lines) + "\n\n"
 
 
 def main() -> None:
@@ -267,9 +344,15 @@ def main() -> None:
     except ValueError:
         assets_rel = "../assets/imu"
 
-    for session in sorted(sessions, key=lambda s: (s.tier, s.trial_id, s.started_at or "")):
+    ordered = sorted(sessions, key=lambda s: (s.tier, s.trial_id, s.started_at or ""))
+    analyses = []
+    for session in ordered:
         print(f"  analyzing {session.trial_id} ({session.session_id}) …")
-        analysis = analyze_session(session)
+        analyses.append(analyze_session(session))
+    # Camera trials are scaled against their participant's slow-pan calibration
+    # once every session has been analyzed (see vor.attach_calibration).
+    vor.attach_calibration(analyses)
+    for session, analysis in zip(ordered, analyses):
         figures = build_figures(session, analysis, assets)
         results.append(analysis)
         sections.append(report.session_section(session, analysis, figures, assets_rel))

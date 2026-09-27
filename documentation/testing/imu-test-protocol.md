@@ -127,6 +127,32 @@ read from the display while the glasses are on the table.
 |---|---|---|---|
 | D1 | Endurance capture | 10 min | Rate stability, dropout, battery drain |
 
+### Tier V — Head motion vs. camera image (worn, native app only)
+
+Run from the Android app's **head-motion lab** (Settings → Research), which
+records through MWDAT 1.0's Motion capability with the glasses' camera streaming
+in the same session. The Web Apps API has no camera access, so this tier has no
+web counterpart. Every other tier can be run from either capture path, with the
+same ids, timings and cues.
+
+| ID | Trial | Duration | Pacing | Measures |
+|---|---|---|---|---|
+| V1 | Side-to-side head turns, gaze fixed | 45 s | 1 Hz metronome | Yaw vs. horizontal image shift: lag, scale, residual discrepancy, phase at 1 Hz |
+| V2 | Up-and-down nods, gaze fixed | 45 s | 1 Hz metronome | Pitch vs. vertical image shift; second camera axis, IMU-camera alignment |
+| V3 | Faster side-to-side turns (seated) | 30 s | 2 Hz metronome | Where motion blur and frame rate start to limit the image measurement |
+| V4 | Slow look-around | 45 s | Spoken, every 3 s | Low-blur calibration of the camera's pixels-per-degree scale |
+
+Setup: seated about two metres from a **detailed** scene — phase correlation
+needs texture, and a blank wall gives it none. The metronome's high tone means
+the first step (left / up), the low tone the second. V1–V3 are the movement of
+the VOR×1 gaze-stabilization exercise; the camera is head-fixed, so what it
+measures is the image motion the head causes, not the eyes' response to it —
+see the limits in `analysis/visor_imu/vor.py`. **No image is stored**: frames are
+reduced, correlated and discarded on the phone; the recording holds one shift
+estimate per frame, with the correlation peak and texture that qualify it.
+
+Run V4 first on a new pair of glasses: the other V trials are scaled against it.
+
 ---
 
 ## Execution

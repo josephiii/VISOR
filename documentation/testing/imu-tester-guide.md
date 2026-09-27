@@ -47,7 +47,9 @@ federal grant proposal. Careful, honest data matters more than a lot of it.
 
 **Not recorded. At all.**
 
-- No camera images or video
+- No camera images or video (the phone version's camera trials measure how far
+  the view moves and discard every picture — see
+  [the phone version](#the-phone-version-visors-head-motion-lab))
 - No microphone or audio
 - No GPS or location
 - No names, email addresses, or any other identifying information
@@ -206,6 +208,51 @@ so a dropped Wi-Fi connection costs a retry, never the recording.
 
 ---
 
+## The phone version: VISOR's head-motion lab
+
+The same trials can also be run from the **VISOR app on the phone**, which talks
+to the glasses directly instead of through a web page. It adds a new set of
+trials, **Tier V**, that the web version cannot do: they use the glasses'
+**camera** to measure how far the view moves while your head turns.
+
+**Where:** VISOR → **Settings** → **Research** → **Head-motion lab**. Your
+glasses must be connected and registered (the lab tells you if they are not,
+with a button to go and do it).
+
+**What the camera trials record — and what they do not.** While a Tier V trial
+runs, the glasses' camera is on, **and the camera light on the front of the
+glasses will be lit.** Tell anyone nearby. But no picture is ever kept: each
+camera frame is shrunk, compared with the one before, and thrown away, all
+inside the phone. The only thing saved is a pair of numbers per frame — how
+far the view shifted, left-right and up-down. Someone reading the file could
+tell the view moved twelve pixels to the right; they could not tell what was
+in it.
+
+**The Tier V trials.** For all four, sit facing a wall or scene with plenty of
+detail — shelves, pictures, furniture — about two metres away. **Not a blank
+wall**: the camera needs detail to measure against.
+
+| Trial | What you do |
+|---|---|
+| V1 | Keep your eyes on one point at eye level. Turn your head gently left and right on the tones: high tone left, low tone right. Small, steady turns. |
+| V2 | Same point, same tones, but nod up (high tone) and down (low tone). |
+| V3 | Like V1 but faster. **Sit down. Stop if you feel dizzy.** |
+| V4 | When VISOR says "left" or "right", turn your head slowly and smoothly that way — as if looking at someone sitting beside you. |
+
+**Everything is spoken.** The lab says what to do before the countdown, plays
+the same tones as the web version, and reads out a short result when the trial
+ends — including, for camera trials, whether the picture tracked your head well
+enough. If it says to try again facing more detail, that is a setup problem, not
+yours.
+
+**Stopping:** press **Stop trial**, or the phone's Back button. As before, a
+stopped trial is kept and marked incomplete.
+
+**Afterwards:** press **Share recording** to send the file to the test runner,
+or leave it on the phone for them to collect.
+
+---
+
 ## For test runners
 
 - One full battery per tester per session. Record the tester code, date, glasses
@@ -224,5 +271,11 @@ so a dropped Wi-Fi connection costs a retry, never the recording.
 - Expect some rejections, especially early. The pipeline is deliberately strict:
   it would rather discard a questionable recording than let it influence a
   result that ends up in a grant proposal.
+- **Phone-lab recordings** are not uploaded automatically. Collect them with the
+  **Share recording** button after each trial, or all at once with
+  `adb pull /sdcard/Android/data/edu.ucf.visor/files/imu-sessions`, and put them
+  under `data/imu-sessions/`. The same `analyze.py` reads both kinds. Before the
+  first Tier V session on a new pair of glasses, run **V4** — it calibrates the
+  camera scale the other V trials are compared against.
 
 Full methodology is in [imu-test-protocol.md](./imu-test-protocol.md).
