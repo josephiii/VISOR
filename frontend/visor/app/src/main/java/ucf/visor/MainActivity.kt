@@ -41,6 +41,10 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
 import kotlin.coroutines.resume
 
+import ucf.visor.capture.SceneDescriber
+import ucf.visor.network.VlmClient
+
+
 class MainActivity : ComponentActivity() {
 
     // MWDAT User Permissions and Initial Integration
@@ -56,10 +60,13 @@ class MainActivity : ComponentActivity() {
             "VISORWHATISTHIS",
         )
 
+        private val OBJECT_WAKE_PHRASES = setOf(
+            "VISORWHATAMIHOLDING",
+        )
+
         private val SCENE_WAKE_PHRASES = setOf(
             "VISORWHATDOYOUSEE",
             "VISORWHATSINFRONTOFME",
-            "VISORWHATAMIHOLDING"
         )
         private const val NAV_WAKE_PHRASE = "VISORGO"
 
@@ -112,6 +119,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
     private lateinit var sceneReader: ReadRequester
+    private lateinit var sceneDescriber: ReadRequester
     private lateinit var objectDetector: ObjectDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -158,6 +166,12 @@ class MainActivity : ComponentActivity() {
             objectDetector,
         )
 
+        sceneDescriber = SceneDescriber(
+            photoSource = FakePhotoSource(this, "photo_test/living_room.png"),
+            vlm = VlmClient(),
+            fallback = objectDetector,
+        )
+
         voiceNav = VoiceNavigationController(
             context = this,
             speak = { speaker.speak(it) },
@@ -174,7 +188,8 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
                 in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
-                in SCENE_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
+                in OBJECT_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
+                in SCENE_WAKE_PHRASES -> sceneDescriber.requestRead { text -> speaker.speak(text) }
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
