@@ -18,19 +18,8 @@ GRAVITY = 9.80665
 
 ACCEL_AXES = ("agx", "agy", "agz")
 GYRO_AXES = ("rrAlpha", "rrBeta", "rrGamma")
-
-# Head axis carried by each gyro channel on the Meta Ray-Ban Display, taken
-# from the recordings rather than the W3C spec (which puts alpha about z).
-# Body frame: x = wearer's right, y = up, z = backward; rrAlpha/rrBeta/rrGamma
-# are rotation about x/y/z, matching Chromium's non-spec rotationRate order.
-# Evidence: paced yaw trials put ~75% of gyro RMS in rrBeta, pitch ~81% in
-# rrAlpha, roll ~67% in rrGamma; and of all 48 signed channel→axis mappings,
-# this one best predicts how gravity moves in the sensor frame
-# (pose.axis_mapping_scores). Signs follow the cues: LEFT, UP and TILT LEFT are
-# all positive.
 GYRO_HEAD_AXIS = {"rrAlpha": "pitch", "rrBeta": "yaw", "rrGamma": "roll"}
 YAW_AXIS = "rrBeta"
-
 
 def _finite(values: pd.Series | np.ndarray) -> np.ndarray:
     arr = np.asarray(values, dtype="float64")
@@ -189,7 +178,7 @@ def allan_deviation(rate: np.ndarray, fs: float, n_taus: int = 60
     Computed on the integrated signal θ (angle for a gyro, velocity for an
     accelerometer):
 
-        σ²(τ) = 1 / (2τ²(N−2m)) · Σ (θ[k+2m] − 2θ[k+m] + θ[k])²
+        σ²(τ) = 1 / (2τ²(N-2m)) · Σ (θ[k+2m] - 2θ[k+m] + θ[k])²
 
     The overlapping estimator is used rather than the non-overlapping one
     because it has substantially better confidence at long averaging times,
@@ -228,7 +217,7 @@ def allan_deviation(rate: np.ndarray, fs: float, n_taus: int = 60
 def allan_params(taus: np.ndarray, adev: np.ndarray) -> dict[str, float | None]:
     """Extract the standard noise coefficients from an Allan deviation curve.
 
-    Random walk is read at τ = 1 s on the −1/2 slope; bias instability is the
+    Random walk is read at τ = 1 s on the -1/2 slope; bias instability is the
     curve minimum divided by 0.664 (the standard scaling for the flat region).
     Units follow the input: deg/s in gives deg/√hr random walk.
     """

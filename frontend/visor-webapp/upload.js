@@ -30,7 +30,7 @@
     });
   }
 
-  function tx(db, mode, fn) {
+  function z(db, mode, fn) {
     return new Promise(function(resolve, reject) {
       var t = db.transaction(STORE, mode);
       var store = t.objectStore(STORE);

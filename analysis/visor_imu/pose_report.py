@@ -23,7 +23,7 @@ from .report import (
     ACCENT, AXIS, GRID, INK, INK_SECONDARY, MUTED, SERIES, SURFACE, _despine,
 )
 
-# Sequential blue ramp (palette.md, steps 100 → 700) for magnitude and time.
+# Sequential blue ramp (palette.md, steps 100 -> 700) for magnitude and time.
 BLUE_RAMP = LinearSegmentedColormap.from_list(
     "visor_blue", ["#cde2fb", "#86b6ef", "#3987e5", "#256abf", "#184f95", "#0d366b"])
 # Ordinal time ramp that stays ≥ 2:1 against the surface at its light end.
@@ -181,7 +181,7 @@ def fig_orientation(panels: list[dict[str, Any]], out: Path, window_s: float = 2
         tt = c["t"][sel] - t0
         ref, est = c[f"{key}_ref"][sel], c[f"{key}_imu"][sel]
         if key == "yaw":
-            # Heading origins are arbitrary on both sides; centring each on its
+            # Heading origins are arbitrary on both sides; centering each on its
             # own median shows the direction of motion without a fitted offset.
             ref, est = ref - np.median(ref), est - np.median(est)
         # The reference is drawn wide and pale underneath so that where the two

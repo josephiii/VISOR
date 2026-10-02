@@ -208,7 +208,7 @@ def initial_alignment(accel: np.ndarray) -> np.ndarray:
     """Quaternion that levels the body using gravity and faces forward along +X.
 
     Heading is arbitrary without a magnetometer, so the initial forward
-    direction (−z body, projected on the horizontal) defines world +X.
+    direction (-z body, projected on the horizontal) defines world +X.
     """
     up_b = accel / np.linalg.norm(accel)
     fwd_b = np.array([0.0, 0.0, -1.0])

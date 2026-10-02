@@ -24,7 +24,6 @@ SCHEMA = "visor.imu.session/1"
 
 STREAM_NAMES = ("devicemotion", "deviceorientation", "deviceorientationabsolute")
 
-
 @dataclass
 class Session:
     """One recorded trial."""
