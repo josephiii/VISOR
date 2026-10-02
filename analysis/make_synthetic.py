@@ -23,6 +23,12 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GRAVITY = 9.80665
 
+# Axes follow the glasses' body frame as measured, not the W3C phone frame:
+# x = wearer's right, y = up, z = backward. Gravity therefore sits on agy, and
+# the gyro channels carry rrAlpha = pitch, rrBeta = yaw, rrGamma = roll (see
+# visor_imu.metrics.GYRO_HEAD_AXIS). Random draws are kept in a fixed order so
+# the noise realisation does not depend on which axis a signal is placed on.
+
 # Ground truth injected by the generator; the pipeline should recover these.
 TRUTH = {
     "sample_rate_hz": 60.0,
@@ -102,8 +108,8 @@ def static_rest(rng, duration_s=120.0, fs=60.0) -> dict:
     bias = TRUTH["accel_bias_ms2"]
     accel = np.array([
         rng.normal(bias[0], TRUTH["accel_noise_ms2"], n),
-        rng.normal(bias[1], TRUTH["accel_noise_ms2"], n),
-        rng.normal(GRAVITY + bias[2], TRUTH["accel_noise_ms2"], n),
+        rng.normal(GRAVITY + bias[1], TRUTH["accel_noise_ms2"], n),
+        rng.normal(bias[2], TRUTH["accel_noise_ms2"], n),
     ])
     # White noise plus a slow bias drift, so the Allan curve has a real minimum.
     drift = np.cumsum(rng.normal(0, 0.0008, n))
@@ -125,11 +131,11 @@ def yaw_paced(rng, duration_s=60.0, fs=60.0, interval_s=2.0) -> dict:
     # Square-ish alternating yaw, smoothed into realistic turn profiles.
     phase = np.sin(2 * np.pi * ts / (2 * interval_s))
     yaw_rate = 80.0 * phase + rng.normal(0, TRUTH["gyro_noise_dps"], n)
-    gyro = np.array([yaw_rate,
-                     rng.normal(0, TRUTH["gyro_noise_dps"], n),
-                     rng.normal(0, TRUTH["gyro_noise_dps"], n)])
-    accel = np.array([rng.normal(0, 0.15, n), rng.normal(0, 0.15, n),
-                      rng.normal(GRAVITY, 0.15, n)])
+    pitch_rate = rng.normal(0, TRUTH["gyro_noise_dps"], n)
+    roll_rate = rng.normal(0, TRUTH["gyro_noise_dps"], n)
+    gyro = np.array([pitch_rate, yaw_rate, roll_rate])
+    accel = np.array([rng.normal(0, 0.15, n), rng.normal(GRAVITY, 0.15, n),
+                      rng.normal(0, 0.15, n)])
 
     marks = [{"t": 0.0, "label": "trial_start", "extra": {"trialId": "B1_yaw_paced"}}]
     for i in range(int(duration_s / interval_s)):
@@ -149,8 +155,8 @@ def stillness_hold(rng, duration_s=60.0, fs=60.0) -> dict:
                      np.sin(2 * np.pi * t / 1000.0 / 7) * 0.4,
                      np.sin(2 * np.pi * t / 1000.0 / 13) * 0.3])
     gyro = tremor + slow
-    accel = np.array([rng.normal(0.1, 0.05, n), rng.normal(-0.05, 0.05, n),
-                      rng.normal(GRAVITY, 0.05, n)])
+    accel = np.array([rng.normal(0.1, 0.05, n), rng.normal(GRAVITY, 0.05, n),
+                      rng.normal(-0.05, 0.05, n)])
     marks = [{"t": 0.0, "label": "trial_start", "extra": {"trialId": "C1_stillness_hold"}},
              {"t": float(t[-1]), "label": "trial_end", "extra": {"outcome": "completed"}}]
     return _session("C1_stillness_hold", "Stillness hold (worn)", "C",
@@ -164,10 +170,12 @@ def scanning(rng, duration_s=90.0, fs=60.0, interval_s=3.0) -> dict:
     # Deliberate asymmetry: rightward sweeps are weaker, as in a left-field loss.
     base = np.sin(2 * np.pi * ts / (2 * interval_s))
     yaw = np.where(base > 0, base * TRUTH["scan_peak_dps"], base * TRUTH["scan_peak_dps"] * 0.6)
-    gyro = np.array([yaw + rng.normal(0, 0.5, n),
-                     rng.normal(0, 0.5, n), rng.normal(0, 0.5, n)])
-    accel = np.array([rng.normal(0, 0.2, n), rng.normal(0, 0.2, n),
-                      rng.normal(GRAVITY, 0.2, n)])
+    yaw_rate = yaw + rng.normal(0, 0.5, n)
+    pitch_rate = rng.normal(0, 0.5, n)
+    roll_rate = rng.normal(0, 0.5, n)
+    gyro = np.array([pitch_rate, yaw_rate, roll_rate])
+    accel = np.array([rng.normal(0, 0.2, n), rng.normal(GRAVITY, 0.2, n),
+                      rng.normal(0, 0.2, n)])
     marks = [{"t": 0.0, "label": "trial_start", "extra": {"trialId": "C2_scanning_pattern"}}]
     for i in range(int(duration_s / interval_s)):
         marks.append({"t": i * interval_s * 1000.0, "label": "cue",
@@ -183,16 +191,15 @@ def walking(rng, duration_s=60.0, fs=60.0) -> dict:
     n = t.size
     step = TRUTH["gait_step_hz"]
     bob = 1.6 * np.sin(2 * np.pi * step * ts) + 0.5 * np.sin(2 * np.pi * 2 * step * ts)
-    accel = np.array([
-        rng.normal(0, 0.3, n) + 0.4 * np.sin(2 * np.pi * step * ts + 0.7),
-        rng.normal(0, 0.3, n),
-        GRAVITY + bob + rng.normal(0, 0.25, n),
-    ])
-    gyro = np.array([
-        6.0 * np.sin(2 * np.pi * step * ts * 0.5) + rng.normal(0, 1.5, n),
-        8.0 * np.sin(2 * np.pi * step * ts) + rng.normal(0, 1.5, n),
-        rng.normal(0, 1.5, n),
-    ])
+    lateral = rng.normal(0, 0.3, n) + 0.4 * np.sin(2 * np.pi * step * ts + 0.7)
+    fore_aft = rng.normal(0, 0.3, n)
+    vertical = GRAVITY + bob + rng.normal(0, 0.25, n)
+    accel = np.array([lateral, vertical, fore_aft])
+    # Head yaw sways once per stride (half the step rate); pitch nods every step.
+    yaw_rate = 6.0 * np.sin(2 * np.pi * step * ts * 0.5) + rng.normal(0, 1.5, n)
+    pitch_rate = 8.0 * np.sin(2 * np.pi * step * ts) + rng.normal(0, 1.5, n)
+    roll_rate = rng.normal(0, 1.5, n)
+    gyro = np.array([pitch_rate, yaw_rate, roll_rate])
     marks = [{"t": 0.0, "label": "trial_start", "extra": {"trialId": "C3_walk_straight"}},
              {"t": float(t[-1]), "label": "trial_end", "extra": {"outcome": "completed"}}]
     return _session("C3_walk_straight", "Walking gait", "C",

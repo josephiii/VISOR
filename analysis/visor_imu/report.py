@@ -21,7 +21,8 @@ import numpy as np
 
 from .loader import Session
 from .metrics import (
-    ACCEL_AXES, GYRO_AXES, allan_deviation, allan_params, estimate_fs, psd, _finite,
+    ACCEL_AXES, GYRO_AXES, GYRO_HEAD_AXIS, allan_deviation, allan_params, estimate_fs, psd,
+    _finite,
 )
 from .rehab import angular_speed
 
@@ -35,7 +36,7 @@ AXIS = "#c3c2b7"
 ACCENT = "#d03b3b"
 
 AXIS_LABELS = {
-    "rrAlpha": "α (yaw)", "rrBeta": "β (pitch)", "rrGamma": "γ (roll)",
+    **{c: f"{sym} ({GYRO_HEAD_AXIS[c]})" for c, sym in zip(GYRO_AXES, "αβγ")},
     "agx": "X", "agy": "Y", "agz": "Z",
 }
 

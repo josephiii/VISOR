@@ -19,6 +19,18 @@ GRAVITY = 9.80665
 ACCEL_AXES = ("agx", "agy", "agz")
 GYRO_AXES = ("rrAlpha", "rrBeta", "rrGamma")
 
+# Head axis carried by each gyro channel on the Meta Ray-Ban Display, taken
+# from the recordings rather than the W3C spec (which puts alpha about z).
+# Body frame: x = wearer's right, y = up, z = backward; rrAlpha/rrBeta/rrGamma
+# are rotation about x/y/z, matching Chromium's non-spec rotationRate order.
+# Evidence: paced yaw trials put ~75% of gyro RMS in rrBeta, pitch ~81% in
+# rrAlpha, roll ~67% in rrGamma; and of all 48 signed channel→axis mappings,
+# this one best predicts how gravity moves in the sensor frame
+# (pose.axis_mapping_scores). Signs follow the cues: LEFT, UP and TILT LEFT are
+# all positive.
+GYRO_HEAD_AXIS = {"rrAlpha": "pitch", "rrBeta": "yaw", "rrGamma": "roll"}
+YAW_AXIS = "rrBeta"
+
 
 def _finite(values: pd.Series | np.ndarray) -> np.ndarray:
     arr = np.asarray(values, dtype="float64")

@@ -21,8 +21,8 @@ plus, where implemented, the Generic Sensor API:
 | API | Provides | Status |
 |---|---|---|
 | `devicemotion` | Acceleration (with and without gravity), rotation rate, interval | **Confirmed working**, ~60 Hz |
-| `deviceorientation` | α/β/γ angles | **Confirmed working**, `absolute = true` — see below |
-| `deviceorientationabsolute` | Absolute orientation, explicitly earth-referenced | Not separately required; `deviceorientation` already reports absolute |
+| `deviceorientation` | α/β/γ angles | **Fires, `absolute = true`.** Roll and pitch agree with an IMU-only estimate; **heading not verified** — does not track head yaw, see below |
+| `deviceorientationabsolute` | Absolute orientation, explicitly earth-referenced | Fires; same heading behaviour as `deviceorientation` (exploratory check, see below) |
 | `Accelerometer`, `Gyroscope`, `Magnetometer` | Generic Sensor API classes | Untested |
 | `AbsoluteOrientationSensor` | Fused quaternion orientation | Untested |
 
@@ -31,7 +31,7 @@ which construct, which start, and which actually deliver readings. That probe
 output is the authoritative answer and is stamped into every session recorded
 afterwards.
 
-### Orientation: resolved, and it is absolute
+### Orientation: the stream is present, but its heading is not verified
 
 Project research on MRBD capabilities records the toolkit as exposing
 "accelerometer, gyroscope, and **compass**". First-light testing appeared to
@@ -45,22 +45,80 @@ every render slot; it also coerced `null` to `0` and initialized the display to
 `0.00`, making "never fired", "fired with nulls" and "genuine zero"
 indistinguishable. Both defects are fixed.
 
-Recorded sessions confirm the compass is present and working:
+Recorded sessions confirm the orientation stream fires and is populated:
 
 | Observation | Value |
 |---|---|
 | `deviceorientation` samples recorded | 3,847 across 5 sessions |
 | Fully-null α/β/γ columns | none |
 | `absolute` flag | `true` on every sample |
-| α (heading) range within one yaw trial | 60.3° – 173.6° |
+| α range within one yaw trial | 60.3° – 173.6° (shows the field is populated; not evidence that it is a correct heading) |
 | Stream rate, device at rest | 57.9 – 60.4 Hz |
 | Stream rate, during active head movement | ~49.5 Hz |
 
-The `absolute = true` flag is the significant part: the orientation is
-earth-referenced rather than an arbitrary relative frame, which means a true
-compass heading is available. Every use case below that would otherwise have
-been confined to a drift-bounded gyro-integration window can instead use an
-absolute reference.
+A populated stream with `absolute = true` shows what the platform *claims*. It
+does not show that the heading is *correct*. When the heading was checked
+against the gyroscope, it failed.
+
+#### Heading does not track head yaw: treat absolute heading as unavailable
+
+> **Observation.** Source: `analysis/pose_analysis.py` →
+> `data/imu-analysis/pose-summary.json` (`heading_survey`,
+> `orientation.per_trial`); figure `pose_orientation.png` in the generated
+> [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md),
+> finding 2. Confidence: **high** that the discrepancy is real (in none of the
+> 6 yaw-dominant recordings, under 3 participant codes, does the heading track
+> the gyro); **none** as to its cause.
+
+The platform's orientation was compared with an IMU-only estimate: a Mahony
+complementary filter using the gyroscope and accelerometer and no
+magnetometer. Heading was compared through its *increments* over 0.25 s, so an
+arbitrary heading offset or slow drift cannot create or hide agreement. A
+trustworthy heading would give a gain near +1 and a correlation near +1.
+
+| Check | Result |
+|---|---|
+| Roll and pitch: platform vs IMU-only filter, B1–B3 (PTest) | **Agree**, 0.2–1.2° RMS over 60 s trials spanning up to ~100°. Not independent: both use the same accelerometer. |
+| Heading increments vs gyro yaw, yaw-dominant trials (B1, B4, C2; 6 sessions) | r = **−0.70 to +0.04**; gain −1.88 to +0.13 |
+| PTest B1, paced ±72° head sweep (gyro) | Platform heading swings ~±125°, **in anti-phase** |
+| Roll trials (B3) | Heading moves with head roll (PTest gain +2.73) |
+| Angle convention | Of 288 axis/order/sign conventions for α/β/γ, only the W3C Z-X′-Y″ one fits measured gravity (residual 0.47 m/s²; next best 2.9). None both fits gravity and tracks the gyro. Exploratory check, not produced by the pipeline. |
+| `deviceorientationabsolute` | Same behaviour: increment correlations within 0.03 of `deviceorientation` in every session. Exploratory check, not produced by the pipeline. |
+
+The convention search rules out the obvious analysis error. The tilt half of
+the same stream agrees with the IMU, so the frame and time alignment are right,
+and no reading of α/β/γ that fits gravity yields a heading that follows the
+head. The gyroscope side is corroborated independently. Every LEFT cue produced
+positive yaw. The ±72° paced sweep is within normal cervical rotation, whereas
+±125° is not. And the gyro channel assignment is itself validated against
+gravity (see `visor_imu.metrics.GYRO_HEAD_AXIS`).
+
+**Consequence.** Until the discrepancy is explained, VISOR treats absolute
+heading as **not available**. Roll and pitch from this stream, or from an
+IMU-only filter, remain usable. Anything that needs yaw must use drift-bounded
+gyro integration (see Open Question 2 for the measured window).
+
+**Hypotheses — not findings.** None of these has been tested:
+
+- The magnetometer is uncalibrated, or is distorted by the glasses' own
+  electronics (speaker magnets, battery, display driver) near the sensor.
+- An axis-sign or frame-mapping error in how the platform fuses the
+  magnetometer into orientation. A mirrored heading with non-unit gain would be
+  consistent with this, but does not establish it.
+
+**What would decide it:**
+
+- Record the raw `Magnetometer` (Generic Sensor API) during a B1 yaw sweep.
+  This needs a capture change: the Capability Probe records only whether the
+  sensor delivers (and its first reading), and sessions store only the three
+  W3C event streams. A field vector
+  that rotates with the gyro, but in the wrong sense or on the wrong axis, would
+  point to fusion. A field that barely rotates, or rotates erratically, would
+  point to calibration or distortion.
+- Repeat B1 after a figure-8 calibration motion, and again outdoors away from
+  steel structures.
+- A known-heading check: face marked 0°, 90°, 180° and 270° floor directions in
+  turn and compare the reported α.
 
 One behaviour worth carrying forward: the orientation stream **degrades under
 motion**, dropping from ~60 Hz at rest to ~49.5 Hz during sustained head
@@ -113,8 +171,8 @@ averaging time. Its −1/2 slope gives **random walk** (how fast integration
 accumulates error) and its minimum gives **bias instability** (the noise floor
 of the bias itself). Together these answer the operationally decisive question:
 *how long can we integrate gyro rate into an angle before the answer is
-useless?* Without absolute heading, that window is the binding constraint on
-half the use cases below.
+useless?* Absolute heading is not currently usable (see above), so that window
+is the binding constraint on every use case below that needs yaw.
 
 **Saturation.** Whether rapid head turns exceed the sensor's range. A clipped
 peak makes every derived amplitude a lower bound rather than a measurement.
@@ -125,6 +183,10 @@ peak makes every derived amplitude a lower bound rather than a measurement.
 
 Each row states what the capability requires, what measures it, and the gate
 that decides it. TBI and low-vision relevance is the reason each is here.
+
+No gate below may assume an absolute heading reference. Where yaw is needed,
+it comes from drift-bounded gyro integration, and the gate must hold within
+that window. Roll and pitch are gravity-referenced and carry no such limit.
 
 ### 1. Head-stability gated capture — *highest-value, lowest-risk*
 
@@ -153,10 +215,20 @@ training: amplitude, rate, and left/right symmetry.
   the affected field — and feedback when they do not — is a genuine clinical
   contribution rather than a convenience feature.
 - **Requires:** yaw-rate integration trustworthy over a single sweep (1–3 s).
+  Absolute heading cannot substitute for this (see *Orientation* above), so the
+  measure stays relative: amplitude and symmetry within a sweep, not where the
+  wearer is facing.
 - **Measured by:** C2, with the integration window bounded by A1/A2 drift.
 - **Gate:** integrated sweep amplitude must be repeatable within ~10% across
   sweeps of equal commanded size, and the drift over 3 s must be small relative
   to a typical 30–60° sweep.
+- **Observation (drift part only).** From the one QC-passed static recording
+  (PTest A1, 120 s; source: `pose-summary.json` `budget`), yaw-channel drift
+  over 3 s is ~0.02° with the bias estimated at rest, and ~0.1° without. That
+  is well below a 30° sweep, so the drift half of the gate is met on this
+  evidence. Confidence: moderate — one recording on one device, and it covers
+  bias only; gyro scale-factor error needs a rate table and is unmeasured.
+  The repeatability half is not yet evaluated.
 
 ### 3. Vestibular / gaze-stabilization exercise adherence
 
@@ -231,10 +303,13 @@ out:
   relative to raw hardware. This characterizes the platform as available to a
   Web App — the correct scope for VISOR's current architecture, but not
   hardware datasheet figures.
-- **Orientation rate is not guaranteed.** Absolute heading is available, but the
-  orientation stream slows under motion (~49.5 Hz vs 60.0 Hz for
-  `devicemotion` in the same trial). Do not assume the two streams are
-  sample-aligned; join them on timestamp, not index.
+- **Absolute heading is not verified.** The orientation stream reports
+  `absolute = true`, but its heading does not track head yaw (see
+  *Orientation* above). Use it for roll and pitch only.
+- **Orientation rate is not guaranteed.** The orientation stream slows under
+  motion (~49.5 Hz vs 60.0 Hz for `devicemotion` in the same trial). Do not
+  assume the two streams are sample-aligned; join them on timestamp, not
+  index.
 - **Bandwidth ceiling.** At ~60 Hz the Nyquist limit is 30 Hz. Head movement
   sits well inside that; high-frequency tremor and impact transients do not.
 - **Battery and thermal.** Quantified by D1, and a real constraint on any
@@ -249,12 +324,27 @@ out:
 Carried forward from [meta-mrbd-capabilities.md](./meta-mrbd-capabilities.md)
 and extended:
 
-1. ~~Does any API path expose absolute heading?~~ **Answered: yes.**
-   `deviceorientation` reports `absolute = true` with populated α/β/γ.
+1. Does any API path expose a *usable* absolute heading? **Reopened.**
+   `deviceorientation` (and `deviceorientationabsolute`) report
+   `absolute = true` with populated α/β/γ, but the heading does not track head
+   yaw (see *Orientation* above). An earlier revision marked this answered on
+   the strength of the populated stream alone. The Generic Sensor
+   `AbsoluteOrientationSensor` and raw `Magnetometer` are untested, and are the
+   next paths to check.
 2. What is the usable gyro integration window before drift dominates?
-   Still open — no valid stationary recording yet. Less critical now that
-   absolute heading is available, but still needed to characterize the sensor
-   and to bound short-window relative measurements between orientation samples.
+   **Critical again**, because without a usable heading every yaw measure
+   depends on it. First estimate, from the one QC-passed static recording
+   (PTest A1, 120 s; source: `pose-summary.json` `budget`; confidence:
+   moderate):
+
+   | Yaw channel (`rrBeta`) | Value | Time to 1° of drift |
+   |---|---|---|
+   | Bias instability | 0.0054 °/s | ~187 s, bias estimated at rest |
+   | Turn-on bias (mean at rest) | 0.0325 °/s | ~31 s, uncalibrated |
+
+   This covers bias only; scale-factor error is unmeasured without a rate
+   table. It rests on a single recording, so confirm it with a stationary A2
+   (5 min) once one passes QC.
 3. Does the sample rate hold under sustained load, or degrade thermally? (D1.)
 4. What is the end-to-end latency of the Neural Band input chain? — still open;
    requires a synchronized external trigger this battery does not provide.
@@ -269,6 +359,7 @@ and extended:
 
 - [imu-test-protocol.md](../testing/imu-test-protocol.md) — trial battery and methodology
 - [imu-characterization-report.md](../testing/imu-characterization-report.md) — generated results
+- [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md) — generated IMU-only orientation and heading analysis (`analysis/pose_analysis.py`)
 - [meta-mrbd-capabilities.md](./meta-mrbd-capabilities.md) — platform capability research
 - [low-vision-research.md](./low-vision-research.md) — user population background
 - `analysis/` — the analysis toolkit that produces the report

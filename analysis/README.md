@@ -31,6 +31,10 @@ python analysis/fetch_sessions.py
 
 # 2. Analyze everything and write figures + report
 python analysis/analyze.py
+
+# 3. Optional: IMU-only 6-DOF head-pose analysis (orientation filter, drift,
+#    zero-velocity updates, step dead reckoning)
+python analysis/pose_analysis.py
 ```
 
 Outputs:
@@ -40,6 +44,9 @@ Outputs:
 | `documentation/testing/imu-characterization-report.md` | Generated results report |
 | `documentation/assets/imu/*.png` | Figures referenced by the report |
 | `data/imu-analysis/summary.json` | Machine-readable results for every session |
+| `documentation/testing/imu-pose-tracking-report.md` | Generated 6-DOF pose report (`pose_analysis.py`) |
+| `documentation/assets/imu/pose/*.png` | Figures referenced by the pose report |
+| `data/imu-analysis/pose-summary.json` | Machine-readable pose results |
 | `data/imu-sessions/` | Downloaded raw sessions (gitignored) |
 
 `fetch_sessions.py` reads `BLOB_READ_WRITE_TOKEN` from
@@ -74,6 +81,12 @@ Recovery verified at the current revision:
 | Scan asymmetry index | +0.25 | +0.250 |
 | Gait cadence | 1.80 Hz | 1.751 Hz |
 
+Synthetic sessions use the glasses' measured body frame (x = right, y = up,
+z = backward): gravity on `agy`, and gyro `rrAlpha` = pitch, `rrBeta` = yaw,
+`rrGamma` = roll — not the W3C-spec assignment. Code that reads yaw from the
+wrong channel therefore fails validation (0 scan sweeps) instead of passing it.
+The mapping lives in `visor_imu.metrics.GYRO_HEAD_AXIS`.
+
 Synthetic sessions are stamped `participant: SYNTHETIC` and `synthetic: true`.
 **They are not measurements and must never be cited as results.**
 
@@ -87,6 +100,9 @@ Synthetic sessions are stamped `participant: SYNTHETIC` and `synthetic: true`.
 | `visor_imu/metrics.py` | Timing/jitter, static bias and noise, Allan deviation, PSD, saturation |
 | `visor_imu/rehab.py` | Stillness/dwell, compensatory scanning, gait, cue-aligned segmentation |
 | `visor_imu/report.py` | Figures and markdown rendering |
+| `visor_imu/pose.py` | Axis identification, Mahony attitude filter, gravity removal, ZUPT, step dead reckoning |
+| `visor_imu/pose_report.py` | Pose-analysis figures |
+| `pose_analysis.py` | CLI: 6-DOF pose analysis, figures and report |
 | `analyze.py` | CLI: dispatch analyses per trial, emit report |
 | `fetch_sessions.py` | Download sessions from the private Blob store |
 | `make_synthetic.py` | Ground-truth data for pipeline validation |

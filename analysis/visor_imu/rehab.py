@@ -20,7 +20,7 @@ import pandas as pd
 from scipy import signal
 
 from .loader import Session
-from .metrics import GYRO_AXES, estimate_fs, _finite
+from .metrics import GYRO_AXES, YAW_AXIS, estimate_fs, _finite
 
 
 # ============================ primitives ============================
@@ -166,13 +166,16 @@ def scan_metrics(session: Session, min_peak_dps: float = 20.0) -> dict[str, Any]
     scan amplitude and left/right symmetry. An asymmetry index far from zero
     means the wearer is under-scanning one side — the behaviour such training
     is designed to correct.
+
+    Yaw is ``YAW_AXIS`` (rrBeta on this platform, not the W3C-spec rrAlpha).
+    Reading the wrong channel measures nodding instead of scanning.
     """
     df = session.motion
-    if df.empty or "rrAlpha" not in df:
+    if df.empty or YAW_AXIS not in df:
         return None
 
     fs = estimate_fs(df)
-    yaw_rate = np.asarray(df["rrAlpha"], dtype="float64")
+    yaw_rate = np.asarray(df[YAW_AXIS], dtype="float64")
     t = np.asarray(df["tPerf"], dtype="float64")
     mask = np.isfinite(yaw_rate) & np.isfinite(t)
     if mask.sum() < 32:
