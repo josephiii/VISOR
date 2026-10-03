@@ -79,6 +79,7 @@
     <string name="debug_hardware_pairing_screen" description="hardware pairing screen debug option">HARDWARE PAIRING SCREEN</string>
     <string name="debug_onboarding" description="view the onboarding process debug option">ONBOARDING PROCESS</string>
     <string name="debug_settings_screen" description="settings screen debug option">SETTINGS SCREEN</string>
+    <string name="debug_motion_lab_screen" description="head-motion lab debug option">HEAD-MOTION LAB</string>
     <string name="debug_enable_navbar" description="enable navigation bar option">TOGGLE NAVIGATION BAR</string>
 
     <!-- VISOR Onboarding Steps -->
@@ -136,6 +137,14 @@
     <string name="enable_mock_device_kit" description="Enable MockDeviceKit button">Enable MockDeviceKit</string>
     <string name="disable_mock_device_kit" description="Disable MockDeviceKit button">Disable MockDeviceKit</string>
     <string name="pair_rayban_meta" description="Pair RayBan Meta">Pair RayBan Meta</string>
+    <string name="pair_rayban_display" description="Pair a mock Meta Ray-Ban Display (MWDAT 1.0)">Pair Meta Ray-Ban Display</string>
+    <string name="mock_motion_feed_start" description="Replay a synthetic IMU feed on the mock glasses">Replay synthetic head motion (1 Hz)</string>
+    <string name="mock_motion_feed_running" description="Synthetic IMU feed is replaying; tap to restart it">Head motion replaying (tap to restart)</string>
+    <string name="mock_battery_low" description="Set mock glasses battery low">Battery 12%</string>
+    <string name="mock_battery_full" description="Set mock glasses battery high">Battery 95%</string>
+    <string name="mock_thermal_hot" description="Set mock glasses thermal level high">Make hot</string>
+    <string name="mock_thermal_normal" description="Set mock glasses thermal level normal">Cool down</string>
+    <string name="mock_voice_launch" description="Simulate a Hey Meta voice launch">Simulate "Hey Meta, start VISOR"</string>
     <string name="unpair" description="Unpair">Unpair</string>
     <string name="power_on" description="Power On">Power On</string>
     <string name="power_off" description="Power Off">Power Off</string>

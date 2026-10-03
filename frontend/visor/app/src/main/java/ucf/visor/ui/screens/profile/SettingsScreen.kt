@@ -47,6 +47,7 @@ fun SettingsScreen(
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
     onHelp: () -> Unit = {},
+    onMotionLab: () -> Unit = {},
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -218,6 +219,22 @@ fun SettingsScreen(
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
             onClick = onHelp,
+        )
+
+        Spacer(Modifier.height(24.dp))
+        SettingSection("Research")
+        Text(
+            "Record your glasses' motion sensors — and, for head-motion trials, the " +
+                    "camera image — for the VISOR research team. Uses experimental " +
+                    "glasses features.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SelectableChip(
+            "Head-motion lab",
+            selected = false,
+            showCheckmark = false,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onMotionLab,
         )
 
         Spacer(Modifier.height(24.dp))

@@ -229,6 +229,18 @@ fun VisorLayout(
         }
     }
 
+    // Observe MotionLabScreen (Settings → Research)
+    LaunchedEffect(uiState.atMotionLab) {
+        if (uiState.atMotionLab) {
+            navController.navigate("motion_lab") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
+            viewModel.onNavigationHandled()
+        }
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Phase 1 Observers
 
@@ -451,6 +463,7 @@ fun VisorLayout(
                                 viewModel = viewModel,
                                 talk = talk,
                                 voiceNav = voiceNav,
+                                onRequestWearablesPermission = onRequestWearablesPermission,
                             )
                         }
 

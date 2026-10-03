@@ -27,6 +27,7 @@ data/imu-analysis/
 documentation/assets/imu
 documentation/testing/imu-characterization-report.md
 documentation/testing/imu-pose-tracking-report.md
+documentation/testing/imu-balance-report.md
 
 
 # Vercel

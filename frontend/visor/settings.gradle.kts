@@ -6,11 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import java.util.Properties
-import kotlin.io.path.div
-import kotlin.io.path.exists
-import kotlin.io.path.inputStream
-
 pluginManagement {
     repositories {
         google {
@@ -25,26 +20,14 @@ pluginManagement {
     }
 }
 
-val localProperties =
-    Properties().apply {
-        val localPropertiesPath = rootDir.toPath() / "local.properties"
-        if (localPropertiesPath.exists()) {
-            load(localPropertiesPath.inputStream())
-        }
-    }
-
+// MWDAT is published to Maven Central from 1.0.0 onward (com.meta.wearable),
+// so the GitHub Packages repository — and the `github_token` PAT it needed in
+// local.properties — is gone. See documentation/developer/mwdat-1.0-upgrade.md.
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/facebook/meta-wearables-dat-android")
-            credentials {
-                username = "" // not needed
-                password = System.getenv("GITHUB_TOKEN") ?: localProperties.getProperty("github_token")
-            }
-        }
     }
 }
 

@@ -335,6 +335,69 @@ def fig_gait(session: Session, out: Path, gait: dict[str, Any] | None) -> Path |
 # ============================ markdown ============================
 
 
+def fig_image_motion(session: Session, image_motion: dict[str, Any], out: Path) -> Path | None:
+    """Head rotation (gyroscope) against the rotation the camera image implies.
+
+    Left: the two angular velocities over time, aligned at the measured lag —
+    they should overlay. Right: one against the other with the identity line;
+    scatter off the line is the IMU/image discrepancy.
+    """
+    from . import vor  # local import: vor imports loader, report must not import vor at module load
+
+    clocks = vor.clock_check(session)
+    if clocks is None:
+        return None
+    if clocks.basis == "device clock" and (clocks.motion_origin_ns is None or clocks.video_origin_us is None):
+        clocks.basis = "phone arrival envelope"
+    t_motion, t_video, motion, video = vor._timelines(session, clocks)
+    intervals = vor.frame_intervals(t_video, video)
+    if intervals.empty:
+        return None
+    lag = image_motion["lag_ms"]
+    starts = intervals["start_ms"].to_numpy()
+    ends = intervals["end_ms"].to_numpy()
+    keep = (starts - lag >= t_motion[0]) & (ends - lag <= t_motion[-1])
+    starts, ends = starts[keep], ends[keep]
+    v = intervals[["vx", "vy"]].to_numpy()[keep]
+    gyro = motion[["gx", "gy", "gz"]].to_numpy(dtype="float64")
+    w = vor.interval_rates(t_motion, gyro, starts - lag, ends - lag)
+    axis = vor.AXES.index(image_motion["dominant_gyro_axis"])
+    direction = np.asarray(image_motion["image_direction_of_dominant_rotation"])
+    bias = np.asarray(image_motion["bias_px_per_s"])
+    scale_px_per_rad = image_motion["scale_px_per_deg"] * 180 / np.pi
+    head = w[:, axis] * 180 / np.pi
+    image = (v - bias) @ direction / scale_px_per_rad * 180 / np.pi
+    t_s = ((starts + ends) / 2 - starts[0]) / 1000.0
+
+    fig, (ax_t, ax_s) = plt.subplots(1, 2, figsize=(9.6, 3.4), gridspec_kw={"width_ratios": [2.2, 1]})
+    window = t_s <= min(10.0, t_s[-1])
+    ax_t.plot(t_s[window], head[window], color=SERIES[0], label="Head (gyroscope)")
+    ax_t.plot(t_s[window], image[window], color=SERIES[1], linestyle="--", label="Camera image")
+    ax_t.set_xlabel("Time (s)")
+    ax_t.set_ylabel(f"Angular velocity about {image_motion['dominant_gyro_axis'].upper()} (°/s)")
+    ax_t.set_title(f"Aligned at {lag:.0f} ms lag")
+    # Below the axes: the curves use the full height, and line style (solid vs
+    # dashed) distinguishes them without relying on colour.
+    ax_t.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2)
+    _despine(ax_t)
+
+    lim = float(np.nanmax(np.abs(np.concatenate([head, image])))) * 1.05
+    ax_s.scatter(head, image, s=6, color=SERIES[0], alpha=0.5, linewidths=0)
+    ax_s.plot([-lim, lim], [-lim, lim], color=INK_SECONDARY, linewidth=1, label="Identity")
+    ax_s.set_xlim(-lim, lim)
+    ax_s.set_ylim(-lim, lim)
+    ax_s.set_aspect("equal")
+    ax_s.set_xlabel("Head (°/s)")
+    ax_s.set_ylabel("Camera image (°/s)")
+    ax_s.set_title(f"Residual {image_motion['residual_dps']:.1f} °/s RMS")
+    _despine(ax_s)
+
+    fig.tight_layout()
+    fig.savefig(out)
+    plt.close(fig)
+    return out
+
+
 def _table(rows: list[tuple[str, Any]], headers: tuple[str, str] = ("Measure", "Value")) -> str:
     out = [f"| {headers[0]} | {headers[1]} |", "|---|---|"]
     for key, value in rows:
@@ -350,6 +413,16 @@ def session_section(session: Session, analysis: dict[str, Any],
     lines: list[str] = []
     lines.append(f"### {session.trial_id} — {session.meta.get('trialTitle', '')}\n")
     lines.append(f"*{session.meta.get('purpose', '')}*\n")
+    if session.is_native:
+        sdk = (session.meta.get("sdk") or {}).get("version", "?")
+        glasses = (session.meta.get("glassesAtStart") or {})
+        lines.append(
+            f"Recorded natively through MWDAT {sdk} Motion"
+            + (" with the camera" if session.meta.get("camera") else "")
+            + (f" on {glasses.get('model')} glasses" if glasses.get("model") else "")
+            + f" · participant `{session.participant}` · session `{session.session_id}`\n")
+        if session.meta.get("synthetic"):
+            lines.append("> **Synthetic session — not a measurement.**\n")
 
     qc = analysis.get("qc") or {}
     if qc.get("violations"):
@@ -379,9 +452,77 @@ def session_section(session: Session, analysis: dict[str, Any],
             ("Event-clock slope vs performance.now()", timing["clock_slope"] or "n/a"),
         ]))
 
-    nulls = analysis.get("fully_null_columns") or []
+    arrival = analysis.get("arrival_timing")
+    if arrival:
+        lines.append("**Delivery to the phone** (arrival times; the table above uses the "
+                     "glasses' own sample clock)\n")
+        lines.append(_table([
+            ("Median arrival interval (ms)", arrival["dt_median_ms"]),
+            ("Arrival interval SD (ms)", arrival["dt_sd_ms"]),
+            ("p99 arrival interval (ms)", arrival["dt_p99_ms"]),
+            ("Longest arrival gap (ms)", arrival["longest_gap_ms"]),
+        ]))
+
+    video_timing = analysis.get("video_timing")
+    if video_timing:
+        lines.append("**Camera frames** (presentation timestamps)\n")
+        lines.append(_table([
+            ("Frames", video_timing["n_samples"]),
+            ("Effective frame rate (fps)", video_timing["effective_hz"]),
+            ("Median frame interval (ms)", video_timing["dt_median_ms"]),
+            ("Dropped-frame gaps (>3x median)", video_timing["dropout_count"]),
+            ("Longest gap (ms)", video_timing["longest_gap_ms"]),
+        ]))
+
+    nulls = analysis.get("native_null_columns") or analysis.get("fully_null_columns") or []
     if nulls:
         lines.append(f"**Fields null for the entire trial:** `{'`, `'.join(nulls)}`\n")
+
+    image_motion = analysis.get("image_motion") or {}
+    if image_motion:
+        lines.append("**Head rotation vs. camera image shift**\n")
+        if not image_motion.get("analyzed"):
+            lines.append(f"Not analyzed: {image_motion.get('reason', 'unknown')}.\n")
+        elif not image_motion.get("reliable"):
+            lines.append(
+                f"**Fit withheld.** {image_motion['reason'][0].upper()}{image_motion['reason'][1:]}. "
+                f"{image_motion['frame_pairs_passing_quality']} frame pairs passed the image-quality "
+                "gates; lag, scale and residual are not reported for this trial. Re-run facing a "
+                "still, detailed scene.\n")
+        else:
+            clocks = image_motion["clocks"]
+            rows = [
+                ("Clock basis", clocks["basis"]),
+                ("Frame pairs passing quality gates",
+                 f"{image_motion['frame_pairs_passing_quality']} of {image_motion['frame_pairs_measured']} "
+                 f"({image_motion['tracked_fraction']*100:.0f}%)"),
+                ("Head speed, RMS (°/s)", image_motion["head_speed_rms_dps"]),
+                ("Dominant rotation axis (glasses frame)", image_motion["dominant_gyro_axis"].upper()),
+                ("IMU-to-image lag (ms)", image_motion["lag_ms"]),
+                ("Variance explained, R² (x / y)",
+                 f"{image_motion['r2_image_x']:.3f} / {image_motion['r2_image_y']:.3f}"),
+                ("Image scale (px per degree of head rotation)", image_motion["scale_px_per_deg"]),
+                ("Residual discrepancy (°/s RMS)", image_motion["residual_dps"]),
+                ("Residual as share of head speed", f"{image_motion['residual_fraction_of_head_speed']*100:.1f}%"),
+            ]
+            if image_motion.get("scale_vs_calibration") is not None:
+                rows.append(("Scale vs. slow-pan calibration", image_motion["scale_vs_calibration"]))
+            stimulus = image_motion.get("stimulus")
+            if stimulus:
+                rows.append(("Paced frequency (Hz)", stimulus["frequency_hz"]))
+                rows.append(("Head amplitude at that frequency (°/s)", stimulus["head_amplitude_dps"]))
+                rows.append(("Image phase lag at that frequency (ms)", stimulus["image_phase_lag_ms"]))
+                if stimulus.get("calibrated_image_gain") is not None:
+                    rows.append(("Calibrated image gain at that frequency", stimulus["calibrated_image_gain"]))
+            lines.append(_table(rows))
+            if image_motion.get("lag_at_search_edge"):
+                lines.append("> The best lag sits at the edge of the search window; the true lag "
+                             "may lie outside it.\n")
+            if clocks["basis"] != "device clock":
+                lines.append("> Motion and video timestamps were not consistent with one shared "
+                             "clock, so the lag is measured on the phone's arrival clock and "
+                             "includes the difference in the two streams' fastest delivery. "
+                             "It aligns the signals; it is not an absolute sensor latency.\n")
 
     # Statistics that presuppose a stationary device are withheld rather than
     # shown with a caveat: a number in a table gets quoted, a caveat does not.
