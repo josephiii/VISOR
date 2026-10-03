@@ -59,7 +59,41 @@ data class QuickLookResult(
     val trackedFraction: Double?,
     val fit: ImageMotionFit?,
     val notes: List<String>,
+    val balance: BalanceLook? = null,
+    val impulses: ImpulseLook? = null,
 )
+
+/**
+ * A timed balance hold, the moment it ends.
+ *
+ * @property headSpeedRmsDps RMS head angular speed (deg/s), all three axes, over
+ *   the sway window: from [QuickLook.SWAY_SKIP_START_MS] after the start to the
+ *   end, less the last [QuickLook.SWAY_SKIP_BEFORE_LOSS_MS] of a lost hold, which
+ *   holds the step itself. The number analysis/visor_imu/balance.py reports, and
+ *   null, as there, when that window is shorter than [QuickLook.SWAY_MIN_WINDOW_MS].
+ */
+data class BalanceLook(
+    val holdSec: Double,
+    val lost: Boolean,
+    val headSpeedRmsDps: Double?,
+)
+
+/**
+ * The head impulse test: what answered each tone, by the rule balance.py uses —
+ * the first run of yaw rate above [QuickLook.IMPULSE_DETECT_DPS] that starts
+ * after the tone, within [QuickLook.IMPULSE_WINDOW_MS] and before the next one;
+ * its peak is the run's maximum, its side the sign there (+ is left).
+ */
+data class ImpulseLook(
+    val tones: Int,
+    val left: Int,
+    val right: Int,
+    val medianPeakDps: Double?,
+    /** Impulses that peaked below [QuickLook.IMPULSE_RAPID_DPS]. */
+    val slow: Int,
+) {
+    val detected: Int get() = left + right
+}
 
 /**
  * The summary a tester hears and sees the moment a trial ends — enough to know
@@ -94,6 +128,110 @@ object QuickLook {
     private const val MIN_HEAD_SPEED_DPS = 3.0
 
     private const val SOURCE_GLASSES = 0.0
+
+    /** Sway window edges, and the shortest window measured, as in balance.py. */
+    const val SWAY_SKIP_START_MS = 2_000.0
+    const val SWAY_SKIP_BEFORE_LOSS_MS = 1_000.0
+    const val SWAY_MIN_WINDOW_MS = 5_000.0
+
+    /** Head impulse rule, as in balance.py. */
+    const val IMPULSE_DETECT_DPS = 60.0
+    const val IMPULSE_RAPID_DPS = 150.0
+    const val IMPULSE_WINDOW_MS = 2_000.0
+
+    /**
+     * A timed hold from [startMs] to [endMs] (recording clock, the marks'), with
+     * the glasses' samples mapped onto it by their lower envelope.
+     */
+    fun balance(
+        motionPhoneMs: DoubleArray,
+        motionDeviceMs: DoubleArray,
+        gyroX: DoubleArray,
+        gyroY: DoubleArray,
+        gyroZ: DoubleArray,
+        motionSource: DoubleArray,
+        startMs: Double,
+        endMs: Double,
+        lost: Boolean,
+    ): BalanceLook {
+        val from = startMs + SWAY_SKIP_START_MS
+        val to = endMs - if (lost) SWAY_SKIP_BEFORE_LOSS_MS else 0.0
+        var sum = 0.0
+        var n = 0
+        glassesClock(motionPhoneMs, motionDeviceMs, motionSource)?.let { (rows, times) ->
+            for (k in rows.indices) {
+                val i = rows[k]
+                val square = gyroX[i] * gyroX[i] + gyroY[i] * gyroY[i] + gyroZ[i] * gyroZ[i]
+                if (times[k] in from..to && square.isFinite()) {
+                    sum += square
+                    n++
+                }
+            }
+        }
+        // A hold too short for the window is reported by its length alone, as the analysis does.
+        return BalanceLook(
+            holdSec = (endMs - startMs) / 1000.0,
+            lost = lost,
+            headSpeedRmsDps = if (n > 0 && to - from >= SWAY_MIN_WINDOW_MS) sqrt(sum / n) * 180.0 / PI else null,
+        )
+    }
+
+    /** Head impulses answering the tones at [cueMs] (recording clock); [gyroYaw] in rad/s. */
+    fun headImpulses(
+        motionPhoneMs: DoubleArray,
+        motionDeviceMs: DoubleArray,
+        gyroYaw: DoubleArray,
+        motionSource: DoubleArray,
+        cueMs: DoubleArray,
+    ): ImpulseLook {
+        val (rows, times) = glassesClock(motionPhoneMs, motionDeviceMs, motionSource)
+            ?: return ImpulseLook(cueMs.size, 0, 0, null, 0)
+        val yaw = DoubleArray(rows.size) { gyroYaw[rows[it]] * 180.0 / PI }
+        val runs = ArrayList<IntRange>()
+        var k = 0
+        while (k < yaw.size) {
+            if (abs(yaw[k]) >= IMPULSE_DETECT_DPS) {
+                val start = k
+                while (k < yaw.size && abs(yaw[k]) >= IMPULSE_DETECT_DPS) k++
+                runs += start until k
+            } else {
+                k++
+            }
+        }
+        var left = 0
+        var right = 0
+        val peaks = ArrayList<Double>()
+        for ((index, cue) in cueMs.withIndex()) {
+            val limit = minOf(cue + IMPULSE_WINDOW_MS, cueMs.getOrElse(index + 1) { Double.POSITIVE_INFINITY })
+            val run = runs.firstOrNull { times[it.first] >= cue && times[it.first] < limit } ?: continue
+            val peak = run.maxBy { abs(yaw[it]) }
+            if (yaw[peak] > 0) left++ else right++
+            peaks += abs(yaw[peak])
+        }
+        return ImpulseLook(
+            tones = cueMs.size,
+            left = left,
+            right = right,
+            medianPeakDps = if (peaks.isEmpty()) null else median(peaks),
+            slow = peaks.count { it < IMPULSE_RAPID_DPS },
+        )
+    }
+
+    /** The glasses' own samples (row indices) and their device times on the phone clock. */
+    private fun glassesClock(
+        phoneMs: DoubleArray,
+        deviceMs: DoubleArray,
+        source: DoubleArray,
+    ): Pair<IntArray, DoubleArray>? {
+        val rows = source.indices.filter {
+            source[it] == SOURCE_GLASSES && deviceMs[it].isFinite() && phoneMs[it].isFinite()
+        }.toIntArray()
+        if (rows.isEmpty()) return null
+        val device = DoubleArray(rows.size) { deviceMs[rows[it]] }
+        val phone = DoubleArray(rows.size) { phoneMs[rows[it]] }
+        val offset = lowerEnvelopeOffset(phone, device) ?: return null
+        return rows to DoubleArray(rows.size) { device[it] + offset }
+    }
 
     fun analyze(
         motionPhoneMs: DoubleArray,

@@ -90,12 +90,14 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Replays a synthetic 1 Hz, ±15° head-shake on the mock glasses' IMU
-     * (MWDAT 1.0 MockMotionKit), looped, so the head-motion lab has motion
-     * data to record without hardware.
+     * (MWDAT 1.0 MockMotionKit), so the head-motion lab has motion data to
+     * record without hardware. Five minutes long: the mock replays a loop with
+     * its own timestamps, and a shorter loop would make the device clock jump
+     * back mid-trial.
      */
     fun startSyntheticHeadMotion(deviceInfo: MockDeviceInfo) {
         executeMockDeviceOperation(deviceInfo, "Loading synthetic head motion", deviceInfo.copy(hasMotionFeed = true)) { device ->
-            device.services.motion.setMotionFeed(SyntheticMotion.yawOscillation(), loop = true)
+            device.services.motion.setMotionFeed(SyntheticMotion.yawOscillation(durationSec = 300.0), loop = true)
         }
     }
 

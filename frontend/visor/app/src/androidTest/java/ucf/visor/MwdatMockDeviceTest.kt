@@ -8,6 +8,7 @@
 // 2. The head-motion lab records a synthetic IMU feed through the Motion capability
 //    and writes a readable visor.imu.session/2 file.
 // 3. "Hey Meta, start VISOR" (voice invocation) starts a session and is answered.
+// 4. Tier S: "Balance lost" ends a timed hold as a result; head impulses are counted.
 
 package ucf.visor
 
@@ -37,9 +38,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import ucf.visor.motionlab.MotionLabViewModel
 import ucf.visor.motionlab.SyntheticMotion
+import ucf.visor.motionlab.protocol.Cue
+import ucf.visor.motionlab.protocol.CueStyle
 import ucf.visor.motionlab.protocol.RunnerState
 import ucf.visor.motionlab.protocol.Trial
 import ucf.visor.motionlab.protocol.TrialOutcome
+import ucf.visor.motionlab.protocol.Trials
 import ucf.visor.wearables.VoiceLaunches
 import ucf.visor.wearables.preferredDevice
 import ucf.visor.wearables.toGlassesStatus
@@ -197,6 +201,93 @@ class MwdatMockDeviceTest {
     /** `-e keepRecordings true` leaves the session files on the device to adb pull. */
     private val keepRecordings: Boolean
         get() = InstrumentationRegistry.getArguments().getString("keepRecordings") == "true"
+
+    private fun startLabTrial(trial: Trial): MotionLabViewModel {
+        lateinit var lab: MotionLabViewModel
+        composeTestRule.runOnUiThread {
+            lab = ViewModelProvider(composeTestRule.activity)[MotionLabViewModel::class.java]
+            lab.observeGlasses()
+            lab.setParticipant("instrumentation")
+            lab.startTrial(trial) { PermissionStatus.Granted }
+        }
+        return lab
+    }
+
+    private fun readRecording(file: java.io.File?): JSONObject {
+        assertNotNull("recording not saved", file)
+        return JSONObject(GZIPInputStream(file!!.inputStream()).bufferedReader().readText())
+    }
+
+    /**
+     * Tier S, a timed hold: the tester's "Balance lost" ends the Romberg as a
+     * result rather than an abort, the recording carries its length and
+     * condition, and the battery moves on to the next task.
+     */
+    @Test
+    fun balanceLostEndsARombergHoldAndTheBatteryMovesOn() {
+        val glasses = pairWornGlasses()
+        glasses.services.motion.setMotionFeed(
+            SyntheticMotion.yawOscillation(durationSec = 60.0, frequencyHz = 0.5, amplitudeDeg = 0.5), loop = true)
+        val romberg = Trials.byId("S1_romberg_eyes_open")!!.copy(prepSec = 1)
+        val lab = startLabTrial(romberg)
+        // Long enough to leave a sway window (2 s in, 1 s before the press, 5 s minimum).
+        composeTestRule.waitUntil(60_000) {
+            (lab.uiState.value.runner as? RunnerState.Recording)?.let { it.elapsedMs >= 9_000 } == true
+        }
+        composeTestRule.runOnUiThread { lab.balanceLost() }
+        composeTestRule.waitUntil(30_000) { lab.uiState.value.runner is RunnerState.Finished }
+
+        val result = lab.uiState.value.lastResult!!
+        assertEquals("reason: ${result.reason}", TrialOutcome.BALANCE_LOST, result.outcome)
+        val meta = readRecording(result.file).getJSONObject("meta")
+        assertEquals("balance_lost", meta.getString("outcome"))
+        val hold = meta.getDouble("holdSec")
+        assertTrue("hold $hold s", hold in 9.0..15.0)
+        assertTrue(meta.getBoolean("timedHold"))
+        assertEquals("romberg", meta.getJSONObject("condition").getString("task"))
+        assertEquals("open", meta.getJSONObject("condition").getString("eyes"))
+        val balance = result.quickLook!!.balance!!
+        assertTrue(balance.lost)
+        assertNotNull(balance.headSpeedRmsDps)
+        assertTrue(result.summary, result.summary.contains("The hold lasted"))
+        assertTrue(result.summary, result.summary.contains("Next: Romberg, eyes closed"))
+        assertEquals("S1_romberg_eyes_closed", lab.uiState.value.selectedTrialId)
+        if (!keepRecordings) result.file!!.delete()
+    }
+
+    /**
+     * Tier S, the head impulse test: impulses streamed through MWDAT Motion are
+     * matched to the lab's tones and counted, with their peak speed, by the
+     * same rule the analysis uses.
+     */
+    @Test
+    fun headImpulsesAreCountedThroughMwdatMotion() {
+        val glasses = pairWornGlasses()
+        // One quick 15° turn a second, alternately left and right, peaking at
+        // 187.5 °/s; long enough not to loop (and so reset its clock) mid-trial.
+        glasses.services.motion.setMotionFeed(SyntheticMotion.headImpulses(durationSec = 60.0), loop = true)
+        val trial = Trials.byId("S4_head_impulse")!!.copy(
+            id = "T0_instrumentation_impulses",
+            prepSec = 1,
+            durationSec = 14,
+            camera = false,
+            cue = Cue(3_000, listOf("IMPULSE"), CueStyle.TONE, firstAtMs = 1_000, count = 4),
+        )
+        val lab = startLabTrial(trial)
+        composeTestRule.waitUntil(90_000) { lab.uiState.value.runner is RunnerState.Finished }
+
+        val result = lab.uiState.value.lastResult!!
+        assertEquals("reason: ${result.reason}", TrialOutcome.COMPLETED, result.outcome)
+        val impulses = result.quickLook!!.impulses!!
+        assertEquals(4, impulses.tones)
+        assertEquals(result.summary, 4, impulses.detected)
+        assertEquals(0, impulses.slow)
+        assertEquals(187.5, impulses.medianPeakDps!!, 187.5 * 0.1)
+        assertTrue(result.summary, result.summary.contains("Found 4 impulses for 4 tones"))
+        val cues = readRecording(result.file).getJSONObject("meta").getJSONObject("cue")
+        assertEquals("TONE", cues.getString("style"))
+        if (!keepRecordings) result.file!!.delete()
+    }
 
     @Test
     fun heyMetaStartVisorStartsASessionAndIsAnswered() {

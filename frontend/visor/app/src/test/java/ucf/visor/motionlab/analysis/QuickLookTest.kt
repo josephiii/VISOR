@@ -186,4 +186,97 @@ class QuickLookTest {
         // Arrival minus stamp: -5.0 and -5.5; the envelope is the smaller.
         assertEquals(-5.5, QuickLook.lowerEnvelopeOffset(doubleArrayOf(5.0, 7.0), doubleArrayOf(10.0, 12.5))!!, 1e-12)
     }
+
+    // ---------------------------------------------------- Tier S: balance tasks
+
+    /** Glasses samples at 60 Hz on their own clock, arriving 20-60 ms later on the recording clock. */
+    private class Feed(val device: DoubleArray, val phone: DoubleArray, val source: DoubleArray)
+
+    private fun feed(durationS: Double): Feed {
+        val random = Random(11)
+        val n = (durationS * 60).toInt()
+        val device = DoubleArray(n) { it * 1000.0 / 60 }
+        return Feed(device, DoubleArray(n) { device[it] + 20 + random.nextDouble(0.0, 40.0) }, DoubleArray(n))
+    }
+
+    /** Rate of a 0 → 1 minimum-jerk step over [0, 1], per unit time; peaks at 1.875. */
+    private fun minJerkRate(s: Double) = if (s <= 0 || s >= 1) 0.0 else 30 * s * s * (1 - s) * (1 - s)
+
+    // The ten impulses of analysis/make_synthetic.py: + is left; the fourth is slow (131 deg/s).
+    private val sides = intArrayOf(1, -1, -1, 1, -1, 1, 1, -1, 1, -1)
+    private val amplitudes = doubleArrayOf(18.0, 16.0, 20.0, 14.0, 17.0, 19.0, 15.0, 18.0, 16.0, 20.0)
+    private val durations = doubleArrayOf(0.15, 0.14, 0.16, 0.20, 0.15, 0.13, 0.15, 0.17, 0.14, 0.16)
+    private val tones = doubleArrayOf(3_000.0, 6_100.0, 9_400.0, 12_000.0, 15_300.0, 18_200.0, 21_500.0,
+        24_100.0, 27_600.0, 30_400.0)
+
+    /** Yaw rate (rad/s): a quick turn 200 ms after each tone, held, then a slow return. */
+    private fun impulseYaw(f: Feed): DoubleArray = DoubleArray(f.device.size) { i ->
+        val t = f.device[i] / 1000
+        var dps = 0.0
+        for (k in tones.indices) {
+            val onset = tones[k] / 1000 + 0.2
+            val out = minJerkRate((t - onset) / durations[k]) / durations[k]
+            val back = minJerkRate((t - (onset + durations[k] + 0.3)) / 1.2) / 1.2
+            dps += sides[k] * amplitudes[k] * (out - back)
+        }
+        dps * PI / 180
+    }
+
+    @Test
+    fun findsEachHeadImpulseWithItsSideAndSpeed() {
+        val f = feed(40.0)
+        val look = QuickLook.headImpulses(f.phone, f.device, impulseYaw(f), f.source, tones)
+        assertEquals(10, look.tones)
+        assertEquals(5, look.left)
+        assertEquals(5, look.right)
+        assertEquals(1, look.slow)
+        // True peaks are 1.875 x amplitude / duration; their median is 214.3 deg/s.
+        assertEquals(214.3, look.medianPeakDps!!, 214.3 * 0.03)
+    }
+
+    @Test
+    fun aToneWithNoTurnAfterItIsMissedAndTheSlowReturnsDoNotCount() {
+        val f = feed(40.0)
+        val extra = tones + 35_000.0
+        val look = QuickLook.headImpulses(f.phone, f.device, impulseYaw(f), f.source, extra)
+        assertEquals(11, look.tones)
+        assertEquals(10, look.detected)
+    }
+
+    @Test
+    fun neuralBandSamplesNeverCountAsHeadImpulses() {
+        val f = feed(40.0)
+        val yaw = impulseYaw(f)
+        for (i in yaw.indices step 7) {
+            f.source[i] = 1.0
+            yaw[i] = -10.0 // a wrist flick, far faster than any head turn
+        }
+        val look = QuickLook.headImpulses(f.phone, f.device, yaw, f.source, tones)
+        assertEquals(5, look.left)
+        assertEquals(5, look.right)
+    }
+
+    @Test
+    fun balanceHeadSpeedLeavesOutTheStartAndTheStepThatEndedTheHold() {
+        val f = feed(12.0)
+        // Steady sway of 2 deg/s RMS, a 40 deg/s settling burst in the first
+        // second and the step that ended the hold in its last 0.8 s.
+        val gx = DoubleArray(f.device.size) { i ->
+            val t = f.device[i] / 1000
+            val dps = if (t < 1.0 || t > 11.2) 40.0 else 2.0 * kotlin.math.sqrt(2.0) * sin(2 * PI * 0.5 * t)
+            dps * PI / 180
+        }
+        val zeros = DoubleArray(f.device.size)
+        val lost = QuickLook.balance(f.phone, f.device, gx, zeros, zeros, f.source, 0.0, 12_000.0, lost = true)
+        assertEquals(12.0, lost.holdSec, 1e-9)
+        assertTrue(lost.lost)
+        assertEquals(2.0, lost.headSpeedRmsDps!!, 0.1)
+        // Held to the end, the last second is part of the hold and the burst counts.
+        val held = QuickLook.balance(f.phone, f.device, gx, zeros, zeros, f.source, 0.0, 12_000.0, lost = false)
+        assertTrue("${held.headSpeedRmsDps}", held.headSpeedRmsDps!! > 10.0)
+        // Lost after 6 s, the window would be 3 s: too short, so only the length is reported.
+        val short = QuickLook.balance(f.phone, f.device, gx, zeros, zeros, f.source, 0.0, 6_000.0, lost = true)
+        assertEquals(6.0, short.holdSec, 1e-9)
+        assertNull(short.headSpeedRmsDps)
+    }
 }

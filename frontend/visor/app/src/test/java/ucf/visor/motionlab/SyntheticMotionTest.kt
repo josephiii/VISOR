@@ -46,4 +46,24 @@ class SyntheticMotionTest {
         val peakRate = samples.maxOf { abs(it.gyroscope!!.y.toDouble()) }
         assertEquals(15 * PI / 180 * 2 * PI, peakRate, 0.01)
     }
+
+    @Test
+    fun headImpulsesTurnFastOutAndSlowlyBackOnTheirQuaternion() {
+        val impulses = SyntheticMotion.headImpulses()
+        assertEquals(120, impulses.size)
+        var integrated = 0.0
+        for (i in 1 until impulses.size) {
+            val dt = (impulses[i].timestampNs - impulses[i - 1].timestampNs) / 1e9
+            integrated += 0.5 * (impulses[i].gyroscope!!.y + impulses[i - 1].gyroscope!!.y) * dt
+            assertEquals("yaw at sample $i", 2 * asin(impulses[i].orientation!!.y.toDouble()), integrated, 5e-3)
+        }
+        val dps = impulses.map { it.gyroscope!!.y * 180 / PI }
+        // Out at 1.875 x 15 deg / 0.15 s, left then right; back under the 60 deg/s threshold.
+        assertEquals(187.5, dps.max(), 187.5 * 0.03)
+        assertEquals(-187.5, dps.min(), 187.5 * 0.03)
+        val returns = dps.withIndex().filter { (i, _) -> (i % 60) / 60.0 > 0.3 }.map { abs(it.value) }
+        assertTrue("slowest return ${returns.max()}", returns.max() < 60)
+        // The loop closes: back at the centre after each pair.
+        assertEquals(0.0, integrated, 5e-3)
+    }
 }

@@ -1,5 +1,6 @@
 package ucf.visor.motionlab.protocol
 
+import kotlin.random.Random
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -19,6 +20,8 @@ class TrialRunnerTest {
         val streamsReady = CompletableDeferred<Unit>()
         val events = mutableListOf<String>()
         val marks = mutableListOf<Pair<String, Map<String, Any?>?>>()
+        val markTimes = mutableListOf<Long>()
+        var clock: () -> Long = { 0L }
         val ends = mutableListOf<Triple<TrialOutcome, String?, Boolean>>()
 
         override suspend fun awaitStreams(trial: Trial): String? {
@@ -33,6 +36,7 @@ class TrialRunnerTest {
 
         override fun mark(label: String, extra: Map<String, Any?>?) {
             marks += label to extra
+            markTimes += clock()
         }
 
         override suspend fun endTrial(trial: Trial, outcome: TrialOutcome, reason: String?, recorded: Boolean) {
@@ -143,6 +147,60 @@ class TrialRunnerTest {
         advanceUntilIdle()
         assertEquals(listOf(Triple(TrialOutcome.FAILED, "Camera permission was not granted", false)), host.ends)
         assertEquals(TrialOutcome.FAILED, feedback.finished)
+    }
+
+    private val hold = trial.copy(id = "S1", tier = "S", prepSec = 2, durationSec = 20, cue = null, timedHold = true)
+
+    @Test
+    fun balanceLostEndsATimedHoldAsAResultWithItsLength() = runTest {
+        val host = FakeHost().also { it.streamsReady.complete(Unit) }
+        host.clock = { testScheduler.currentTime }
+        val feedback = RecordingFeedback()
+        val runner = runner(host, feedback)
+        runner.start(hold)
+        advanceTimeBy(9_500) // a 2 s countdown, then 7.5 s of the hold
+        runner.balanceLost()
+        runner.abort("pressed afterwards")
+        advanceUntilIdle()
+        assertEquals(listOf(Triple(TrialOutcome.BALANCE_LOST, "Balance lost", true)), host.ends)
+        assertEquals(TrialOutcome.BALANCE_LOST, feedback.finished)
+        assertEquals("balance_lost", host.marks.last().second!!["outcome"])
+        val start = host.markTimes[host.marks.indexOfFirst { it.first == "trial_start" }]
+        assertEquals(7_500L, host.markTimes.last() - start)
+    }
+
+    @Test
+    fun balanceLostBeforeTheHoldStartsIsIgnored() = runTest {
+        val host = FakeHost().also { it.streamsReady.complete(Unit) }
+        val runner = runner(host, RecordingFeedback())
+        runner.start(hold)
+        advanceTimeBy(1_000) // still counting down
+        runner.balanceLost()
+        advanceUntilIdle()
+        assertEquals(listOf(Triple(TrialOutcome.COMPLETED, null, true)), host.ends)
+    }
+
+    @Test
+    fun jitteredCuesAreUnpredictableButStayInTheirWindows() = runTest {
+        val host = FakeHost().also { it.streamsReady.complete(Unit) }
+        var started = -1L
+        val cueTimes = mutableListOf<Long>()
+        val timed = object : TrialFeedback {
+            override fun recordingStarted(trial: Trial) { started = testScheduler.currentTime }
+            override fun cue(trial: Trial, label: String, index: Int, style: CueStyle) {
+                cueTimes += testScheduler.currentTime
+            }
+        }
+        val runner = TrialRunner(this, host, timed, Random(7), now = { testScheduler.currentTime })
+        val impulses = Cue(3_000, listOf("IMPULSE"), CueStyle.TONE, jitterMs = 750, firstAtMs = 3_000, count = 10)
+        runner.start(trial.copy(prepSec = 0, durationSec = 40, cue = impulses))
+        advanceUntilIdle()
+        assertEquals(10, cueTimes.size)
+        assertEquals(3_000L, cueTimes.first() - started)
+        val gaps = cueTimes.zipWithNext { a, b -> b - a }
+        assertTrue("gaps $gaps", gaps.all { it in 2_250L..3_750L })
+        assertTrue("not a fixed beat", gaps.toSet().size > 1)
+        assertEquals(10, host.marks.count { it.first == "cue" })
     }
 
     @Test

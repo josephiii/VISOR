@@ -153,6 +153,58 @@ estimate per frame, with the correlation peak and texture that qualify it.
 
 Run V4 first on a new pair of glasses: the other V trials are scaled against it.
 
+### Tier S — Balance and vestibular tasks (worn, native app only)
+
+Five standardized tasks, run in order as a quick battery from the head-motion
+lab (it lists them first and, after each usable result, selects the next).
+About 12 minutes including countdowns. Analyzed by
+`analysis/balance_analysis.py`, which writes one figure per task.
+
+| ID | Task | Conditions | Each | Measures |
+|---|---|---|---|---|
+| S1 | Modified Romberg: feet together, arms by the sides | eyes open, eyes closed | 30 s | Head sway (AP, ML, 95% area, mean velocity, sway acceleration); eyes-closed ÷ open ratio |
+| S2 | Tandem stance: heel to toe | left foot in front, right foot in front × eyes open, closed | 30 s | As S1, narrower base; hold time |
+| S3 | Single-leg stance | dominant, non-dominant leg × eyes open, closed | 20 s | Hold time; sway while held |
+| S4 | Head impulse test, seated, eyes on a target | 10 impulses on unpredictable tones (3 ± 0.75 s apart) | 40 s | Each impulse's side, peak head velocity, amplitude; camera on |
+| S5 | Gaze stabilization while reading | side to side, up and down, 1 Hz metronome | 30 s | Movement achieved vs. pacing; camera image vs. head (near-target ratio) |
+
+**Timed holds (S1–S3).** Eyes-closed trials close the eyes at the start tones
+and open them at the end chime. In single-leg stance the foot lifts at the
+start tones. The tester presses **Balance lost** when the wearer steps, puts a
+foot down or opens their eyes. That ends the trial as a *result* (outcome
+`balance_lost`, its length recorded as the hold time), not as an incomplete
+recording, and QC accepts it. Sway is measured from 2 s after the start tones,
+and stops 1 s before a Balance lost press, which holds the step itself.
+
+**Head impulse test (S4).** A tester behind the seated wearer turns the head
+quickly and briefly, about 15°, to either side at each tone, holds it, then
+returns it slowly. The tone does not say which side. Without a tester, the
+wearer makes the turn (an active head impulse, which is not the same test).
+The impulse for a tone is the first yaw movement faster than 60 °/s that
+starts within 2 s after it; impulses below 150 °/s are counted as slow.
+
+**Gaze stabilization (S5).** A page of large print on the wall at eye level,
+read from about an arm's length. It is the V1/V2 movement with a near target.
+Compared with the V4 scale measured at a distant scene, the camera's image
+moves further than the head turns (about 1 + r/d, for a camera r in front of
+the rotation axis and text d away). This is the same geometry that makes a
+near target need a VOR gain above 1.
+
+**What is measured, and what is not.** Sway is the head's angular sway in its
+gravity-levelled mean pose, integrated from the gyroscope with the bias fitted
+against the accelerometer. It is head sway, not centre-of-pressure sway, and
+the two agree only as far as the head moves with the body. Head impulses are
+head kinematics only: a clinical head impulse test also records the eyes,
+which the glasses cannot, so **no VOR gain is reported**. At 60 Hz a 150 ms
+impulse spans about nine samples, so peak velocities can read a few percent
+low.
+
+**Safety.** These tasks are designed to challenge balance. For S1–S3, stand
+next to a wall or counter with a spotter beside the wearer, especially with
+eyes closed and for anyone with TBI, vestibular involvement or low vision.
+Skip S4 with neck pain or a neck injury (common after TBI), and stop S4 or S5
+at any dizziness.
+
 ---
 
 ## Execution
@@ -173,6 +225,10 @@ Total wall time is roughly 34 minutes including preparation countdowns, plus
 setup. Running the two Tier A trials first gets the glasses-off work out of the
 way in one block rather than interleaving it. Tiers may be run on separate
 days; each trial is self-contained and independently analyzable.
+
+The native-only tiers run from the head-motion lab: Tier S in its listed order
+(`S1 → S2 → S3 → S4 → S5`, eyes open before eyes closed), and Tier V with V4
+first on a new pair of glasses.
 
 **Safety.** B4 (rapid turns) and C3/C4 (walking, sit-to-stand) involve movement
 that can provoke dizziness or loss of balance. Stop immediately if dizzy. Walk
@@ -219,8 +275,8 @@ A session is **valid** for characterization only if all of the following hold.
 | Effective sample rate | Within 10% of the session median across the battery |
 | Dropout fraction | < 1% of inter-sample intervals exceeding 3× median |
 | Longest gap | < 250 ms |
-| Trial outcome | `completed`, not `aborted` |
-| Duration | Within 2% of the planned trial duration |
+| Trial outcome | `completed` (or `balance_lost` for a Tier S timed hold), not `aborted` |
+| Duration | Within 2% of the planned trial duration (not checked on a `balance_lost` hold, whose length is the result) |
 | Backgrounding | No `visibility_hidden` marks during recording |
 | Tier A only — stationarity | Peak gyro SD < 2 °/s and accel peak-to-peak < 1 m/s² |
 

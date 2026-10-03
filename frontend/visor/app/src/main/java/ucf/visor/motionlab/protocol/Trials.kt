@@ -1,5 +1,7 @@
 package ucf.visor.motionlab.protocol
 
+import kotlin.random.Random
+
 /** How a trial's pacing cue reaches the wearer. */
 enum class CueStyle {
     /** The cue word is spoken (TTS) after a short blip — for cues a second or more apart. */
@@ -11,22 +13,56 @@ enum class CueStyle {
      * (e.g. left/up), low = second (right/down).
      */
     METRONOME,
+
+    /**
+     * The same single tone every time, no speech — a prompt that gives nothing
+     * away, as the head impulse test needs: the side is not announced.
+     */
+    TONE,
 }
 
-/** Alternate through [steps] every [intervalMs] for the whole recording. */
+/**
+ * Cycle through [steps], one every [intervalMs] from [firstAtMs], for the whole
+ * recording or for [count] cues.
+ *
+ * @property jitterMs moves each interval by up to this much either way, at
+ *   random, so the next cue cannot be anticipated. The cue marks record when
+ *   each one actually fell.
+ */
 data class Cue(
     val intervalMs: Long,
     val steps: List<String>,
     val style: CueStyle = CueStyle.SPOKEN,
-)
+    val jitterMs: Long = 0,
+    val firstAtMs: Long = 0,
+    val count: Int? = null,
+) {
+    /** When each cue falls, in ms from the start of recording, within [durationMs]. */
+    fun times(durationMs: Long, random: Random = Random.Default): List<Long> {
+        val out = ArrayList<Long>()
+        var at = firstAtMs
+        while (at < durationMs && (count == null || out.size < count)) {
+            out += at
+            at += intervalMs + if (jitterMs > 0) random.nextLong(-jitterMs, jitterMs + 1) else 0L
+        }
+        return out
+    }
+}
 
 /**
  * One fixed, repeatable procedure.
  *
  * @property camera whether the glasses camera streams during the trial. Only
- *   the vestibulo-ocular tier needs it; every other trial is IMU-only so its
- *   numbers stay comparable with the web IMU Lab's, and so the camera's power
- *   and heat do not colour the endurance trial.
+ *   the trials about head motion against the camera image need it; every other
+ *   trial is IMU-only so its numbers stay comparable with the web IMU Lab's,
+ *   and so the camera's power and heat do not colour the endurance trial.
+ * @property brief spoken as the countdown starts, after the title: what to do
+ *   at the start tones, for a wearer whose eyes will be closed or on a target.
+ * @property timedHold a balance hold whose length is the result. The tester
+ *   ends it with "Balance lost" when the wearer steps, puts a foot down or
+ *   opens their eyes; that is a valid result, not an incomplete recording.
+ * @property condition what the analysis groups by (task, eyes, stance side…),
+ *   written into the recording so nothing has to be parsed out of [id].
  */
 data class Trial(
     val id: String,
@@ -40,6 +76,9 @@ data class Trial(
     val instructions: List<String>,
     val cue: Cue? = null,
     val camera: Boolean = false,
+    val brief: String? = null,
+    val timedHold: Boolean = false,
+    val condition: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -57,10 +96,18 @@ data class Trial(
  * camera access). Each V trial records head rotation (gyroscope) and the image
  * shift that rotation produces in the head-fixed camera, which is the raw
  * material for the IMU-versus-image discrepancy analysis (analysis/visor_imu/vor.py).
+ *
+ * Tier S is five standardized balance and vestibular tasks, run in order as a
+ * quick battery: modified Romberg, tandem stance, single-leg stance (each with
+ * eyes open and closed), the head impulse test and gaze stabilization while
+ * reading — the last two with the camera on. Ids share a task number (S1–S5)
+ * and carry their condition in [Trial.condition]; analysis/balance_analysis.py
+ * measures and plots them.
  */
 object Trials {
 
     val tiers: Map<String, String> = linkedMapOf(
+        "S" to "Balance and vestibular tasks",
         "V" to "Head motion vs. camera (VOR research)",
         "A" to "Instrument characterization",
         "B" to "Dynamic response",
@@ -68,7 +115,140 @@ object Trials {
         "D" to "System constraints",
     )
 
+    private const val SPOTTER = "Stand next to a wall or counter you can reach, with someone beside you. " +
+        "If you need to step, put a foot down or open your eyes, do: the tester presses Balance lost, " +
+        "and that is the result, not a failure."
+
+    private fun eyesBrief(eyes: String) =
+        if (eyes == "closed") "Close your eyes at the start tones and keep them closed until the end chime."
+        else "Keep your eyes on one point straight ahead."
+
+    private fun romberg(eyes: String) = Trial(
+        id = "S1_romberg_eyes_$eyes",
+        tier = "S",
+        title = "Romberg, eyes $eyes",
+        worn = true,
+        prepSec = 10,
+        durationSec = 30,
+        purpose = "Head sway standing with the feet together, eyes $eyes. Eyes closed against eyes " +
+            "open is the Romberg comparison: how much balance leans on vision.",
+        setup = "Stand with your feet together and your arms by your sides. ${eyesBrief(eyes)} " +
+            "Stay as still as you comfortably can until the three falling tones. $SPOTTER",
+        instructions = listOf("Feet together, arms by your sides", "Eyes $eyes", "Spotter beside you"),
+        brief = "Feet together, arms by your sides. ${eyesBrief(eyes)}",
+        timedHold = true,
+        condition = mapOf("task" to "romberg", "eyes" to eyes),
+    )
+
+    private fun tandem(front: String, eyes: String): Trial {
+        val back = if (front == "left") "right" else "left"
+        return Trial(
+            id = "S2_tandem_${front}_front_eyes_$eyes",
+            tier = "S",
+            title = "Tandem stance, $front foot in front, eyes $eyes",
+            worn = true,
+            prepSec = 12,
+            durationSec = 30,
+            purpose = "Head sway standing heel to toe, $front foot in front, eyes $eyes: a narrower base " +
+                "than the Romberg, side to side.",
+            setup = "Stand heel to toe: your $front foot straight in front of your $back, the front heel " +
+                "touching the back toes. Arms by your sides. Get into position during the countdown. " +
+                "${eyesBrief(eyes)} $SPOTTER",
+            instructions = listOf("Heel to toe, $front foot in front", "Eyes $eyes", "Spotter beside you"),
+            brief = "Heel to toe, $front foot in front. ${eyesBrief(eyes)}",
+            timedHold = true,
+            condition = mapOf("task" to "tandem", "eyes" to eyes, "front" to front),
+        )
+    }
+
+    private fun singleLeg(leg: String, eyes: String): Trial {
+        val name = if (leg == "dominant") "dominant" else "non-dominant"
+        return Trial(
+            id = "S3_single_leg_${leg}_eyes_$eyes",
+            tier = "S",
+            title = "Single-leg stance, $name leg, eyes $eyes",
+            worn = true,
+            prepSec = 10,
+            durationSec = 20,
+            purpose = "How long, and how steadily, the $name leg holds a single-leg stance with eyes $eyes.",
+            setup = "Stand on your $name leg (your dominant leg is the one you would kick a ball with). " +
+                "Keep both feet down during the countdown. At the start tones, lift the other foot just off " +
+                "the floor, not touching your standing leg, hands on your hips or by your sides. " +
+                "${eyesBrief(eyes)} $SPOTTER",
+            instructions = listOf("Stand on your $name leg", "Lift the other foot at the start tones",
+                "Eyes $eyes · spotter beside you"),
+            brief = "Stand on your $name leg, and lift the other foot at the start tones. ${eyesBrief(eyes)}",
+            timedHold = true,
+            condition = mapOf("task" to "single_leg", "eyes" to eyes, "leg" to leg),
+        )
+    }
+
+    private fun gazeStabilization(plane: String): Trial {
+        val horizontal = plane == "horizontal"
+        val movement = if (horizontal) "turn your head gently left on the high tone and right on the low tone"
+        else "nod gently up on the high tone and down on the low tone"
+        return Trial(
+            id = "S5_gaze_stabilization_$plane",
+            tier = "S",
+            title = "Gaze stabilization while reading, " + if (horizontal) "side to side" else "up and down",
+            worn = true,
+            prepSec = 12,
+            durationSec = 30,
+            purpose = "Reading while the head moves ${if (horizontal) "side to side" else "up and down"} at a " +
+                "paced 1 Hz (the VOR x1 exercise, with a near target). Records the head movement achieved and " +
+                "the camera's view of the text; compare with ${if (horizontal) "V1" else "V2"}, the same " +
+                "movement at a distant target.",
+            setup = "Tape a page of large print to a wall at eye level and sit about an arm's length from it. " +
+                "Keep reading while you $movement. Small movements: the words should stay clear. If they blur " +
+                "or jump, tell the tester. Stop if you feel dizzy.",
+            instructions = listOf("Seated, reading the page", if (horizontal) "Left and right with the tones"
+            else "Up and down with the tones", "Stop if dizzy"),
+            cue = Cue(intervalMs = 500, steps = if (horizontal) listOf("LEFT", "RIGHT") else listOf("UP", "DOWN"),
+                style = CueStyle.METRONOME),
+            camera = true,
+            brief = "Keep reading, and ${movement.replace("turn your head", "turn")}.",
+            condition = mapOf("task" to "gaze_stabilization", "plane" to plane),
+        )
+    }
+
     val all: List<Trial> = listOf(
+        // ---------- Tier S: standardized balance and vestibular tasks (worn) ----------
+        romberg("open"),
+        romberg("closed"),
+        tandem("left", "open"),
+        tandem("right", "open"),
+        tandem("left", "closed"),
+        tandem("right", "closed"),
+        singleLeg("dominant", "open"),
+        singleLeg("non_dominant", "open"),
+        singleLeg("dominant", "closed"),
+        singleLeg("non_dominant", "closed"),
+        Trial(
+            id = "S4_head_impulse",
+            tier = "S",
+            title = "Head impulse test (seated)",
+            worn = true,
+            prepSec = 12,
+            durationSec = 40,
+            purpose = "Ten brief, fast head turns on unpredictable tones, with the camera measuring how far " +
+                "the view moves. Gives each impulse's side, peak head speed and size. Head movement only: " +
+                "the glasses do not track the eyes, so this is not a VOR gain.",
+            setup = "Sit facing a detailed scene about two metres away, eyes on one point straight ahead. At " +
+                "each tone, the tester, standing behind you with hands on your head, turns your head quickly " +
+                "and briefly about 15 degrees to either side, holds it, then brings it slowly back to the " +
+                "middle. You will not know which side. Without a tester, make the quick turn yourself. Skip " +
+                "this test if you have neck pain or a neck injury, and stop if you feel dizzy.",
+            instructions = listOf("Seated, eyes on one point", "A quick, small turn at each tone",
+                "Skip with neck pain · stop if dizzy"),
+            cue = Cue(intervalMs = 3_000, steps = listOf("IMPULSE"), style = CueStyle.TONE,
+                jitterMs = 750, firstAtMs = 3_000, count = 10),
+            camera = true,
+            brief = "Eyes on the point ahead. At each tone, one quick, small turn, then slowly back to the middle.",
+            condition = mapOf("task" to "head_impulse", "plane" to "horizontal"),
+        ),
+        gazeStabilization("horizontal"),
+        gazeStabilization("vertical"),
+
         // ---------- Tier V: head motion vs. camera image shift (worn, camera on) ----------
         Trial(
             id = "V1_vor_yaw_paced",

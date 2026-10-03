@@ -16,8 +16,10 @@ different measurements and conflating them would fabricate data.
 
 For ``/2`` sessions the loader also derives a ``devicemotion`` frame in the
 ``/1`` column vocabulary, so every existing analysis (timing, Allan deviation,
-scanning, gait, cue segmentation) runs on native recordings unchanged. The
-mapping is documented on :func:`_derive_devicemotion`.
+scanning, gait, cue segmentation, pose) runs on native recordings unchanged.
+The mapping is documented on :func:`_derive_devicemotion`. Native-only fields
+(magnetometer, MWDAT's fused quaternion) are read from
+:attr:`Session.native_glasses`, which shares that frame's time base.
 """
 
 from __future__ import annotations
@@ -103,6 +105,11 @@ class Session:
         return self.streams.get("dat_video", pd.DataFrame())
 
     @property
+    def native_glasses(self) -> pd.DataFrame:
+        """The glasses' own native samples, every SDK column, plus ``tPerf`` as in :attr:`motion`."""
+        return glasses_samples(self.dat_motion)
+
+    @property
     def clocks(self) -> dict[str, Any]:
         return self.meta.get("clocks") or {}
 
@@ -144,8 +151,8 @@ def _stream_to_frame(stream: dict[str, Any]) -> pd.DataFrame:
     return pd.DataFrame({k: np.asarray(v, dtype="float64") for k, v in columns.items()})
 
 
-def _derive_devicemotion(dat_motion: pd.DataFrame) -> pd.DataFrame:
-    """Express native MWDAT samples in the web session's ``devicemotion`` columns.
+def glasses_samples(dat_motion: pd.DataFrame) -> pd.DataFrame:
+    """The glasses' own rows of a native ``dat_motion`` stream, with ``tPerf`` added.
 
     * Only samples whose ``source`` is the glasses are kept. MWDAT can interleave
       a Neural Band into the same feed, and a second rigid body in a head signal
@@ -153,18 +160,7 @@ def _derive_devicemotion(dat_motion: pd.DataFrame) -> pd.DataFrame:
     * ``tPerf`` is the **glasses' own sample time** (``tDevice``) re-based onto
       the recording's phone clock, so cue marks (phone clock) still line up.
       The web path's ``tPerf`` is an arrival time; the native path has the true
-      sampling time, which is what integration and spectra should use. The
-      phone arrival time is kept as ``tEvent``.
-    * ``agx..agz`` are the accelerometer (m/s², gravity included — the same
-      convention as ``accelerationIncludingGravity``). Linear acceleration is
-      not supplied by MWDAT, so ``ax..az`` are all null.
-    * Rotation rates are converted to °/s and named by **head axis in the
-      glasses body frame** — +Y up, −Z forward, X lateral, as measured on worn
-      glasses in Meta's BirdSpotter sample: ``rrAlpha`` = yaw (about Y),
-      ``rrBeta`` = pitch (about X), ``rrGamma`` = roll (about Z). This is not
-      the W3C device-axis convention; it is chosen so ``rrAlpha`` means yaw, as
-      the scanning analysis assumes. :mod:`vor` reports the dominant rotation
-      axis of each paced trial so the convention can be checked on real data.
+      sampling time, which is what integration and spectra should use.
     """
     if dat_motion.empty or "tDevice" not in dat_motion:
         return pd.DataFrame()
@@ -179,19 +175,42 @@ def _derive_devicemotion(dat_motion: pd.DataFrame) -> pd.DataFrame:
     # arrival - stamp (see vor.lower_envelope_offset): arrival is never earlier
     # than the sample, so the minimum is the offset plus the fastest delivery.
     offset = lower_envelope_offset(glasses["tPhone"].to_numpy(), glasses["tDevice"].to_numpy())
-    t_perf = glasses["tDevice"].to_numpy() + (offset if offset is not None else 0.0)
+    return glasses.assign(tPerf=glasses["tDevice"].to_numpy() + (offset if offset is not None else 0.0))
+
+
+def _derive_devicemotion(dat_motion: pd.DataFrame) -> pd.DataFrame:
+    """Express native MWDAT samples in the web session's ``devicemotion`` columns.
+
+    * Rows and ``tPerf`` are those of :func:`glasses_samples`. The phone
+      arrival time is kept as ``tEvent``.
+    * ``agx..agz`` are the accelerometer (m/s², gravity included — the same
+      convention as ``accelerationIncludingGravity``). Linear acceleration is
+      not supplied by MWDAT, so ``ax..az`` are all null.
+    * Rotation rates are converted to °/s, and the SDK's ``gx, gy, gz`` become
+      ``rrAlpha, rrBeta, rrGamma`` **unchanged in order**. Both capture paths
+      report in the same glasses body frame — x = wearer's right, y = up,
+      z = backward. The pose analysis measured it on the web stream
+      (:data:`metrics.GYRO_HEAD_AXIS`, by gravity consistency); Meta's
+      BirdSpotter sample measured +Y up and -Z forward on worn glasses. So
+      ``rrAlpha`` is pitch, ``rrBeta`` yaw and ``rrGamma`` roll on both paths, and
+      every analysis keyed on those names reads native sessions correctly.
+      :func:`pose.axis_mapping_scores` re-tests this on each platform's data.
+    """
+    glasses = glasses_samples(dat_motion)
+    if glasses.empty:
+        return pd.DataFrame()
 
     deg = 180.0 / np.pi
     nan = np.full(len(glasses), np.nan)
     return pd.DataFrame({
-        "tPerf": t_perf,
+        "tPerf": glasses["tPerf"].to_numpy(),
         "tEvent": glasses["tPhone"].to_numpy(),
         "ax": nan, "ay": nan, "az": nan,
         "agx": glasses["ax"].to_numpy(),
         "agy": glasses["ay"].to_numpy(),
         "agz": glasses["az"].to_numpy(),
-        "rrAlpha": glasses["gy"].to_numpy() * deg,
-        "rrBeta": glasses["gx"].to_numpy() * deg,
+        "rrAlpha": glasses["gx"].to_numpy() * deg,
+        "rrBeta": glasses["gy"].to_numpy() * deg,
         "rrGamma": glasses["gz"].to_numpy() * deg,
         "interval": nan,
     })

@@ -170,7 +170,16 @@ def fig_axis_identification(shares: pd.DataFrame, mapping: pd.DataFrame, out: Pa
 # ============================ 2. orientation ============================
 
 
-def fig_orientation(panels: list[dict[str, Any]], out: Path, window_s: float = 24.0) -> Path:
+WEB_ORIENTATION_NOTE = (
+    "Nothing is fitted between the two estimates. The platform stream is not ground truth: its "
+    "roll/pitch share our accelerometer; its heading adds the magnetometer, and moves opposite to "
+    "the gyro here.")
+
+
+def fig_orientation(panels: list[dict[str, Any]], out: Path, window_s: float = 24.0,
+                    title: str = "Orientation from gyro + accelerometer only",
+                    reference: str = "platform orientation (fused, compass)",
+                    note: str = WEB_ORIENTATION_NOTE) -> Path:
     """IMU-only roll/pitch/yaw against the platform's fused orientation."""
     fig, axes = plt.subplots(len(panels), 1, figsize=(9.6, 2.35 * len(panels)), sharex=False)
     for ax, p in zip(np.atleast_1d(axes), panels):
@@ -187,7 +196,7 @@ def fig_orientation(panels: list[dict[str, Any]], out: Path, window_s: float = 2
         # The reference is drawn wide and pale underneath so that where the two
         # agree, both remain visible rather than one hiding the other.
         ax.plot(tt, ref, color=SERIES[1], linewidth=3.4, alpha=0.55,
-                label="platform orientation (fused, compass)", solid_capstyle="round")
+                label=reference, solid_capstyle="round")
         ax.plot(tt, est, color=SERIES[0], linewidth=1.4, label="IMU-only filter (gyro + accel)")
         ax.set_ylabel(f"{key} (°)" + (", centred" if key == "yaw" else ""))
         ax.set_title(f"{key.capitalize()} — {p['trial']}", loc="left", fontsize=9.5)
@@ -197,12 +206,9 @@ def fig_orientation(panels: list[dict[str, Any]], out: Path, window_s: float = 2
     first = np.atleast_1d(axes)[0]
     first.legend(loc="lower left", ncol=2, bbox_to_anchor=(0.0, 1.14), fontsize=8)
     np.atleast_1d(axes)[-1].set_xlabel("time (s)")
-    fig.suptitle("Orientation from gyro + accelerometer only", x=0.01, ha="left",
-                 fontsize=11, fontweight="bold", color=INK, y=1.02)
+    fig.suptitle(title, x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK, y=1.02)
     fig.tight_layout()
-    _note(fig, "Nothing is fitted between the two estimates. The platform stream is not ground truth: its "
-               "roll/pitch share our accelerometer; its heading adds the magnetometer, and moves opposite to "
-               "the gyro here.", y=0.0)
+    _note(fig, note, y=0.0)
     fig.savefig(out)
     plt.close(fig)
     return out

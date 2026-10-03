@@ -144,6 +144,11 @@ class SessionRecording(
     /** A consistent copy of one video column (for the on-phone quick look). */
     fun videoColumn(name: String): DoubleArray = synchronized(lock) { video.column(name) }
 
+    /** When each mark with [label] was made, ms since recording start, in order. */
+    fun markTimes(label: String): DoubleArray = synchronized(lock) {
+        marks.filter { it.label == label }.map { it.tMs }.toDoubleArray()
+    }
+
     fun metaValue(key: String): Any? = synchronized(lock) { meta[key] }
 
     fun writeJson(out: Writer) = synchronized(lock) {

@@ -1,6 +1,7 @@
 package ucf.visor.motionlab.protocol
 
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -12,7 +13,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class TrialOutcome { COMPLETED, ABORTED, FAILED }
+enum class TrialOutcome {
+    COMPLETED,
+    ABORTED,
+    FAILED,
+
+    /** A timed balance hold ended by the tester: the hold's length is the result. */
+    BALANCE_LOST,
+}
 
 /** Where a trial is. The recording screen renders exactly this. */
 sealed interface RunnerState {
@@ -86,8 +94,10 @@ interface TrialFeedback {
  * delay after delay, so one late cue never shifts every cue after it.
  *
  * Exactly one [TrialHost.endTrial] per trial, however it ends: completion,
- * [abort], [fail], or a stream that never came up — whichever gets there first.
+ * [abort], [fail], [balanceLost], or a stream that never came up — whichever
+ * gets there first.
  *
+ * @param random draws a jittered cue schedule ([Cue.jitterMs]); seeded in tests.
  * @param now monotonic milliseconds — `SystemClock.elapsedRealtime` on device,
  *   the virtual clock in tests.
  */
@@ -95,6 +105,7 @@ class TrialRunner(
     private val scope: CoroutineScope,
     private val host: TrialHost,
     private val feedback: TrialFeedback,
+    private val random: Random = Random.Default,
     private val now: () -> Long,
 ) {
     private val _state = MutableStateFlow<RunnerState>(RunnerState.Idle)
@@ -123,6 +134,16 @@ class TrialRunner(
 
     /** The glasses gave out mid-trial. Anything recorded is kept, marked failed. */
     fun fail(reason: String) = stop(TrialOutcome.FAILED, reason)
+
+    /**
+     * The tester saw the wearer step, put a foot down or open their eyes: a
+     * timed hold ends here, and its length is the result. Ignored until
+     * recording has started, since a hold that never began has no length.
+     */
+    fun balanceLost() {
+        val run = current ?: return
+        if (run.recording) stop(TrialOutcome.BALANCE_LOST, "Balance lost")
+    }
 
     private fun stop(outcome: TrialOutcome, reason: String?) {
         val run = current ?: return
@@ -158,13 +179,14 @@ class TrialRunner(
         val startedAt = now()
         val durationMs = trial.durationSec * 1_000L
         val cue = trial.cue
+        val schedule = cue?.times(durationMs, random).orEmpty()
         var nextCue = 0
         var lastLabel: String? = null
 
         while (true) {
             val elapsed = now() - startedAt
             if (elapsed >= durationMs) break
-            if (cue != null && elapsed >= nextCue * cue.intervalMs) {
+            if (cue != null && nextCue < schedule.size && elapsed >= schedule[nextCue]) {
                 val label = cue.steps[nextCue % cue.steps.size]
                 host.mark("cue", mapOf("index" to nextCue, "label" to label))
                 feedback.cue(trial, label, nextCue, cue.style)
@@ -172,7 +194,7 @@ class TrialRunner(
                 nextCue++
             }
             _state.value = RunnerState.Recording(trial, elapsed, lastLabel, nextCue - 1)
-            val nextCueAt = if (cue != null) nextCue * cue.intervalMs else Long.MAX_VALUE
+            val nextCueAt = schedule.getOrElse(nextCue) { Long.MAX_VALUE }
             val wakeAt = minOf(durationMs, nextCueAt, elapsed + TICK_MS)
             delay((wakeAt - elapsed).coerceAtLeast(1))
         }

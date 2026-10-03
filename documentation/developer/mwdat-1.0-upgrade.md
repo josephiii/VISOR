@@ -18,7 +18,14 @@ lab** that records both and measures their discrepancy, plus an analysis
 pipeline that was validated against ground truth. Three smaller features follow
 Meta's two new samples: **"Hey Meta, start VISOR"** voice launch
 (VoiceInvocationsSample), live **glasses status** from 1.0's device-state
-fields (BirdSpotter), and Meta-AI-initiated registration.
+fields (BirdSpotter), and Meta-AI-initiated registration. After the branch was
+rebased onto the IMU Lab's **pose analysis**, the lab's recordings were brought
+into it: both capture paths now share one body frame. The native path also adds
+two heading references the web path lacks, MWDAT's fused quaternion and the raw
+magnetometer, which can settle the pose analysis's open heading question. The
+lab also gained a **balance and vestibular battery** (Tier S: Romberg, tandem
+and single-leg stance, the head impulse test, gaze stabilization while reading),
+with one analysis figure per task.
 
 ---
 
@@ -33,6 +40,8 @@ fields (BirdSpotter), and Meta-AI-initiated registration.
 | 5. Analysis | Read native sessions; IMU-versus-image discrepancy module; ground-truth synthetic data | Done |
 | 6. Verify | JVM unit tests, MockDeviceKit instrumentation tests on an emulator, synthetic ground truth, release build | Done (see [Verification](#verification)) |
 | 7. Hardware | Run on real Meta Ray-Ban Display glasses | **Not done; needs the team's glasses.** Checklist below |
+| 8. Pose analysis, after the rebase | Reconcile the native channel names with the pose analysis's measured body frame; run the pose analysis on native recordings | Done (see [section 6](#6-pose-analysis-on-native-recordings)) |
+| 9. Balance battery | Tier S in the lab, phone summaries, `balance_analysis.py` with one figure per task | Done (see [section 7](#7-balance-and-vestibular-tasks-tier-s)) |
 
 ---
 
@@ -216,6 +225,119 @@ Pair a mock **Ray-Ban Meta** or **Ray-Ban Display**. Replay a synthetic 1 Hz
 head shake on the mock IMU. Set battery to 12%/95%, make hot or cool. Simulate
 "Hey Meta, start VISOR". Open the head-motion lab directly.
 
+The mock head shake is five minutes long. MockDeviceKit replays a looped feed
+with the feed's own timestamps, so the "device clock" jumps back at every loop.
+Real glasses never do this, and the original 10-second loop gave any longer
+lab trial a nonsense sample rate in its spoken summary.
+
+### 6. Pose analysis on native recordings
+
+**Why:** the IMU Lab's pose analysis (`analysis/pose_analysis.py`, merged
+before this branch was rebased) measured, from gravity consistency, which web
+gyro channel is which axis. Its answer was that the glasses' body frame is
+x = right, y = up, z = backward, with `rrAlpha` = pitch, `rrBeta` = yaw and
+`rrGamma` = roll. Meta's BirdSpotter measured the same frame for MWDAT
+(+Y up, −Z forward). But this branch's loader named native channels by an
+earlier guess (`rrAlpha` = yaw), so after the rebase native recordings were
+mislabelled. On a synthetic pure-yaw trial the yaw channel carried 1.3% of the
+rotation, scanning would have been measured on the pitch axis, and the pose
+analysis's own axis test concluded that the native channels were swapped.
+
+**What changed:**
+
+- **One body frame, one set of names.** The loader passes `gx, gy, gz` through
+  as `rrAlpha, rrBeta, rrGamma` unchanged (an identity mapping instead of a
+  swizzle), so every analysis keyed on those names reads native recordings
+  correctly. On the same synthetic trial the yaw channel now carries 97.4%.
+- **The same pose code runs on native recordings.** `pose_analysis.py` analyzes
+  web and native recordings separately with identical code. The web report is
+  unchanged; on the team's real data the summary and report text are
+  byte-identical. Native recordings add a **web vs. native** comparison table.
+- **MWDAT's fused quaternion as a platform reference.** The SDK documents it
+  only as a quaternion with `w` scalar, and BirdSpotter declines to use it for
+  that reason. `pose.quaternion_convention` scores the twelve possible readings
+  (body→world or world→body × six "up" axes) against gravity, pooled over
+  every native recording, and uses the winner. It is reported with the
+  runner-up's residual.
+- **The raw magnetometer, the decisive heading check.** The pose analysis
+  found the web platform's heading does not track gyro yaw (finding 2), and
+  could not tell whether the magnetometer or the fusion was at fault. The
+  native lab records the raw field. `pose.magnetic_heading` builds a
+  tilt-compensated compass from it, and the comparison table scores it the same
+  way (heading increments against gyro yaw). On Ray-Ban Meta the field is null
+  (Meta known issue); Meta Ray-Ban Display may report one.
+- **The rounding floor.** Native values are recorded at the SDK's float
+  resolution (1e-6 m/s² as written), not the browser's 0.1, so finding 3's
+  quantization term does not apply natively. The table reports the measured
+  resolution and drift side by side.
+
+The VOR analysis (`vor.py`) was already independent of the names (it reads
+`gx, gy, gz` directly) and was not changed, apart from a helper that returns
+the camera's view of head rotation for the balance figures.
+
+### 7. Balance and vestibular tasks (Tier S)
+
+**Why:** a quick, standard battery the team asked for, recordable on the
+glasses in about twelve minutes, with each task plotted.
+
+| ID | Task | Conditions | Each |
+|---|---|---|---|
+| S1 | Modified Romberg | eyes open, closed | 30 s |
+| S2 | Tandem stance | left / right foot in front × eyes open, closed | 30 s |
+| S3 | Single-leg stance | dominant / non-dominant × eyes open, closed | 20 s |
+| S4 | Head impulse test, seated (camera on) | 10 impulses on unpredictable tones | 40 s |
+| S5 | Gaze stabilization while reading (camera on) | side to side, up and down, 1 Hz | 30 s |
+
+**In the app** (`motionlab/protocol/Trials.kt` and its runner and screen):
+
+- The tier is listed first, and after each usable result the lab selects the
+  next task and says its name. A quick collection is then just pressing Start.
+- **Balance lost.** Timed holds (S1–S3) show a large Balance lost button for
+  the tester. It ends the hold as a *result* (`TrialOutcome.BALANCE_LOST`,
+  outcome `balance_lost`, `holdSec` in the recording) with the finish chime,
+  not the abort tones. The analysis's QC accepts it as valid.
+- **Unpredictable tones** for the head impulse test: a new `TONE` cue style
+  (one tone, no side announced) with a jittered schedule (3 s ± 0.75 s, ten
+  tones, all fitting the trial in the worst case; tested over 500 random draws).
+- **Spoken briefs** for wearers whose eyes are closed or on a target, e.g.
+  "Close your eyes at the start tones and keep them closed until the end chime."
+  Each recording carries its `condition` (task, eyes, side or leg), so the
+  analysis never parses trial ids.
+- **Spoken results**, by the same definitions as the analysis: hold time and
+  head angular speed for holds (withheld below a 5-second window, as in the
+  analysis), and impulses found per tone, left/right, typical peak speed and
+  how many were slower than 150 °/s. Example: "Found 10 impulses for 10 tones: 5
+  to the left and 5 to the right. Typical peak head speed 214 degrees per
+  second. 1 was slower than 150 degrees per second; the test needs quick, brief
+  turns."
+
+**In the analysis** (`analysis/visor_imu/balance.py`, `balance_analysis.py`):
+
+- **Sway**: AP and ML head tilt in the trial's gravity-levelled mean pose,
+  95% ellipse area, mean sway velocity, and sway acceleration (ISway-style),
+  plus the eyes-closed ÷ eyes-open ratio for every stance. The tilt is
+  integrated from the gyroscope, with the bias fitted against the
+  accelerometer. It deliberately does not come from the pose analysis's
+  attitude filter: on synthetic inverted-pendulum sway that filter read every
+  hold 7–28% high, because its accelerometer correction takes the head's own
+  sway acceleration (in phase with the tilt) for more tilt. That filter remains
+  the right tool for the large head movements it was validated on.
+- **Head impulses**: per tone, side, peak velocity, amplitude, latency, peak
+  acceleration; the camera's view of each impulse overlaid when the frames
+  tracked.
+- **Gaze stabilization**: the frequency and amplitude achieved against the
+  1 Hz pacing, the off-axis share, and the camera against the head at the V4
+  far-scene scale. With reading text near the camera, that ratio exceeds 1 by
+  the parallax of a camera ahead of the neck's rotation axis (≈ 1 + r/d), the
+  geometry that makes a near target need a VOR gain above 1.
+- **Figures**: an overview (sway area by condition, eyes open vs. closed) and
+  one figure per task. Each has a table beside it in the report.
+
+**What it does not claim.** Head sway is not centre-of-pressure sway. The head
+impulse test here is head kinematics only: without eye tracking there is **no
+VOR gain**. At 60 Hz a 150 ms impulse spans about nine samples, so peaks can
+read a few percent low.
+
 ---
 
 ## Setup the team needs to do (Wearables Developer Center)
@@ -251,24 +373,53 @@ head shake on the mock IMU. Set battery to 12%/95%, make hot or cool. Simulate
 | No regression in the web analysis | Existing synthetic web sessions | Scan asymmetry +0.250, gait 1.751 Hz: identical to the documented values |
 | Loader ↔ Kotlin writer | Python analysis of the files the app wrote on the emulator | Parsed; the mock pan (unrelated to the mock head shake) correctly produced **R² 0.01 → fit withheld** |
 
+### After the rebase: pose integration and Tier S
+
+| Check | How | Result |
+|---|---|---|
+| The rebase regression, shown before fixing | Synthetic native V1 (pure yaw) and V2 (pitch, gravity moving) through the post-rebase loader | Yaw channel carried **1.3%** of the rotation; the pose analysis's own axis test chose the *swapped* mapping (`ωx = rrBeta`). After: **97.4%**, and the identity mapping is adopted (0.07 vs 1.01 m/s²) |
+| Web results unchanged | The team's real sessions (26 web recordings) through `analyze.py` and `pose_analysis.py`, before and after | Characterization summary identical. Pose summary: every baseline value identical, 4 keys added, and the report text byte-identical |
+| Native pose on ground truth | Synthetic native A1/B1–B3 with physically consistent gyro, accelerometer, quaternion and magnetometer | Quaternion convention identified (body→world, up +Y; 0.09 vs 2.13 m/s² for the next best); fused and magnetometer headings gain +1.00; filter vs fused roll/pitch 0.06–0.61° RMS |
+| Balance analysis on ground truth | 13 synthetic Tier S sessions: inverted-pendulum sway with a gyro bias, a lost hold, 10 impulses, near-target reading | Sway RMS within −1.8 to +3.2% (lost hold ±5.5%), area −2.1 to +3.1%, sway acceleration within 1%; impulses 10/10, sides exact, peaks −2.2 to 0%; gaze 1.00 Hz, camera ÷ head 1.252–1.254 (truth 1.25). The pose filter's tilt read the same sway 7–28% high, so sway is gyro-integrated (section 7) |
+| JVM unit tests | Adds: Balance lost semantics (a result, its length, ignored before recording); a jittered tone schedule (in its windows, not a fixed beat; all ten fit across 500 draws); the battery's shape; the phone's impulse and sway rules on the same synthetic impulses as the analysis; the impulse feed integrating to its quaternion | **53/53 pass** |
+| Instrumentation (emulator, Android 37, 16 KB pages) | Adds: a Romberg ended with Balance lost through MockDeviceKit (outcome, `holdSec`, condition in the file; the battery advances to "Romberg, eyes closed"); head impulses streamed through MWDAT Motion, counted per tone | **8/8 pass** |
+| Phone ↔ analysis agreement | Python on the recordings the app wrote in those tests | Hold time 4.045 s on the phone and 4.05 s in Python; impulses 4/4 on both, median peak 182.9 °/s |
+| Found by those tests | MockDeviceKit replays a looped feed with its own timestamps, so a 2-second impulse loop made the device clock jump back (the phone reported 660 Hz); the debug menu's 10-second head shake had the same flaw | Feeds now outlast a trial |
+
 ### What only real glasses can answer
 
 Run these on the team's Meta Ray-Ban Display before relying on any number:
 
 1. **Axis convention.** V1 should report dominant axis **Y** (yaw) and image
-   **x**; V2 axis **X** and image **y**. The loader's yaw/pitch/roll naming
-   follows BirdSpotter's measurement on worn glasses (+Y up, −Z forward).
+   **x**; V2 axis **X** and image **y**. Then record B1–B3 in the lab and run
+   `pose_analysis.py`: in the web-vs-native table, the native "Gyro axes" row
+   should show the adopted (identity) mapping well below the best alternative.
+   That is the same gravity test that settled the web channels.
 2. **Clock sharing.** Does the report say "device clock" or "phone arrival
    envelope"? That settles whether the lag is an absolute latency.
 3. **Motion with the glasses off** (A1/A2). The SDK may pause a session when
    the glasses are doffed; the recording will show `motion_state PAUSED` marks
    and QC will flag it. If it pauses, the static trials stay on the web lab.
 4. **Magnetometer.** Null on Ray-Ban Meta (Meta known issue); check whether
-   MRBD reports one.
+   MRBD reports one. If it does, the native B1's "Raw magnetometer heading" row
+   decides the pose analysis's finding 2. A raw-field heading that tracks the
+   gyro puts the web heading failure in the platform's fusion; one that does
+   not puts it in the sensor.
 5. **Camera + Motion bandwidth.** Motion at 60 Hz alongside 30 fps video over
    Bluetooth: check the report's arrival-timing and dropout rows.
 6. **Heat.** Camera streaming warms the glasses; watch thermal marks on V3/V4.
 7. **Voice launch** end to end (Developer Mode off, WDC approval).
+8. **The fused quaternion's convention.** The comparison table names the
+   reading chosen and the runner-up's residual. A winner near the accelerometer
+   noise with a distant runner-up settles it. If no reading fits, MWDAT's
+   quaternion uses a different body frame from the IMU; write that down rather
+   than use it.
+9. **Head impulse side.** In S4, make the first turn to the left: the spoken
+   summary should count it as left. That confirms positive yaw is a left turn
+   natively, as it is on the web path.
+10. **Sway floor.** Run S1 with the glasses resting on a table, not worn. The
+    sway area and head speed should come out near zero, and whatever remains is
+    the floor every standing result sits on.
 
 ---
 
@@ -284,6 +435,11 @@ Run these on the team's Meta Ray-Ban Display before relying on any number:
 - Recordings stay on the phone until shared; the web lab's Blob upload path is
   not wired into the app (adding a client-side key to the APK would not be real
   access control).
+- Tier S measures the head: head sway, not centre-of-pressure sway, and head
+  impulse kinematics with no eye tracking, hence no VOR gain. Its sway and
+  impulse metrics are validated on synthetic ground truth only.
+- The stance tasks use no camera and could also run in the web IMU Lab; they
+  have not been added there.
 
 ## Next steps (recommended)
 

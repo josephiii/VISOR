@@ -211,6 +211,9 @@ class MotionLabViewModel(application: Application) :
 
     fun abort() = runner.abort("Stopped from the phone")
 
+    /** The tester ends a timed balance hold: the wearer stepped or put a foot down. */
+    fun balanceLost() = runner.balanceLost()
+
     /** Marks the app going to the background and back — sampling may pause while hidden. */
     fun onAppVisibilityChanged(visible: Boolean) {
         mark(if (visible) "visibility_visible" else "visibility_hidden")
@@ -306,8 +309,13 @@ class MotionLabViewModel(application: Application) :
             "purpose" to trial.purpose,
             "camera" to trial.camera,
             "cue" to trial.cue?.let {
-                mapOf("intervalMs" to it.intervalMs, "steps" to it.steps, "style" to it.style.name)
+                mapOf(
+                    "intervalMs" to it.intervalMs, "steps" to it.steps, "style" to it.style.name,
+                    "jitterMs" to it.jitterMs, "firstAtMs" to it.firstAtMs, "count" to it.count,
+                )
             },
+            "condition" to trial.condition.ifEmpty { null },
+            "timedHold" to trial.timedHold,
             "platform" to "android-mwdat",
             "sdk" to mapOf("name" to "Meta Wearables Device Access Toolkit", "version" to BuildConfig.MWDAT_VERSION),
             "motion" to mapOf("samplingRateHz" to LabGlassesLink.Config(trial.camera).samplingRateHz),
@@ -376,6 +384,12 @@ class MotionLabViewModel(application: Application) :
         finished.putMeta("outcomeReason", reason)
         finished.putMeta("glassesAtEnd", _uiState.value.glasses?.toMeta())
         finished.putMeta("framesNotAnalyzed", droppedFrames)
+        // A timed hold's length is its result, so it goes into the file itself.
+        if (trial.timedHold) {
+            val start = finished.markTimes("trial_start").firstOrNull()
+            val end = finished.markTimes("trial_end").lastOrNull()
+            if (start != null && end != null) finished.putMeta("holdSec", (end - start) / 1000.0)
+        }
 
         val participant = (finished.metaValue("participant") as? String) ?: "anon"
         val sessionId = finished.metaValue("sessionId") as String
@@ -385,11 +399,26 @@ class MotionLabViewModel(application: Application) :
                 .onFailure { Log.e(TAG, "Could not save $file", it) }
                 .isSuccess
         }
-        val quickLook = withContext(Dispatchers.Default) { quickLook(finished) }
-        val summary = summarize(trial, outcome, reason, quickLook, saved)
+        val quickLook = withContext(Dispatchers.Default) { quickLook(trial, outcome, finished) }
+        // A battery runs in order: once a trial ends with a usable result, the
+        // next one is selected, so the tester only has to press Start again.
+        val next = nextInBattery(trial, outcome)
+        val summary = summarize(trial, outcome, reason, quickLook, saved) +
+            (next?.let { " Next: ${it.title}." } ?: "")
         _uiState.update {
-            it.copy(lastResult = LabResult(trial, outcome, reason, file.takeIf { saved }, quickLook, summary))
+            it.copy(
+                lastResult = LabResult(trial, outcome, reason, file.takeIf { saved }, quickLook, summary),
+                selectedTrialId = next?.id ?: it.selectedTrialId,
+            )
         }
+    }
+
+    private fun nextInBattery(trial: Trial, outcome: TrialOutcome): Trial? {
+        if (trial.tier != BATTERY_TIER) return null
+        if (outcome != TrialOutcome.COMPLETED && outcome != TrialOutcome.BALANCE_LOST) return null
+        val tier = Trials.all.filter { it.tier == BATTERY_TIER }
+        val index = tier.indexOfFirst { it.id == trial.id }
+        return if (index < 0) null else tier.getOrNull(index + 1)
     }
 
     // ---------------------------------------------------------- TrialFeedback
@@ -397,8 +426,12 @@ class MotionLabViewModel(application: Application) :
     override fun countdown(trial: Trial, secondsLeft: Int) {
         if (secondsLeft == trial.prepSec) {
             say(
-                if (trial.worn) "${trial.title}. Get ready. Recording starts in $secondsLeft seconds."
-                else "${trial.title}. Set the glasses down now. Recording starts in $secondsLeft seconds.",
+                when {
+                    trial.brief != null ->
+                        "${trial.title}. ${trial.brief} Recording starts in $secondsLeft seconds."
+                    trial.worn -> "${trial.title}. Get ready. Recording starts in $secondsLeft seconds."
+                    else -> "${trial.title}. Set the glasses down now. Recording starts in $secondsLeft seconds."
+                },
             )
         } else if (secondsLeft <= 3) {
             cues.play(CuePlayer.Sound.TICK)
@@ -421,6 +454,7 @@ class MotionLabViewModel(application: Application) :
         when (style) {
             CueStyle.METRONOME ->
                 cues.play(if (index % 2 == 0) CuePlayer.Sound.BEAT_HIGH else CuePlayer.Sound.BEAT_LOW)
+            CueStyle.TONE -> cues.play(CuePlayer.Sound.BEAT_HIGH)
             CueStyle.SPOKEN -> {
                 cues.play(CuePlayer.Sound.CUE)
                 say(label.lowercase(Locale.US))
@@ -429,7 +463,9 @@ class MotionLabViewModel(application: Application) :
     }
 
     override fun finished(trial: Trial, outcome: TrialOutcome, reason: String?) {
-        cues.play(if (outcome == TrialOutcome.COMPLETED) CuePlayer.Sound.FINISH else CuePlayer.Sound.ABORT)
+        // A lost hold is a result, so it ends on the finish chime, not the abort tones.
+        val valid = outcome == TrialOutcome.COMPLETED || outcome == TrialOutcome.BALANCE_LOST
+        cues.play(if (valid) CuePlayer.Sound.FINISH else CuePlayer.Sound.ABORT)
         viewModelScope.launch {
             // The chime first; the summary once the file is written.
             delay(700)
@@ -539,26 +575,69 @@ class MotionLabViewModel(application: Application) :
         }
     }
 
-    private fun quickLook(rec: SessionRecording): QuickLookResult = QuickLook.analyze(
-        motionPhoneMs = rec.motionColumn("tPhone"),
-        motionDeviceMs = rec.motionColumn("tDevice"),
-        gyroX = rec.motionColumn("gx"),
-        gyroY = rec.motionColumn("gy"),
-        gyroZ = rec.motionColumn("gz"),
-        motionSource = rec.motionColumn("source"),
-        videoPhoneMs = rec.videoColumn("tPhone"),
-        videoPtsMs = rec.videoColumn("tPts"),
-        shiftX = rec.videoColumn("shiftX"),
-        shiftY = rec.videoColumn("shiftY"),
-        peak = rec.videoColumn("peak"),
-        textureSd = rec.videoColumn("textureSd"),
-        refIndex = rec.videoColumn("refIndex"),
-    )
+    private fun quickLook(trial: Trial, outcome: TrialOutcome, rec: SessionRecording): QuickLookResult {
+        val phone = rec.motionColumn("tPhone")
+        val device = rec.motionColumn("tDevice")
+        val gx = rec.motionColumn("gx")
+        val gy = rec.motionColumn("gy")
+        val gz = rec.motionColumn("gz")
+        val source = rec.motionColumn("source")
+        val look = QuickLook.analyze(
+            motionPhoneMs = phone,
+            motionDeviceMs = device,
+            gyroX = gx,
+            gyroY = gy,
+            gyroZ = gz,
+            motionSource = source,
+            videoPhoneMs = rec.videoColumn("tPhone"),
+            videoPtsMs = rec.videoColumn("tPts"),
+            shiftX = rec.videoColumn("shiftX"),
+            shiftY = rec.videoColumn("shiftY"),
+            peak = rec.videoColumn("peak"),
+            textureSd = rec.videoColumn("textureSd"),
+            refIndex = rec.videoColumn("refIndex"),
+        )
+        val start = rec.markTimes("trial_start").firstOrNull()
+        val end = rec.markTimes("trial_end").lastOrNull()
+        val balance = if (trial.timedHold && start != null && end != null) {
+            QuickLook.balance(phone, device, gx, gy, gz, source, start, end, outcome == TrialOutcome.BALANCE_LOST)
+        } else null
+        // Yaw is rotation about the glasses' +Y (up) axis: positive turns left.
+        val impulses = if (trial.condition["task"] == "head_impulse") {
+            QuickLook.headImpulses(phone, device, gy, source, rec.markTimes("cue"))
+        } else null
+        return look.copy(balance = balance, impulses = impulses)
+    }
 
     private fun outcomeSentence(trial: Trial, outcome: TrialOutcome, reason: String?): String = when (outcome) {
         TrialOutcome.COMPLETED -> "${trial.title} complete."
         TrialOutcome.ABORTED -> "${trial.title} stopped."
         TrialOutcome.FAILED -> "${trial.title} could not finish. ${reason.orEmpty()}".trim()
+        TrialOutcome.BALANCE_LOST -> "${trial.title}: balance lost."
+    }
+
+    /** What a balance or head impulse task found, for listening: whole numbers, plain words. */
+    private fun taskSentences(trial: Trial, look: QuickLookResult): List<String> = buildList {
+        look.balance?.let { b ->
+            add(
+                if (b.lost) "The hold lasted ${b.holdSec.roundToInt()} of ${trial.durationSec} seconds."
+                else "Held for the full ${trial.durationSec} seconds.",
+            )
+            b.headSpeedRmsDps?.let { add("Head movement averaged ${"%.1f".format(Locale.US, it)} degrees per second.") }
+        }
+        look.impulses?.let { i ->
+            add(
+                "Found ${i.detected} impulses for ${i.tones} tones: ${i.left} to the left and ${i.right} to the right." +
+                    (i.medianPeakDps?.let { " Typical peak head speed ${it.roundToInt()} degrees per second." } ?: ""),
+            )
+            if (i.slow > 0) {
+                add(
+                    "${i.slow} ${if (i.slow == 1) "was" else "were"} slower than " +
+                        "${QuickLook.IMPULSE_RAPID_DPS.roundToInt()} degrees per second; the test needs quick, brief turns.",
+                )
+            }
+            if (i.detected < i.tones) add("${i.tones - i.detected} tones had no clear head turn after them.")
+        }
     }
 
     /** The spoken and on-screen summary. Plain numbers, rounded for listening. */
@@ -570,6 +649,7 @@ class MotionLabViewModel(application: Application) :
         saved: Boolean,
     ): String = buildList {
         add(outcomeSentence(trial, outcome, reason))
+        addAll(taskSentences(trial, look))
         look.motion?.let { m ->
             add(
                 "Recorded ${m.samples} motion samples at ${m.effectiveHz.roundToInt()} hertz" +
@@ -621,6 +701,9 @@ class MotionLabViewModel(application: Application) :
         private const val KEY_PARTICIPANT = "participant"
         private const val LEASE_OWNER = "motion_lab"
         const val SESSIONS_DIR = "imu-sessions"
+
+        /** The tier run as a battery: each usable result selects the next trial. */
+        private const val BATTERY_TIER = "S"
 
         /** How long the lab waits for the glasses' data after the countdown. */
         private const val STREAM_TIMEOUT_MS = 25_000L

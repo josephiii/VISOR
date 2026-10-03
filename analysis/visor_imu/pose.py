@@ -324,13 +324,20 @@ def platform_rotation(alpha: np.ndarray, beta: np.ndarray, gamma: np.ndarray) ->
     return r
 
 
-def platform_angles(session: Session) -> pd.DataFrame | None:
+def platform_angles(session: Session, convention: dict[str, Any] | None = None
+                    ) -> pd.DataFrame | None:
     """Head angles from the platform's absolute (compass-referenced) orientation.
 
     This stream is fused by the platform with the magnetometer and is not
     ground truth. It is an *independent* reference for heading, and a
     same-sensor cross-check for roll and pitch.
+
+    Native sessions have no W3C angles; their platform orientation is MWDAT's
+    fused quaternion, read under ``convention`` (a row of
+    :func:`quaternion_convention`), or under this session's own best one.
     """
+    if session.is_native:
+        return native_platform_angles(session, convention)
     o = session.orientation
     if o.empty or any(c not in o for c in ("tPerf", "alpha", "beta", "gamma")):
         return None
@@ -356,6 +363,136 @@ def platform_gravity_residual(session: Session) -> float | None:
     to = o["tPerf"].to_numpy(dtype="float64") / 1000.0
     acc = np.column_stack([np.interp(to, imu.t, imu.accel[:, i]) for i in range(3)])
     return float(np.median(np.linalg.norm(up_b - acc, axis=1)))
+
+
+# ============================ native platform reference ============================
+
+# MWDAT documents its fused orientation only as a quaternion with w scalar; the
+# reference frame is unstated (Meta's BirdSpotter sample declines to use it for
+# that reason). So, as for the W3C angles above, the convention is settled
+# against gravity: the quaternion maps body→world or world→body, and the world's
+# up is one of six axes. Each candidate is a proper rotation onto +Z up, the
+# frame head_angles() reads, so the sense of yaw is preserved.
+QUAT_UP_AXES = ("+X", "-X", "+Y", "-Y", "+Z", "-Z")
+_TO_Z_UP = {
+    "+X": np.array([[0.0, 0.0, -1.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0]]),
+    "-X": np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]]),
+    "+Y": np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]]),
+    "-Y": np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, -1.0, 0.0]]),
+    "+Z": np.eye(3),
+    "-Z": np.diag([1.0, -1.0, -1.0]),
+}
+
+
+def _lowpass(x: np.ndarray, fs: float, cutoff_hz: float) -> np.ndarray:
+    sos = signal.butter(2, min(cutoff_hz, 0.4 * fs) / (fs / 2.0), output="sos")
+    return signal.sosfiltfilt(sos, x, axis=0)
+
+
+def _native_columns(session: Session, cols: list[str]) -> pd.DataFrame | None:
+    g = session.native_glasses
+    if g.empty or any(c not in g for c in ("tPerf", *cols)):
+        return None
+    g = g.dropna(subset=["tPerf", *cols])
+    return g if len(g) >= 32 else None
+
+
+def _native_quaternions(session: Session) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+    """Time (s), unit quaternions (w, x, y, z) and low-passed accelerometer."""
+    g = _native_columns(session, ["qw", "qx", "qy", "qz", "ax", "ay", "az"])
+    if g is None:
+        return None
+    t = g["tPerf"].to_numpy(dtype="float64") / 1000.0
+    q = g[["qw", "qx", "qy", "qz"]].to_numpy(dtype="float64")
+    norm = np.linalg.norm(q, axis=1)
+    keep = norm > 0.5
+    if keep.sum() < 32:
+        return None
+    fs = float(1.0 / np.median(np.diff(t)))
+    acc = _lowpass(g[["ax", "ay", "az"]].to_numpy(dtype="float64"), fs, 2.0)
+    return t[keep], q[keep] / norm[keep, None], acc[keep]
+
+
+def native_rotation(q: np.ndarray, conjugate: bool, up: str) -> np.ndarray:
+    """Body→world (+Z up) rotations from MWDAT quaternions under one convention."""
+    r = quat_to_matrix(q)
+    if conjugate:
+        r = np.transpose(r, (0, 2, 1))
+    return _TO_Z_UP[up] @ r
+
+
+def quaternion_convention(sessions: list[Session]) -> pd.DataFrame:
+    """Rank the twelve readings of MWDAT's quaternion by gravity consistency.
+
+    At rest the accelerometer reads g along world up, expressed in the body
+    frame, which is the third row of a correct body→world matrix. A wrong
+    reading puts gravity on the wrong axis. Pure yaw about gravity cannot tell
+    a quaternion from its conjugate, so the ranking pools every session: the
+    tilt in real head movement separates them.
+    """
+    scores: dict[tuple[bool, str], list[float]] = {}
+    for session in sessions:
+        data = _native_quaternions(session)
+        if data is None:
+            continue
+        _, q, acc = data
+        g_local = float(np.median(np.linalg.norm(acc, axis=1)))
+        for conjugate in (False, True):
+            for up in QUAT_UP_AXES:
+                r = native_rotation(q, conjugate, up)
+                err = np.linalg.norm(g_local * r[:, 2, :] - acc, axis=1)
+                scores.setdefault((conjugate, up), []).append(float(np.median(err)))
+    rows = [{
+        "convention": f"{'world→body' if conjugate else 'body→world'}, up = {up}",
+        "conjugate": conjugate,
+        "up": up,
+        "residual_ms2": float(np.mean(errs)),
+    } for (conjugate, up), errs in scores.items()]
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values("residual_ms2").reset_index(drop=True)
+
+
+def native_platform_angles(session: Session, convention: dict[str, Any] | None = None
+                           ) -> pd.DataFrame | None:
+    """Head angles from MWDAT's fused quaternion, read under ``convention``."""
+    data = _native_quaternions(session)
+    if data is None:
+        return None
+    if convention is None:
+        ranked = quaternion_convention([session])
+        if ranked.empty:
+            return None
+        convention = ranked.iloc[0].to_dict()
+    t, q, _ = data
+    return head_angles(native_rotation(q, bool(convention["conjugate"]), str(convention["up"])), t)
+
+
+def magnetic_heading(session: Session, lowpass_hz: float = 2.0) -> pd.DataFrame | None:
+    """Tilt-compensated compass heading from the raw magnetometer (native only).
+
+    The check the web path could not make: its platform heading does not track
+    the gyro, and only the raw field can say whether the magnetometer or the
+    fusion is at fault. The field's horizontal part is north; the heading is the
+    forward axis's angle from it, positive counter-clockwise seen from above
+    (toward the left), the same sense as :func:`head_angles` yaw, so
+    :func:`heading_agreement` scores it directly. Null on Ray-Ban Meta, whose
+    magnetometer MWDAT does not expose.
+    """
+    g = _native_columns(session, ["ax", "ay", "az", "mx", "my", "mz"])
+    if g is None:
+        return None
+    t = g["tPerf"].to_numpy(dtype="float64") / 1000.0
+    fs = float(1.0 / np.median(np.diff(t)))
+    up = _lowpass(g[["ax", "ay", "az"]].to_numpy(dtype="float64"), fs, lowpass_hz)
+    up /= np.linalg.norm(up, axis=1, keepdims=True)
+    field = _lowpass(g[["mx", "my", "mz"]].to_numpy(dtype="float64"), fs, lowpass_hz)
+    north = field - np.sum(field * up, axis=1, keepdims=True) * up
+    fwd = np.tile([0.0, 0.0, -1.0], (len(t), 1))
+    fwd -= np.sum(fwd * up, axis=1, keepdims=True) * up
+    yaw = np.arctan2(np.sum(np.cross(north, fwd) * up, axis=1), np.sum(north * fwd, axis=1))
+    strength = np.linalg.norm(field, axis=1)
+    return pd.DataFrame({"t": t, "yaw": np.rad2deg(np.unwrap(yaw)), "field_ut": strength})
 
 
 def heading_agreement(track: AttitudeTrack, platform: pd.DataFrame, lag_s: float = 0.25

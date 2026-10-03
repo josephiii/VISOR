@@ -143,7 +143,11 @@ fun MotionLabScreen(
         )
 
         if (state.isRunning || state.connecting) {
-            RunningPanel(state = state, onStop = { labViewModel.abort() })
+            RunningPanel(
+                state = state,
+                onStop = { labViewModel.abort() },
+                onBalanceLost = { labViewModel.balanceLost() },
+            )
         } else {
             state.message?.let { MessageCard(it) }
             state.lastResult?.let { result ->
@@ -292,7 +296,7 @@ private fun TrialDetails(trial: Trial) {
 }
 
 @Composable
-private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit) {
+private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceLost: () -> Unit) {
     val runner = state.runner
     val phase = when {
         state.connecting -> "Connecting to the glasses…"
@@ -329,6 +333,11 @@ private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit) {
             Text("• $it", style = MaterialTheme.typography.bodyLarge)
         }
         LiveNumbers(state.live, camera = state.selectedTrial.camera)
+    }
+    // For the tester: the wearer stepped, put a foot down or opened their eyes.
+    // That ends a timed hold as a result; Stop trial below is for anything else.
+    if (runner is RunnerState.Recording && runner.trial.timedHold) {
+        SwitchButton(label = "Balance lost", onClick = onBalanceLost)
     }
     SwitchButton(label = "Stop trial", isDestructive = true, onClick = onStop)
 }
@@ -376,6 +385,7 @@ private fun ResultCard(result: LabResult, onShare: (java.io.File) -> Unit) {
                 TrialOutcome.COMPLETED -> "Trial complete"
                 TrialOutcome.ABORTED -> "Trial stopped"
                 TrialOutcome.FAILED -> "Trial could not finish"
+                TrialOutcome.BALANCE_LOST -> "Balance lost: hold time recorded"
             },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,

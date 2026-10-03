@@ -338,6 +338,42 @@ def analyze(session: Session) -> dict[str, Any] | None:
     return result
 
 
+def image_angular_velocity(session: Session, image_motion: dict[str, Any],
+                           scale_px_per_deg: float | None = None) -> pd.DataFrame | None:
+    """The camera's view of head rotation, one row per quality-gated frame interval.
+
+    Image velocity along the direction the dominant rotation moves the image,
+    in °/s at ``scale_px_per_deg`` (default: the fit's own scale; pass the slow-pan
+    calibration to compare against a scale measured at distance). Times are
+    shifted back by the fitted lag and onto the motion stream's ``tPerf`` base
+    (s), so the result overlays the gyroscope in ``session.motion``.
+    """
+    if not image_motion.get("analyzed"):
+        return None
+    clocks = clock_check(session)
+    if clocks is None:
+        return None
+    if clocks.basis == "device clock" and (clocks.motion_origin_ns is None or clocks.video_origin_us is None):
+        clocks.basis = "phone arrival envelope"
+    t_motion, t_video, motion, video = _timelines(session, clocks)
+    intervals = frame_intervals(t_video, video)
+    if intervals.empty:
+        return None
+    # tPerf is the device time re-based by the motion stream's lower envelope.
+    t_perf = motion["tDevice"].to_numpy() + (
+        lower_envelope_offset(motion["tPhone"].to_numpy(), motion["tDevice"].to_numpy()) or 0.0)
+    shift = float(np.median(t_perf - t_motion))
+    direction = np.asarray(image_motion["image_direction_of_dominant_rotation"])
+    bias = np.asarray(image_motion["bias_px_per_s"])
+    scale = scale_px_per_deg or image_motion["scale_px_per_deg"]
+    mid = (intervals["start_ms"] + intervals["end_ms"]).to_numpy() / 2.0 - image_motion["lag_ms"] + shift
+    return pd.DataFrame({
+        "t_s": mid / 1000.0,
+        "image_dps": (intervals[["vx", "vy"]].to_numpy() - bias) @ direction / scale,
+        "peak": intervals["peak"].to_numpy(),
+    })
+
+
 def attach_calibration(results: list[dict[str, Any]]) -> None:
     """Scale each camera trial against its participant's slow-pan calibration.
 

@@ -187,6 +187,10 @@ problem — it is recorded as incomplete and simply re-run.
 - **Walking (C3):** use a clear, level path. If your balance is at all
   uncertain, have someone walk with you.
 - **Sit-to-stand (C4):** use a stable chair with no wheels. Use the armrests.
+- **Balance tasks (phone lab, Tier S):** always with a spotter beside you and a
+  wall or counter within reach, above all with your eyes closed. Skip the head
+  impulse test if you have neck pain or a neck injury, and stop it or the
+  reading task if you feel dizzy.
 - Skip any trial that does not feel safe for you. Tell the test runner which one
   and why — that is useful information in itself, not a failure.
 
@@ -211,9 +215,10 @@ so a dropped Wi-Fi connection costs a retry, never the recording.
 ## The phone version: VISOR's head-motion lab
 
 The same trials can also be run from the **VISOR app on the phone**, which talks
-to the glasses directly instead of through a web page. It adds a new set of
-trials, **Tier V**, that the web version cannot do: they use the glasses'
-**camera** to measure how far the view moves while your head turns.
+to the glasses directly instead of through a web page. It adds two sets of
+trials the web version does not have: **Tier S**, five standard balance and
+vestibular tasks, and **Tier V**, which uses the glasses' **camera** to measure
+how far the view moves while your head turns.
 
 **Where:** VISOR → **Settings** → **Research** → **Head-motion lab**. Your
 glasses must be connected and registered (the lab tells you if they are not,
@@ -239,11 +244,31 @@ wall**: the camera needs detail to measure against.
 | V3 | Like V1 but faster. **Sit down. Stop if you feel dizzy.** |
 | V4 | When VISOR says "left" or "right", turn your head slowly and smoothly that way — as if looking at someone sitting beside you. |
 
+**The balance tasks (Tier S).** The phone lab lists these first. They are a
+quick battery of about twelve minutes: after each one, the lab picks the next,
+so you only press **Start this trial** again. A **spotter must stand beside the
+person doing them**, next to a wall or counter they can reach.
+
+| Task | What you do |
+|---|---|
+| Romberg (eyes open, then closed) | Stand with your feet together and your arms by your sides for 30 seconds. With eyes closed, close them at the two rising tones and open them at the three falling tones. |
+| Tandem stance (four ways) | Stand heel to toe, one foot straight in front of the other, for 30 seconds: left foot in front, then right, eyes open, then closed. Get into position during the countdown. |
+| Single-leg stance (four ways) | Stand on one leg for 20 seconds: dominant leg (the one you would kick a ball with), then the other, eyes open, then closed. Keep both feet down during the countdown and lift one at the start tones. |
+| Head impulse test | Sit, eyes on one point ahead. At each tone, the tester behind you turns your head quickly and briefly to one side, then slowly back. You will not know which side. **Skip this one if you have neck pain or a neck injury.** The camera is on. |
+| Gaze stabilization (two ways) | Sit an arm's length from a page of large print taped to the wall. Keep reading while you turn your head gently left and right with the tones, then up and down. The camera is on. |
+
+**Balance lost.** In the standing tasks, putting a foot down, stepping or
+opening your eyes is **fine and expected**: that moment *is* the result. The
+tester presses the large **Balance lost** button, which ends the task and keeps
+the time you held. It is not a failed trial and does not need re-running.
+**Stop trial** is only for something going wrong.
+
 **Everything is spoken.** The lab says what to do before the countdown, plays
 the same tones as the web version, and reads out a short result when the trial
 ends — including, for camera trials, whether the picture tracked your head well
-enough. If it says to try again facing more detail, that is a setup problem, not
-yours.
+enough, how long a balance task was held, and how many head turns it found in
+the head impulse test. If it says to try again facing more detail, that is a
+setup problem, not yours.
 
 **Stopping:** press **Stop trial**, or the phone's Back button. As before, a
 stopped trial is kept and marked incomplete.
@@ -277,5 +302,8 @@ or leave it on the phone for them to collect.
   under `data/imu-sessions/`. The same `analyze.py` reads both kinds. Before the
   first Tier V session on a new pair of glasses, run **V4** — it calibrates the
   camera scale the other V trials are compared against.
+- **Balance tasks:** `python analysis/balance_analysis.py` writes
+  `imu-balance-report.md`, with one figure per task for each participant. Run V4
+  too if you want the gaze-stabilization camera compared against a distant scene.
 
 Full methodology is in [imu-test-protocol.md](./imu-test-protocol.md).

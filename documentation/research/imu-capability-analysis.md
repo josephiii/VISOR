@@ -317,10 +317,31 @@ foreground-only constraint below for anything built on the native path, though
 MWDAT's raw video stream still pauses in the background.
 
 Open questions only hardware can close: whether video timestamps share the
-motion clock (the analysis tests it per session), whether the SDK pauses Motion
-when the glasses are taken off (it would affect the static trials), and the
-glasses' body-frame axis convention (taken from Meta's BirdSpotter sample; each
-V-trial reports its dominant axis so it can be checked).
+motion clock (the analysis tests it per session), and whether the SDK pauses
+Motion when the glasses are taken off (it would affect the static trials).
+
+**One body frame on both paths.** The pose analysis's gravity test settled the
+web channels (x right, y up, z backward; `rrBeta` = yaw), and Meta's
+BirdSpotter measured the same frame for MWDAT. The native loader therefore
+names `gx, gy, gz` as `rrAlpha, rrBeta, rrGamma` directly, and
+`pose_analysis.py` re-runs the same test on native recordings.
+
+**What the native path adds to the heading question** (*Orientation* above):
+the raw magnetometer (null on Ray-Ban Meta) and MWDAT's own fused quaternion.
+`pose_analysis.py` scores both against gyro yaw, beside the web numbers. A raw
+field that tracks the gyro would place the web heading failure in the
+platform's fusion, not in the sensor. The quaternion's reference frame is not
+documented by the SDK; the analysis chooses its reading by gravity
+consistency, as was done for the W3C angles.
+
+**Balance and vestibular tasks** (Tier S, native only): Romberg, tandem and
+single-leg stance with eyes open and closed, the head impulse test and gaze
+stabilization while reading, analyzed by `analysis/balance_analysis.py`.
+Sway is measured as head sway (not centre-of-pressure sway); head impulses as
+head kinematics (no eye tracking, so no VOR gain). Gate for use beyond
+screening: sway areas and hold times that repeat within a participant across
+sessions, and an eyes-closed increase that exceeds the session-to-session
+spread.
 
 ---
 
@@ -362,8 +383,10 @@ and extended:
    `absolute = true` with populated α/β/γ, but the heading does not track head
    yaw (see *Orientation* above). An earlier revision marked this answered on
    the strength of the populated stream alone. The Generic Sensor
-   `AbsoluteOrientationSensor` and raw `Magnetometer` are untested, and are the
-   next paths to check.
+   `AbsoluteOrientationSensor` and raw `Magnetometer` are untested on the web
+   path. The native path records the raw magnetometer and MWDAT's fused
+   quaternion, and `pose_analysis.py` scores both against gyro yaw; one native
+   B1 on glasses that report a magnetometer would answer this.
 2. What is the usable gyro integration window before drift dominates?
    **Critical again**, because without a usable heading every yaw measure
    depends on it. First estimate, from the one QC-passed static recording
@@ -392,7 +415,8 @@ and extended:
 
 - [imu-test-protocol.md](../testing/imu-test-protocol.md) — trial battery and methodology
 - [imu-characterization-report.md](../testing/imu-characterization-report.md) — generated results
-- [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md) — generated IMU-only orientation and heading analysis (`analysis/pose_analysis.py`)
+- [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md) — generated IMU-only orientation and heading analysis (`analysis/pose_analysis.py`), with the web-vs-native comparison
+- [imu-balance-report.md](../testing/imu-balance-report.md) — generated balance and vestibular task analysis (`analysis/balance_analysis.py`)
 - [meta-mrbd-capabilities.md](./meta-mrbd-capabilities.md) — platform capability research
 - [low-vision-research.md](./low-vision-research.md) — user population background
 - `analysis/` — the analysis toolkit that produces the report

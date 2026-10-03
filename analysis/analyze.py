@@ -84,9 +84,12 @@ def analyze_session(session: loader.Session) -> dict[str, Any]:
         "duration": duration,
         "violations": [],
     }
-    if outcome and outcome != "completed":
+    # A balance hold the tester ended with "Balance lost" is a valid result
+    # whose length is the measurement (Tier S), not an incomplete recording.
+    balance_lost = outcome == "balance_lost"
+    if outcome and outcome not in ("completed", "balance_lost"):
         qc["violations"].append(f"trial outcome was '{outcome}', not 'completed'")
-    if duration.get("checked") and not duration["within_tolerance"]:
+    if not balance_lost and duration.get("checked") and not duration["within_tolerance"]:
         qc["violations"].append(
             f"ran {duration['actual_s']:.1f}s of a planned {duration['planned_s']:.0f}s "
             f"({duration['completion_fraction']*100:.0f}%)")
