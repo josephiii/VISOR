@@ -12,8 +12,12 @@ class YoloService:
         return
     
     def runModel(self, image:str):
+        objects = []
         res = self.model(image)
-        return res
+        for box in res[0].boxes:
+            name = r.names[int(box.cls)]
+            objects.append({"object": name, "id": int(box.cls), "coords":box.xyxy.toList(), "conf": int(box.conf)})
+        return objects
     def MergeClasses():
         '''
         There are cases where the model returns separate objects when those separat objects make up one object. For example, 
@@ -22,19 +26,12 @@ class YoloService:
         they are in proximity. 
         '''
 ##TEST
-'''
+
 if __name__=="__main__":
     path = (Path(__file__).resolve())
     path = os.path.join(path, "..", "..", "tests")
-    print(os.path.abspath(path))
     service= YoloService()
     res = service.runModel(os.path.abspath(os.path.join(path, "qwen2-vl/images.jpg")))
     r = res[0]
     r.save("out.jpg")
-    for box in r.boxes:
-        cls_id = int(box.cls[0])
-        label  = r.names[cls_id]
-        conf   = float(box.conf[0])
-        xyxy   = box.xyxy[0].tolist()   # [x1, y1, x2, y2] pixel corners
-        print(f"{label}  {conf:.2f}  {xyxy}")
-'''
+    
