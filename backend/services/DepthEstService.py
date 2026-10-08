@@ -60,12 +60,22 @@ class Depth:
             print(error)
             raise HTTPException(status_code=500, detail=str(error)) 
         
+    def getObjectdepths(self, objects, grid):
+        for obj in objects:
+            #Get df ox x,y
+            rawObjectDepth = grid[obj.coords[1]:obj.coords[3], obj.coords[0], obj.coords[2]]
+            #Get 25% depth
+            objdepth = np.percentile(rawObjectDepth, 25)
+            obj["depth"] = objdepth
+        return objects
+    
 if __name__ == "__main__":
     print("Starting download/cache of the model...")
     depth = Depth()                       # This downloads and caches the model files
     print("Model successfully loaded and cached on your computer!")
     img = Image.open("./capturedImages/room.jpg").convert("RGB")  # <- any image path
     depth_map = depth.runModel(img)
+    print((depth_map))
 
     print(depth_map.shape, depth_map.min(), depth_map.max())
     norm = ((depth_map - depth_map.min()) / (depth_map.max() - depth_map.min()) * 255).astype(np.uint8)
