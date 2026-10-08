@@ -28,7 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.profile.Severity
-import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.profile.TextScale
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
@@ -36,7 +36,6 @@ import ucf.visor.ui.profile.VisionType
 import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
-import kotlin.math.roundToInt
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
@@ -44,11 +43,11 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     viewModel: VisorViewModel,
-    speak: (String) -> Unit = {},
     onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
     onHelp: () -> Unit = {},
+    onMotionLab: () -> Unit = {},
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -126,23 +125,24 @@ fun SettingsScreen(
 
         SettingSection("How fast VISOR talks")
         Text(
-            text = profile.speechRate.label(),
+            text = SpeechRates.label(profile.speechRate),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Slider(
-            value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
+            value = profile.speechRate,
             onValueChange = { position ->
-                val rate = SpeechRate.entries[position.roundToInt()
-                    .coerceIn(0, SpeechRate.entries.lastIndex)]
+                val rate = SpeechRates.snap(position)
                 if (rate != profile.speechRate) onProfileChange(profile.copy(speechRate = rate))
             },
-            onValueChangeFinished = { speak("Speech ${profile.speechRate.label().lowercase()}.") },
-            valueRange = 0f..(SpeechRate.entries.lastIndex).toFloat(),
-            steps = SpeechRate.entries.size - 2, // notches between the endpoints, not counting them
+            valueRange = SpeechRates.Min..SpeechRates.Max,
+            steps = SpeechRates.SliderSteps,
             modifier = Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = "Speech rate: ${profile.speechRate.label()}" },
+                .semantics {
+                    contentDescription =
+                        "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
+                },
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Slower", style = MaterialTheme.typography.bodySmall)
@@ -196,6 +196,21 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
 
+        SettingSection("Glasses tap navigation")
+        Text(
+            "When your glasses are connected, the same navigation shows up as " +
+                    "buttons on their display — tap or swipe on the temple arm or " +
+                    "Neural Band to select one, no phone or voice needed.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SelectableChip(
+            label = if (profile.glassesTapNavigationEnabled) "Glasses tap navigation: ON" else "Glasses tap navigation: OFF",
+            selected = profile.glassesTapNavigationEnabled,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            onProfileChange(profile.copy(glassesTapNavigationEnabled = !profile.glassesTapNavigationEnabled))
+        }
+
         Spacer(Modifier.height(24.dp))
         SettingSection("Support")
         SelectableChip(
@@ -204,6 +219,22 @@ fun SettingsScreen(
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
             onClick = onHelp,
+        )
+
+        Spacer(Modifier.height(24.dp))
+        SettingSection("Research")
+        Text(
+            "Record your glasses' motion sensors — and, for head-motion trials, the " +
+                    "camera image — for the VISOR research team. Uses experimental " +
+                    "glasses features.",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SelectableChip(
+            "Head-motion lab",
+            selected = false,
+            showCheckmark = false,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onMotionLab,
         )
 
         Spacer(Modifier.height(24.dp))

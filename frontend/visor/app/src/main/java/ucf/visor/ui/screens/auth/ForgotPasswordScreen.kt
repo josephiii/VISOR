@@ -3,6 +3,7 @@ package ucf.visor.ui.screens.auth
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,7 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
@@ -40,13 +40,11 @@ fun ForgotPasswordScreen(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
+            .fillMaxSize()
             .padding(vertical = 24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
             .verticalScroll(scrollState)
     ) {
-
-        VisorHeader()
-
         Card(
             shape = VisorShapes.Control,
             modifier = Modifier

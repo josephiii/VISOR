@@ -58,6 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.meta.wearable.dat.core.types.ThermalLevel
+import com.meta.wearable.dat.mockdevice.api.GlassesModel
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import ucf.visor.R
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -249,6 +251,15 @@ fun DebugScreen(
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_motion_lab_screen),
+                    onClick = {
+                        onDismiss()
+                        navController.navigate("motion_lab")
+                    }
+                )
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
                     text = stringResource(R.string.debug_enable_navbar),
                     onClick = {
                         visorViewModel.toggleNavigationBar()
@@ -310,9 +321,18 @@ fun DebugScreen(
                     ActionButton(
                         modifier = Modifier.fillMaxWidth(),
                         text = stringResource(R.string.pair_rayban_meta),
-                        onClick = { debugViewModel.pairRaybanMeta() },
+                        onClick = { debugViewModel.pairGlasses(GlassesModel.RAYBAN_META) },
                         enabled = uiState.pairedDevices.size < 3,
                     )
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.pair_rayban_display),
+                        onClick = { debugViewModel.pairGlasses(GlassesModel.META_RAYBAN_DISPLAY) },
+                        enabled = uiState.pairedDevices.size < 3,
+                    )
+                }
+                uiState.lastAction?.let {
+                    Text(text = it, style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -526,6 +546,52 @@ private fun MockDeviceCard(
                             onClick = { imagePickerLauncher.launch("image/*") },
                         )
                     }
+
+                    // MWDAT 1.0 mock capabilities: IMU feed, device state, voice launch.
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(
+                            if (deviceInfo.hasMotionFeed) R.string.mock_motion_feed_running
+                            else R.string.mock_motion_feed_start,
+                        ),
+                        onClick = { viewModel.startSyntheticHeadMotion(deviceInfo) },
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ActionButton(
+                            modifier = Modifier.weight(1f),
+                            text = stringResource(R.string.mock_battery_low),
+                            onClick = { viewModel.setBatteryLevel(deviceInfo, 12) },
+                        )
+                        ActionButton(
+                            modifier = Modifier.weight(1f),
+                            text = stringResource(R.string.mock_battery_full),
+                            onClick = { viewModel.setBatteryLevel(deviceInfo, 95) },
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ActionButton(
+                            modifier = Modifier.weight(1f),
+                            text = stringResource(R.string.mock_thermal_hot),
+                            onClick = { viewModel.setThermalLevel(deviceInfo, ThermalLevel.SEVERE) },
+                        )
+                        ActionButton(
+                            modifier = Modifier.weight(1f),
+                            text = stringResource(R.string.mock_thermal_normal),
+                            onClick = { viewModel.setThermalLevel(deviceInfo, ThermalLevel.NONE) },
+                        )
+                    }
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.mock_voice_launch),
+                        onClick = { viewModel.simulateVoiceLaunch(deviceInfo) },
+                    )
                 }
             }
         }

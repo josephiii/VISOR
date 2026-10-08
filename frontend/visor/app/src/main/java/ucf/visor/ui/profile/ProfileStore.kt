@@ -25,11 +25,12 @@ class ProfileStore(context: Context) {
             .putStringSet(KEY_VISION_TYPES, p.visionTypes.map { it.name }.toSet())
             .putString(KEY_DESCRIPTION, p.visionDescription)
             .putString(KEY_SEVERITY, p.severity.name)
-            .putString(KEY_SPEECH_RATE, p.speechRate.name)
+            .putFloat(KEY_SPEECH_RATE_MULTIPLIER, p.speechRate)
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_TEXT_SCALE, p.textScale.name)
             .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
+            .putBoolean(KEY_GLASSES_TAP_NAV, p.glassesTapNavigationEnabled)
             .apply()
     }
 
@@ -46,13 +47,17 @@ class ProfileStore(context: Context) {
             visionDescription = prefs.getString(KEY_DESCRIPTION, defaults.visionDescription)
                 ?: defaults.visionDescription,
             severity = enumOrDefault(KEY_SEVERITY, defaults.severity),
-            speechRate = enumOrDefault(KEY_SPEECH_RATE, defaults.speechRate),
+            speechRate = speechRateOrDefault(defaults.speechRate),
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
             voiceNavigationEnabled = prefs.getBoolean(
                 KEY_VOICE_NAV,
                 defaults.voiceNavigationEnabled
+            ),
+            glassesTapNavigationEnabled = prefs.getBoolean(
+                KEY_GLASSES_TAP_NAV,
+                defaults.glassesTapNavigationEnabled
             ),
         )
     }
@@ -61,6 +66,20 @@ class ProfileStore(context: Context) {
     fun hasProfile(): Boolean = prefs.contains(KEY_SEVERITY)
 
     fun clear() = prefs.edit().clear().apply()   // for logout / delete account
+
+    private fun speechRateOrDefault(default: Float): Float {
+        val saved = if (prefs.contains(KEY_SPEECH_RATE_MULTIPLIER)) {
+            prefs.getFloat(KEY_SPEECH_RATE_MULTIPLIER, default)
+        } else {
+            when (prefs.getString(KEY_SPEECH_RATE, null)) {
+                "SLOW" -> SpeechRates.Slow
+                "NORMAL" -> SpeechRates.Normal
+                "FAST" -> SpeechRates.Fast
+                else -> default
+            }
+        }
+        return saved.coerceIn(SpeechRates.Min, SpeechRates.Max)
+    }
 
     private inline fun <reified T : Enum<T>> enumOrDefault(key: String, default: T): T {
         val raw = prefs.getString(key, null) ?: return default
@@ -73,10 +92,14 @@ class ProfileStore(context: Context) {
         const val KEY_VISION_TYPES = "visionTypes"
         const val KEY_DESCRIPTION = "visionDescription"
         const val KEY_SEVERITY = "severity"
+
+        // Legacy key: the pre-slider enum name. Read for migration, never written.
         const val KEY_SPEECH_RATE = "speechRate"
+        const val KEY_SPEECH_RATE_MULTIPLIER = "speechRateMultiplier"
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_TEXT_SCALE = "textScale"
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
+        const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
     }
 }
