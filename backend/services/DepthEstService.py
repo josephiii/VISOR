@@ -60,13 +60,14 @@ class Depth:
             print(error)
             raise HTTPException(status_code=500, detail=str(error)) 
         
-    def getObjectdepths(self, objects, grid):
+    def getObjectdepths(self, objects, grid: np.ndarray):
         for obj in objects:
             #Get df ox x,y
-            rawObjectDepth = grid[obj.coords[1]:obj.coords[3], obj.coords[0], obj.coords[2]]
+            x1, y1, x2, y2 = map(int, obj["coords"])
+            rawObjectDepth = grid[y1:y2, x1:x2]
             #Get 25% depth
             objdepth = np.percentile(rawObjectDepth, 25)
-            obj["depth"] = objdepth
+            obj["depth"] = float(objdepth)
         return objects
     
 if __name__ == "__main__":
