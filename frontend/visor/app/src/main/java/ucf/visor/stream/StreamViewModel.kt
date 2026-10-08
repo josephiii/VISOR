@@ -51,6 +51,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.wearables.describeSessionError
+import ucf.visor.wearables.isWarningOnly
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -241,6 +243,12 @@ class StreamViewModel(
     }
 
     private fun handleSessionError(error: DeviceSessionError) {
+        // MWDAT 1.0: DWA_OUT_OF_STU_RANGE is a compatibility warning, not an
+        // ending — the SDK documents that apps continue normally.
+        if (error.isWarningOnly) {
+            Log.w(TAG, "Session warning: ${error.description}")
+            return
+        }
         Log.e(TAG, "Session error: ${error.description}")
         val alreadyShowingUpdateRequired =
             visorViewModel.uiState.value.isFirmwareUpdateRequired ||
@@ -268,7 +276,7 @@ class StreamViewModel(
         if (error == DeviceSessionError.DAT_APP_ON_THE_GLASSES_UPDATE_REQUIRED) {
             visorViewModel.setDatAppUpdateRequired(true)
         }
-        visorViewModel.setRecentError(error.description)
+        visorViewModel.setRecentError(describeSessionError(error))
         stopStream()
         visorViewModel.navigateToDeviceSelection()
     }

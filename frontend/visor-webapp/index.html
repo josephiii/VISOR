@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="VISOR IMU Lab — instrumented inertial sensor characterization and data collection for Meta Ray-Ban Display glasses.">
+  <meta name="mrbd-web-app-capable" content="yes">
+  <title>VISOR IMU Lab</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ============ HOME ============ -->
+    <div id="screen-home" class="screen">
+      <header class="header">
+        <h1>VISOR IMU Lab</h1>
+        <span class="header-meta" id="home-status">—</span>
+      </header>
+      <div class="content">
+        <button class="list-item focusable" data-action="go-trials">
+          <span class="list-item-icon">▶</span>
+          <span class="list-item-content">
+            <span class="list-item-title">Run Protocol</span>
+            <span class="list-item-meta">Guided characterization trials</span>
+          </span>
+        </button>
+        <button class="list-item focusable" data-action="go-probe">
+          <span class="list-item-icon">◈</span>
+          <span class="list-item-content">
+            <span class="list-item-title">Capability Probe</span>
+            <span class="list-item-meta">Which sensor APIs actually work</span>
+          </span>
+        </button>
+        <button class="list-item focusable" data-action="go-readout">
+          <span class="list-item-icon">∿</span>
+          <span class="list-item-content">
+            <span class="list-item-title">Live Readout</span>
+            <span class="list-item-meta">Real-time sensor values</span>
+          </span>
+        </button>
+        <button class="list-item focusable" data-action="go-queue">
+          <span class="list-item-icon">↑</span>
+          <span class="list-item-content">
+            <span class="list-item-title">Session Queue</span>
+            <span class="list-item-meta" id="queue-badge">No pending sessions</span>
+          </span>
+        </button>
+        <button class="list-item focusable" data-action="go-settings">
+          <span class="list-item-icon">⚙</span>
+          <span class="list-item-content">
+            <span class="list-item-title">Settings</span>
+            <span class="list-item-meta" id="settings-badge">Participant: anon</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ CAPABILITY PROBE ============ -->
+    <div id="screen-probe" class="screen hidden">
+      <header class="header">
+        <h1>Capability Probe</h1>
+        <span class="header-meta" id="probe-status">Ready</span>
+      </header>
+      <div class="content" id="probe-results">
+        <div class="card">
+          <div class="card-subtitle">
+            Tests every inertial API path and reports which deliver real readings.
+            Takes about 3 seconds. Keep the glasses still.
+          </div>
+        </div>
+      </div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="run-probe">Run Probe</button>
+        <button class="nav-item focusable" data-action="go-home">Back</button>
+      </nav>
+    </div>
+
+    <!-- ============ LIVE READOUT ============ -->
+    <div id="screen-readout" class="screen hidden">
+      <header class="header">
+        <h1>Live Readout</h1>
+        <span class="header-meta" id="readout-status">—</span>
+      </header>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Accelerometer <span class="rate-pill" id="rate-motion">0 Hz</span></div>
+          <div class="card-subtitle">m/s², including gravity</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">X</span><span id="accel-x">—</span></div>
+            <div class="axis-value"><span class="axis-label">Y</span><span id="accel-y">—</span></div>
+            <div class="axis-value"><span class="axis-label">Z</span><span id="accel-z">—</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Gyroscope</div>
+          <div class="card-subtitle">rotation rate, °/s</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">α</span><span id="gyro-alpha">—</span></div>
+            <div class="axis-value"><span class="axis-label">β</span><span id="gyro-beta">—</span></div>
+            <div class="axis-value"><span class="axis-label">γ</span><span id="gyro-gamma">—</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Orientation <span class="rate-pill" id="rate-orient">0 Hz</span></div>
+          <div class="card-subtitle">absolute angle, ° — “—” means the API returned null</div>
+          <div class="data-grid three-col">
+            <div class="axis-value"><span class="axis-label">α</span><span id="orient-alpha">—</span></div>
+            <div class="axis-value"><span class="axis-label">β</span><span id="orient-beta">—</span></div>
+            <div class="axis-value"><span class="axis-label">γ</span><span id="orient-gamma">—</span></div>
+          </div>
+        </div>
+      </div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable" data-action="go-home">Back</button>
+      </nav>
+    </div>
+
+    <!-- ============ TRIAL LIST ============ -->
+    <div id="screen-trials" class="screen hidden">
+      <header class="header">
+        <h1>Protocol</h1>
+        <span class="header-meta" id="trials-status">—</span>
+      </header>
+      <div class="content" id="trial-list"></div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable" data-action="go-home">Back</button>
+      </nav>
+    </div>
+
+    <!-- ============ TRIAL BRIEF ============ -->
+    <div id="screen-brief" class="screen hidden">
+      <header class="header">
+        <h1 id="brief-title">Trial</h1>
+        <span class="header-meta" id="brief-duration">—</span>
+      </header>
+      <div class="content">
+        <div class="card" id="brief-worn-card">
+          <div class="card-title" id="brief-worn">—</div>
+          <div class="card-subtitle" id="brief-prep">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Setup</div>
+          <div class="card-subtitle" id="brief-setup">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Measures</div>
+          <div class="card-subtitle" id="brief-purpose">—</div>
+        </div>
+      </div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="start-trial">Start</button>
+        <button class="nav-item focusable" data-action="go-trials">Back</button>
+      </nav>
+    </div>
+
+    <!-- ============ TRIAL RUNNING ============ -->
+    <div id="screen-run" class="screen hidden">
+      <div class="run-wrap">
+        <div class="run-trial" id="run-trial">—</div>
+        <div class="run-phase" id="run-phase">GET READY</div>
+        <div class="run-cue" id="run-cue">—</div>
+        <div class="run-hint" id="run-hint"></div>
+        <div class="run-clock" id="run-clock">0 / 0 s</div>
+        <div class="progress-bar"><div class="progress-fill" id="run-progress"></div></div>
+        <div class="run-counts" id="run-counts">motion 0 · orient 0</div>
+      </div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable danger" data-action="abort-trial">Abort</button>
+      </nav>
+    </div>
+
+    <!-- ============ TRIAL DONE ============ -->
+    <div id="screen-done" class="screen hidden">
+      <header class="header">
+        <h1>Trial Complete</h1>
+        <span class="header-meta" id="done-outcome">—</span>
+      </header>
+      <div class="content" id="done-summary"></div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="upload-now">Upload</button>
+        <button class="nav-item focusable" data-action="go-trials">Next Trial</button>
+      </nav>
+    </div>
+
+    <!-- ============ QUEUE ============ -->
+    <div id="screen-queue" class="screen hidden">
+      <header class="header">
+        <h1>Session Queue</h1>
+        <span class="header-meta" id="queue-status">—</span>
+      </header>
+      <div class="content" id="queue-list"></div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="upload-now">Upload All</button>
+        <button class="nav-item focusable" data-action="go-home">Back</button>
+      </nav>
+    </div>
+
+    <!-- ============ SETTINGS ============ -->
+    <div id="screen-settings" class="screen hidden">
+      <header class="header">
+        <h1>Settings</h1>
+      </header>
+      <div class="content">
+        <div class="card">
+          <div class="card-title">Participant ID</div>
+          <div class="card-subtitle">De-identified code only. Never a name or any other identifier.</div>
+          <input class="text-input focusable" id="input-participant" type="text"
+                 placeholder="anon" autocomplete="off">
+        </div>
+        <div class="card">
+          <div class="card-title">Ingest Key</div>
+          <div class="card-subtitle">Only needed if INGEST_KEY is set on the server. Leave blank otherwise.</div>
+          <input class="text-input focusable" id="input-key" type="text"
+                 placeholder="(none)" autocomplete="off">
+        </div>
+      </div>
+      <nav class="nav-bar">
+        <button class="nav-item focusable primary" data-action="save-settings">Save</button>
+        <button class="nav-item focusable" data-action="go-home">Back</button>
+      </nav>
+    </div>
+
+  </div>
+
+  <script src="capture.js"></script>
+  <script src="protocol.js"></script>
+  <script src="upload.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

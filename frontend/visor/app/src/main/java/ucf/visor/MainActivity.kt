@@ -5,7 +5,9 @@ import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
 import android.Manifest.permission.RECORD_AUDIO
+import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,11 +20,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.registration.RegistrationRequest
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import com.meta.wearable.dat.core.voiceinvocations.isVoiceInvocationsIntent
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,10 +44,12 @@ import ucf.visor.capture.DescribeObject
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
+import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
 
 import ucf.visor.capture.SceneDescriber
@@ -70,21 +81,36 @@ class MainActivity : ComponentActivity() {
         )
         private const val NAV_WAKE_PHRASE = "VISORGO"
 
+        /** How long a voice launch waits for its stream delivery before acting on the intent alone. */
+        private const val VOICE_STREAM_GRACE_MS = 3_000L
+
         private fun normalizeKeyword(phrase: String): String =
             phrase.uppercase().filter { it.isLetter() }
     }
 
     val viewModel: VisorViewModel by viewModels()
-
+    private var wearablesInitialized = false
     private val permissionCheckLauncher =
         registerForActivityResult(RequestMultiplePermissions()) { permissionsResult ->
             viewModel.onPermissionsResult(permissionsResult) @androidx.annotation.RequiresPermission(
                 android.Manifest.permission.RECORD_AUDIO
             ) {
+                if (wearablesInitialized) return@onPermissionsResult
+                wearablesInitialized = true
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
                 listener.start()
+                // Only now may the on-glasses nav touch the SDK — resolving
+                // viewModel.deviceSelector any earlier throws WearablesException.
+                glassesNav.onWearablesReady()
+                // "Hey Meta, start VISOR": open the stream early so a voice
+                // command that cold-launched the app is still delivered.
+                VoiceLaunches.get().start()
+                // The intent that launched VISOR may be a voice launch or a
+                // Meta AI registration request; neither could be read before
+                // the SDK existed.
+                handleWearablesIntent(intent)
             }
         }
 
@@ -118,6 +144,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
+    private lateinit var glassesNav: GlassesNavigationController
     private lateinit var sceneReader: ReadRequester
     private lateinit var sceneDescriber: ReadRequester
     private lateinit var objectDetector: ObjectDetector
@@ -133,8 +160,12 @@ class MainActivity : ComponentActivity() {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
             }
 
+            LaunchedEffect(profile.glassesTapNavigationEnabled) {
+                glassesNav.setEnabled(profile.glassesTapNavigationEnabled)
+            }
+
             LaunchedEffect(profile.speechRate) {
-                speaker.setSpeechRate(profile.speechRate.multiplier)
+                speaker.setSpeechRate(profile.speechRate)
             }
 
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
@@ -145,6 +176,7 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
                         voiceNav = voiceNav,
+                        glassesNav = glassesNav,
                     )
                 }
 
@@ -180,6 +212,8 @@ class MainActivity : ComponentActivity() {
             isSpeaking = { speaker.isSpeaking() },
         )
 
+        glassesNav = GlassesNavigationController { viewModel.deviceSelector }
+
         // Single KWS engine for every wake phrase (OCR reading + "VISOR GO"):
         // running two overlapping AudioRecord/model instances would double up
         // on the microphone and CPU for no benefit, so this callback routes by
@@ -193,11 +227,71 @@ class MainActivity : ComponentActivity() {
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
+
+        // Answer every "Hey Meta, start VISOR" the glasses deliver, exactly once.
+        // Collected only while VISOR is visible: acting on a launch means
+        // showing Home, and the answer should describe what the wearer gets.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                VoiceLaunches.get().pending.collect { launches ->
+                    val launch = launches.firstOrNull() ?: return@collect
+                    val result = performVoiceLaunch()
+                    VoiceLaunches.get().acknowledge(launch, result.success, result.spoken)
+                }
+            }
+        }
     }
 
     override fun onStart() {
         super.onStart()
         permissionCheckLauncher.launch(PERMISSIONS)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Before the SDK is up, the permission callback handles getIntent()
+        // itself — which setIntent() just made this one.
+        if (wearablesInitialized) handleWearablesIntent(intent)
+    }
+
+    /**
+     * The two MWDAT 1.0 intents VISOR can be opened with: a registration
+     * request started from the Meta AI app, and a voice launch.
+     */
+    private fun handleWearablesIntent(intent: Intent) {
+        Wearables.handleIntent(intent) { request -> onRegistrationRequest(request) }
+            .onFailure { error, _ -> Log.w("VISOR", "Registration intent: ${error.description}") }
+
+        if (isVoiceInvocationsIntent(intent)) {
+            // The launch itself arrives on the voice-invocation stream and is
+            // answered there. If the stream cannot deliver it (not connected,
+            // or not approved in the Developer Center), still do what the
+            // wearer asked for rather than open silently.
+            // The stream can deliver just before or just after the intent, so
+            // any launch handled from a few seconds before it counts.
+            val openedAt = SystemClock.elapsedRealtime()
+            lifecycleScope.launch {
+                delay(VOICE_STREAM_GRACE_MS)
+                if (lastVoiceLaunchAt < openedAt - VOICE_STREAM_GRACE_MS) performVoiceLaunch()
+            }
+        }
+    }
+
+    private var lastVoiceLaunchAt = 0L
+
+    private fun performVoiceLaunch(): VisorViewModel.VoiceLaunchResult {
+        lastVoiceLaunchAt = SystemClock.elapsedRealtime()
+        val result = viewModel.startSessionFromVoice()
+        speaker.speak(result.spoken)
+        return result
+    }
+
+    /** Registration begun in the Meta AI app: continue it here, and say so. */
+    private fun onRegistrationRequest(request: RegistrationRequest) {
+        speaker.speak("Connecting VISOR to your glasses.")
+        request.continueRegistration(this)
+            .onFailure { error, _ -> Log.w("VISOR", "Registration request: ${error.description}") }
     }
 
     override fun onDestroy() {
@@ -207,5 +301,6 @@ class MainActivity : ComponentActivity() {
         speaker.shutdown()
         listener.shutdown()
         voiceNav.shutdown()
+        glassesNav.shutdown()
     }
 }

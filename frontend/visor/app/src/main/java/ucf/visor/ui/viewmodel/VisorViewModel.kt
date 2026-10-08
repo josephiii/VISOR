@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.selectors.AutoDeviceSelector
 import com.meta.wearable.dat.core.selectors.DeviceSelector
+import com.meta.wearable.dat.core.types.Device
 import com.meta.wearable.dat.core.types.DeviceCompatibility
 import com.meta.wearable.dat.core.types.DeviceIdentifier
 import com.meta.wearable.dat.core.types.Permission
@@ -22,6 +23,8 @@ import kotlinx.coroutines.launch
 import ucf.visor.auth.SessionStore
 import ucf.visor.ui.profile.ProfileStore
 import ucf.visor.ui.profile.UserProfile
+import ucf.visor.wearables.rankForSession
+import ucf.visor.wearables.toGlassesStatus
 
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,6 +56,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private var monitoringStarted = false
     private val deviceMonitoringJobs = mutableMapOf<DeviceIdentifier, Job>()
     private val deviceCompatibility = mutableMapOf<DeviceIdentifier, DeviceCompatibility>()
+    private val deviceSnapshots = mutableMapOf<DeviceIdentifier, Device>()
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
@@ -100,8 +104,10 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             deviceMonitoringJobs[deviceId]?.cancel()
             deviceMonitoringJobs.remove(deviceId)
             deviceCompatibility.remove(deviceId)
+            deviceSnapshots.remove(deviceId)
         }
         updateFirmwareUpdateRequired()
+        updateGlassesStatus()
 
         // Start monitoring jobs only for new devices (not already being monitored)
         val newDevices = devices - deviceMonitoringJobs.keys
@@ -109,7 +115,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             val job = viewModelScope.launch {
                 Wearables.devicesMetadata[deviceId]?.collect { metadata ->
                     deviceCompatibility[deviceId] = metadata.compatibility
+                    deviceSnapshots[deviceId] = metadata
                     updateFirmwareUpdateRequired()
+                    updateGlassesStatus()
                     if (metadata.compatibility == DeviceCompatibility.DEVICE_UPDATE_REQUIRED) {
                         val deviceName = metadata.name.ifEmpty { deviceId }
                         setRecentError("Device '$deviceName' requires an update to work with this app")
@@ -188,6 +196,46 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     fun hideDebugMenu() {
         _uiState.update { it.copy(isDebugMenuVisible = false) }
+    }
+
+    /**
+     * Clears every pending navigation request.
+     *
+     * The screen flags in [VisorUiState] are one-shot *events*, not state:
+     * VisorLayout watches each with a `LaunchedEffect` keyed on the flag, and a
+     * `LaunchedEffect` only re-runs when its key changes. So a flag left true
+     * after its navigation has happened silently disables that destination —
+     * asking for it again re-sets a flag that is already true, the key never
+     * changes, and nothing moves.
+     *
+     * That is what made the navigation bar go dead after a system back press:
+     * back pops the NavController without telling this ViewModel, leaving the
+     * flag for the screen the user just left still true, so its bar item did
+     * nothing. Consuming the flag the moment VisorLayout has acted on it keeps
+     * every request a genuine false -> true transition.
+     *
+     * Only navigation intents are cleared here. Session state such as
+     * `isAuthComplete` is real state and must survive.
+     */
+    fun onNavigationHandled() {
+        _uiState.update {
+            it.copy(
+                atTitle = false,
+                isLoggingIn = false,
+                isSigningUp = false,
+                hasForgottenPassword = false,
+                isEnteringCode = false,
+                isVerifyingAccount = false,
+                isResettingPassword = false,
+                goingHome = false,
+                isPairingHardware = false,
+                atSettings = false,
+                atHelp = false,
+                atMotionLab = false,
+                isOnboarding = false,
+                isConfiguring = false,
+            )
+        }
     }
 
     fun login() {
@@ -288,6 +336,11 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atHelp = false) }
     }
 
+    /** The head-motion lab (Settings → Research): MWDAT 1.0 Motion + camera trials. */
+    fun motionLab() {
+        _uiState.update { it.copy(atMotionLab = true) }
+    }
+
     fun requestLogoutConfirm() {
         _uiState.update { it.copy(isLogoutConfirmVisible = true) }
     }
@@ -317,6 +370,32 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             else
                 it.copy(isSessionActive = true)
         }
+    }
+
+    /** What VISOR did for one "Hey Meta, start VISOR", and what to tell the wearer. */
+    data class VoiceLaunchResult(val success: Boolean, val spoken: String)
+
+    /**
+     * The action behind a voice launch: go Home and make sure a session is
+     * running. Idempotent on purpose — never a toggle — because a launch can
+     * reach VISOR twice (the launch intent and the voice-invocation stream),
+     * and a second "start" must not end the session the first one began.
+     */
+    fun startSessionFromVoice(): VoiceLaunchResult {
+        if (!_uiState.value.isAuthComplete) {
+            return VoiceLaunchResult(
+                success = false,
+                spoken = "VISOR is open. Please log in on your phone to start.",
+            )
+        }
+        home()
+        val alreadyRunning = _uiState.value.isSessionActive
+        if (!alreadyRunning) _uiState.update { it.copy(isSessionActive = true) }
+        return VoiceLaunchResult(
+            success = true,
+            spoken = if (alreadyRunning) "VISOR is ready. Your session is already running."
+            else "VISOR is ready. Session started.",
+        )
     }
 
     fun toggleNavigationBar() {
@@ -363,6 +442,16 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         val isRequired =
             deviceCompatibility.values.any { it == DeviceCompatibility.DEVICE_UPDATE_REQUIRED }
         _uiState.update { it.copy(isFirmwareUpdateRequired = isRequired) }
+    }
+
+    /**
+     * Battery, worn, hinge and thermal state arrive on `Device` itself since
+     * MWDAT 1.0 (`Wearables.getDeviceState` was removed). Only the pair VISOR
+     * would actually use — worn and connected first — is surfaced.
+     */
+    private fun updateGlassesStatus() {
+        val best = deviceSnapshots.values.minByOrNull(::rankForSession)
+        _uiState.update { it.copy(glassesStatus = best?.toGlassesStatus()) }
     }
 
     fun showGettingStartedSheet() {

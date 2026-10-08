@@ -27,17 +27,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import ucf.visor.R
+import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
 import ucf.visor.ui.components.scrollIndicator
+import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.wearables.GlassesStatus
 
-// This screen will prompt the user to
+// This screen will prompt the user to register VISOR with their glasses, and —
+// once registered — shows the glasses' live state (MWDAT 1.0 device state).
 @Composable
 fun HardwarePairingScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
+    talk: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
@@ -78,6 +89,10 @@ fun HardwarePairingScreen(
                 )
             }
         }
+
+        uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
+            GlassesStatusCard(status = status, onSpeak = { talk(status.spokenSummary()) })
+        }
         Spacer(modifier = Modifier.weight(1f))
 
         Column(
@@ -98,6 +113,50 @@ fun HardwarePairingScreen(
                         ?: Toast.makeText(context, "Activity not available", Toast.LENGTH_SHORT)
                             .show()
                 },
+            )
+        }
+    }
+}
+
+/**
+ * The glasses' live state, readable at a glance and — more to the point for
+ * VISOR's users — aloud: checking battery without finding and reading the
+ * charging case's light is exactly the kind of small task low vision makes hard.
+ */
+@Composable
+private fun GlassesStatusCard(status: GlassesStatus, onSpeak: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = VisorShapes.Control,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                "${status.model}: ${if (status.connected) "connected" else "not connected"}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            val details = buildList {
+                status.batteryPercent?.let {
+                    add("Battery $it%" + if (status.charging == true) ", charging" else "")
+                }
+                status.worn?.let { add(if (it) "Being worn" else "Not being worn") }
+                status.temperatureWord?.let { add("Temperature $it") }
+            }
+            if (details.isNotEmpty()) {
+                Text(details.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
+            }
+            SelectableChip(
+                label = "Read glasses status aloud",
+                selected = false,
+                showCheckmark = false,
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onSpeak,
             )
         }
     }
