@@ -8,11 +8,14 @@ import com.meta.wearable.dat.core.types.DeviceIdentifier
 import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import ucf.visor.wearables.GlassesStatus
 
 data class VisorUiState(
     // Post-MWDAT
     val registrationState: RegistrationState = RegistrationState.UNAVAILABLE,
     val devices: ImmutableList<DeviceIdentifier> = persistentListOf(),
+    /** The pair VISOR would use (worn and connected first), with MWDAT 1.0 device state. */
+    val glassesStatus: GlassesStatus? = null,
 
     val isStreaming: Boolean = false,
     val isDebugMenuVisible: Boolean = false,
@@ -37,6 +40,7 @@ data class VisorUiState(
     val isPairingHardware: Boolean = false,
     val atSettings: Boolean = false,
     val atHelp: Boolean = false,
+    val atMotionLab: Boolean = false,
     val isOnboarding: Boolean = false,
 
     // Component States.
@@ -56,8 +60,6 @@ data class VisorUiState(
     val isRegistering: Boolean = registrationState == RegistrationState.REGISTERING
 
     val canStartRegistration: Boolean = canRegister && !isRegistering
-
-    val finishedOnboarding: Boolean = goingHome
 
     val navigationBarEnabled: Boolean = isAuthComplete
 }

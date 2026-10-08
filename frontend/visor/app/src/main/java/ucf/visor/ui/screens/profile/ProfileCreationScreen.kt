@@ -33,7 +33,7 @@ import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.profile.Severity
-import ucf.visor.ui.profile.SpeechRate
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.profile.UserProfile
 import ucf.visor.ui.profile.Verbosity
 import ucf.visor.ui.profile.VisionType
@@ -41,7 +41,6 @@ import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
-import kotlin.math.roundToInt
 
 
 /**
@@ -68,8 +67,9 @@ private enum class Step(val title: String, val spokenPrompt: String) {
     VOICE_NAV(
         "Navigate VISOR by voice?",
         "You can navigate VISOR by voice, any time, by saying \"VISOR GO\" followed by " +
-                "a command, like \"open settings\" or \"go home\". This is on by default. " +
-                "Say yes to keep it on, or no to turn it off — you can always change this later in Settings."
+                "a command, like \"open settings\" or \"go home\". It stays off unless you " +
+                "turn it on. Say yes to turn it on, or no to leave it off — you can always " +
+                "change this later in Settings."
     ),
     VISION(
         "Which of these describe what you experience?",
@@ -116,9 +116,9 @@ fun ProfileCreationScreen(
 
     // VOICE NAVIGATION
     LaunchedEffect(step) {
+        if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         speak(step.spokenPrompt)
         val askedStep = step
-        if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()
             if (heard.isNullOrEmpty()) return@captureUtterance
@@ -174,9 +174,9 @@ fun ProfileCreationScreen(
 
                 Step.SPEECH_RATE -> {
                     val match = when {
-                        heard.contains("slow") -> SpeechRate.SLOW
-                        heard.contains("fast") -> SpeechRate.FAST
-                        heard.contains("normal") -> SpeechRate.NORMAL
+                        heard.contains("slow") -> SpeechRates.Slow
+                        heard.contains("fast") -> SpeechRates.Fast
+                        heard.contains("normal") -> SpeechRates.Normal
                         else -> null
                     }
                     if (match != null) {
@@ -258,24 +258,23 @@ fun ProfileCreationScreen(
 
             Step.SPEECH_RATE -> {
                 Text(
-                    text = profile.speechRate.label(),
+                    text = SpeechRates.label(profile.speechRate),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Slider(
-                    value = SpeechRate.entries.indexOf(profile.speechRate).toFloat(),
+                    value = profile.speechRate,
                     onValueChange = { position ->
-                        val rate = SpeechRate.entries[
-                            position.roundToInt().coerceIn(0, SpeechRate.entries.lastIndex)
-                        ]
+                        val rate = SpeechRates.snap(position)
                         if (rate != profile.speechRate) profile = profile.copy(speechRate = rate)
                     },
-                    valueRange = 0f..(SpeechRate.entries.lastIndex).toFloat(),
-                    steps = SpeechRate.entries.size - 2,
+                    valueRange = SpeechRates.Min..SpeechRates.Max,
+                    steps = SpeechRates.SliderSteps,
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics {
-                            contentDescription = "Speech rate: ${profile.speechRate.label()}"
+                            contentDescription =
+                                "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
                         },
                 )
                 Row(
