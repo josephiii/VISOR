@@ -13,5 +13,5 @@ def beginDepthEst(image : UploadFile = File(...)):
     if image is None:
         raise HTTPException(status_code=400, detail="Missing image/frame")
     response = service.runModel(image)
-    return "Success"
+    return "Success", response
     

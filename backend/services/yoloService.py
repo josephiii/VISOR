@@ -15,9 +15,11 @@ class YoloService:
         objects = []
         res = self.model(image)
         for box in res[0].boxes:
-            name = r.names[int(box.cls)]
-            objects.append({"object": name, "id": int(box.cls), "coords":box.xyxy.toList(), "conf": int(box.conf)})
+            name = res[0].names[int(box.cls)]
+            objects.append({"object": name, "classID": int(box.cls), "coords":box.xyxy.tolist()[0], "conf": float(box.conf)})
+            
         return objects
+    
     def MergeClasses():
         '''
         There are cases where the model returns separate objects when those separat objects make up one object. For example, 
@@ -32,6 +34,5 @@ if __name__=="__main__":
     path = os.path.join(path, "..", "..", "tests")
     service= YoloService()
     res = service.runModel(os.path.abspath(os.path.join(path, "qwen2-vl/images.jpg")))
-    r = res[0]
-    r.save("out.jpg")
+    print(res, res[0]["coords"])
     
