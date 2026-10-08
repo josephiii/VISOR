@@ -1,0 +1,346 @@
+/**
+ * VISOR IMU Web App — Meta Ray-Ban Display glasses
+ */
+
+:root {
+  --bg-primary: #000000; /* transparent on additive display */
+  --bg-secondary: #0a0a0f;
+  --bg-tertiary: #14141f;
+  --bg-card: #1a1a2e;
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --accent-primary: #00d4ff;
+  --accent-secondary: #00ff88;
+  --danger: #ff4466;
+  --focus-ring: #00d4ff;
+  --focus-glow: rgba(0, 212, 255, 0.4);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  width: 600px;
+  height: 600px;
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* --- Screens --- */
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.screen.hidden { display: none; }
+
+/* --- Header --- */
+.header {
+  display: flex;
+  align-items: center;
+  padding: 16px 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  gap: 12px;
+  flex-shrink: 0;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  flex: 1;
+}
+.header-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* --- Content Area --- */
+.content {
+  flex: 1;
+  padding: 12px 4px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Focus States (critical for EMG/D-pad) --- */
+.focusable {
+  transition:
+    transform 475ms cubic-bezier(0.6, 0, 0.4, 1),
+    box-shadow 300ms cubic-bezier(0.4, 0.04, 0.5, 1);
+  border: 2px solid transparent;
+  cursor: pointer;
+  min-height: 44px;
+}
+.focusable:focus {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 20px var(--focus-glow);
+  transform: scale(0.91);
+}
+
+/* --- Navigation Bar --- */
+.nav-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 4px 4px;
+  background: transparent;
+  flex-shrink: 0;
+}
+.nav-item {
+  flex: 1;
+  height: 56px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-item.primary {
+  background: var(--accent-primary);
+  color: #0a0a0f;
+}
+
+/* --- Cards --- */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+/* --- IMU axis readout --- */
+.data-grid.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.axis-value {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.axis-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.axis-value span:last-child {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-primary);
+}
+
+/* --- Error States --- */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.error-icon { font-size: 36px; }
+.error-message {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 400px;
+}
+
+/* --- List items (menus, trial list) --- */
+.list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-align: left;
+  gap: 12px;
+  font-family: inherit;
+}
+.list-item-icon {
+  font-size: 20px;
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--accent-primary);
+}
+.list-item-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.list-item-title { font-size: 16px; font-weight: 600; }
+.list-item-meta { font-size: 12px; color: var(--text-secondary); }
+
+.tier-head {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 2px 2px;
+}
+
+/* --- Key/value rows --- */
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.kv:last-child { border-bottom: none; }
+.kv span { color: var(--text-secondary); }
+.kv b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.kv b.ok { color: var(--accent-secondary); }
+.kv b.bad { color: var(--text-muted); }
+
+.verdict {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.rate-pill {
+  float: right;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  background: rgba(0, 255, 136, 0.12);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+
+/* --- Trial run screen --- */
+.run-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px;
+  text-align: center;
+}
+.run-trial { font-size: 15px; color: var(--text-secondary); }
+.run-phase {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-secondary);
+}
+.run-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  max-width: 520px;
+}
+/* Read at a glance while the head is in motion — large, bright, high contrast. */
+.run-cue {
+  font-size: 68px;
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  word-break: break-word;
+}
+.run-clock {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-primary);
+}
+.run-counts { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* --- Progress --- */
+.progress-bar {
+  width: 90%;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-primary);
+  border-radius: 4px;
+  transition: width 0.25s linear;
+}
+
+/* --- Loading --- */
+.loading-container {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px; padding: 30px;
+}
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid var(--bg-tertiary);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: var(--text-secondary); }
+
+/* --- Text input --- */
+.text-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+}
+.text-input::placeholder { color: var(--text-muted); }
+
+.nav-item.danger { background: var(--danger); color: #ffffff; }
+
+/* --- Utility --- */
+.hidden { display: none !important; }
+.text-danger { color: var(--danger); }
