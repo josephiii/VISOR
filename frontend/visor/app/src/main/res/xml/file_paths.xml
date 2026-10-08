@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="shared_images" path="images/"/>
+    <!-- Head-motion lab recordings (gzipped JSON), shared out through the share
+         sheet. Scoped to that one directory under the app's external files. -->
+    <external-files-path name="imu_sessions" path="imu-sessions/"/>
 </paths>

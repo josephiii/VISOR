@@ -5,6 +5,11 @@ Runs the orientation filter, drift analysis, zero-velocity-aided integration
 and step dead reckoning over recorded sessions, then writes figures, a
 markdown report and a JSON summary.
 
+Web (DeviceMotion) and native (the Android head-motion lab, MWDAT Motion)
+recordings are analyzed separately with the same code. The report is built on
+the web battery; native recordings add a side-by-side comparison, with MWDAT's
+fused quaternion and raw magnetometer as the platform heading references.
+
 Usage:
     python analysis/pose_analysis.py
     python analysis/pose_analysis.py --in data/imu-sessions --assets documentation/assets/imu/pose
@@ -34,6 +39,8 @@ DEFAULT_REPORT = REPO_ROOT / "documentation" / "testing" / "imu-pose-tracking-re
 DEFAULT_SUMMARY = REPO_ROOT / "data" / "imu-analysis" / "pose-summary.json"
 
 PACED = {"B1_yaw_paced": "yaw", "B2_pitch_paced": "pitch", "B3_roll_paced": "roll"}
+# Yaw-dominant trials for the heading survey; the V ids exist only natively.
+YAW_DOMINANT = ("B1", "B4", "C2", "V1", "V3", "V4")
 TOLERANCE_M = 0.10
 TOLERANCE_DEG = 1.0
 
@@ -41,8 +48,19 @@ TOLERANCE_DEG = 1.0
 # ============================ session selection ============================
 
 
+def _has_hole(s: loader.Session) -> bool:
+    """A stretch with no samples: the app was hidden, or the glasses stopped
+    or paused the Motion capability (native)."""
+    for m in s.marks:
+        if m.get("label") in ("visibility_hidden", "motion_revive"):
+            return True
+        if (m.get("extra") or {}).get("state") == "PAUSED":
+            return True
+    return False
+
+
 def completed(sessions: list[loader.Session]) -> list[loader.Session]:
-    """Sessions that ran to their planned length and were never backgrounded."""
+    """Sessions that ran to their planned length with no hole in the data."""
     out = []
     for s in sessions:
         if s.meta.get("outcome") not in (None, "completed"):
@@ -50,7 +68,7 @@ def completed(sessions: list[loader.Session]) -> list[loader.Session]:
         check = metrics.duration_check(s.motion, s.meta.get("plannedDurationSec"), s.duration_s)
         if check.get("checked") and not check["within_tolerance"]:
             continue
-        if any(m.get("label") == "visibility_hidden" for m in s.marks):
+        if _has_hole(s):
             continue
         out.append(s)
     return out
@@ -98,7 +116,8 @@ def axis_identification(done: list[loader.Session]) -> tuple[pd.DataFrame, pd.Da
     return share_frame, pose.axis_mapping_scores(probe)
 
 
-def orientation_panels(done: list[loader.Session]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def orientation_panels(done: list[loader.Session], convention: dict[str, Any] | None = None
+                       ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     panels, stats = [], []
     for trial, axis in PACED.items():
         primary = primary_participant(done)
@@ -106,7 +125,7 @@ def orientation_panels(done: list[loader.Session]) -> tuple[list[dict[str, Any]]
         if s is None:
             continue
         imu = pose.imu_arrays(s)
-        ref = pose.platform_angles(s)
+        ref = pose.platform_angles(s, convention)
         if imu is None or ref is None:
             continue
         filt = pose.mahony(imu)
@@ -135,16 +154,28 @@ def orientation_panels(done: list[loader.Session]) -> tuple[list[dict[str, Any]]
     return panels, stats
 
 
-def heading_survey(done: list[loader.Session]) -> list[dict[str, Any]]:
-    """Platform heading agreement for every yaw-dominant recording."""
+def heading_survey(done: list[loader.Session], convention: dict[str, Any] | None = None
+                   ) -> list[dict[str, Any]]:
+    """Platform heading agreement for every yaw-dominant recording.
+
+    Native recordings are also scored on the raw magnetometer's tilt-compensated
+    heading, which separates a bad sensor from bad fusion.
+    """
     out = []
     for s in done:
-        if s.trial_id[:2] not in ("B1", "B4", "C2"):
+        if s.trial_id[:2] not in YAW_DOMINANT:
             continue
-        imu, ref = pose.imu_arrays(s), pose.platform_angles(s)
+        imu, ref = pose.imu_arrays(s), pose.platform_angles(s, convention)
         if imu is None or ref is None:
             continue
-        out.append({"session": label(s), **pose.heading_agreement(pose.mahony(imu), ref)})
+        track = pose.mahony(imu)
+        row = {"session": label(s), **pose.heading_agreement(track, ref)}
+        mag = pose.magnetic_heading(s)
+        if mag is not None:
+            row["magnetometer"] = {**pose.heading_agreement(track, mag),
+                                   "field_ut_mean": float(mag["field_ut"].mean()),
+                                   "field_ut_sd": float(mag["field_ut"].std())}
+        out.append(row)
     return out
 
 
@@ -231,13 +262,8 @@ def fmt(v: float, digits: int = 2) -> str:
     return "∞" if not np.isfinite(v) else f"{v:,.{digits}f}"
 
 
-def write_report(path: Path, assets_rel: str, figures: dict[str, Path], summary: dict[str, Any]) -> None:
-    o = summary["orientation"]
-    d = summary["drift"]
-    st = summary["sit_stand"]
-    w = summary["walking"]
-    m = summary["axis_mapping"]
-
+def write_report(path: Path, assets_rel: str, figures: dict[str, Path], summary: dict[str, Any],
+                 include_web: bool = True, native_figure: Path | None = None) -> None:
     lines = [
         "# IMU-only 6-DOF Head Pose — What the Gyroscope and Accelerometer Can Recover",
         "",
@@ -248,6 +274,46 @@ def write_report(path: Path, assets_rel: str, figures: dict[str, Path], summary:
         "statement below is self-consistency or agreement with the platform's own orientation stream, "
         "not validated accuracy.",
         "",
+    ]
+    if include_web:
+        lines += web_lines(assets_rel, figures, summary)
+    else:
+        lines += ["> The web IMU Lab battery in this data set is incomplete, so its sections are "
+                  "omitted; see `pose-summary.json` for what was computed.", ""]
+    if "native" in summary:
+        lines += native_lines(summary, assets_rel, native_figure)
+
+    lines += [
+        "## Method notes",
+        "",
+        "- **Orientation:** Mahony complementary filter, Kp = 1.0, Ki = 0.02, accelerometer correction "
+        "weighted by exp(−(‖a‖−g)²/0.8²) so head acceleration does not pull the tilt estimate. Heading "
+        "origin is arbitrary (no compass).",
+        "- **Gravity removal:** specific force rotated to world, minus local g estimated in-run from "
+        "near-static samples.",
+        "- **ZUPT:** stationary when mean |ω| < 5 °/s and max ‖a‖−g < 0.3 m/s² over 0.2 s, for ≥ 0.2 s. "
+        "Velocity is zeroed there and de-drifted linearly across each movement.",
+        "- **Step dead reckoning:** steps are peaks of 0.8–3.5 Hz band-passed vertical acceleration; "
+        "heading is filter yaw averaged per step; step length is an assumed 0.70 m.",
+    ]
+    if include_web:
+        w = summary["walking"]
+        lines.append(f"- **Walking trial note:** C3 asks for a straight path, but the recording shows "
+                     f"{w['total_turn_deg']:,.0f}° of cumulative leftward turning "
+                     f"(~{w['total_turn_deg']/360:.1f} laps), so the wearer walked a loop.")
+    lines.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def web_lines(assets_rel: str, figures: dict[str, Path], summary: dict[str, Any]) -> list[str]:
+    o = summary["orientation"]
+    d = summary["drift"]
+    st = summary["sit_stand"]
+    w = summary["walking"]
+    m = summary["axis_mapping"]
+
+    lines = [
         "## Summary",
         "",
         "| Degree of freedom | IMU-only result | Status |",
@@ -298,78 +364,161 @@ def write_report(path: Path, assets_rel: str, figures: dict[str, Path], summary:
     for key, p in figures.items():
         lines.append(f"**{captions.get(key, key)}**\n")
         lines.append(f"![{key}]({assets_rel}/{p.name})\n")
+    return lines
 
-    lines += [
-        "## Method notes",
+
+def native_lines(summary: dict[str, Any], assets_rel: str, figure: Path | None) -> list[str]:
+    """The same measures from the Android head-motion lab, beside the web ones."""
+    web = summary if "orientation" in summary else {}
+    nat = summary["native"]
+
+    def axes(s):
+        m = s.get("axis_mapping")
+        return f"{m['adopted_residual']:.2f} vs {m['best_alternative_residual']:.2f} m/s²" if m else "—"
+
+    def resolution(s):
+        v = s.get("accel_resolution_ms2")
+        return "—" if v is None else f"{v:.2g} m/s²"
+
+    def tilt(s):
+        v = (s.get("orientation") or {}).get("pitch_roll_rms_range")
+        return f"{v} RMS" if v and v != "n/a" else "—"
+
+    def agreement(rows):
+        if not rows:
+            return "—"
+        r = [h["r"] for h in rows]
+        g = [h["gain"] for h in rows]
+        return f"r {min(r):+.2f} to {max(r):+.2f}, gain {min(g):+.2f} to {max(g):+.2f} (n = {len(rows)})"
+
+    def magnetometer(s):
+        rows = [h["magnetometer"] for h in s.get("heading_survey") or [] if "magnetometer" in h]
+        if not rows:
+            return "— (null on Ray-Ban Meta)"
+        field = np.mean([h["field_ut_mean"] for h in rows])
+        return f"{agreement(rows)}; field {field:.0f} µT"
+
+    def bias(s):
+        b = s.get("budget") or {}
+        if b.get("yaw_bias_instability_dps") is None:
+            return "—"
+        return f"{b['yaw_bias_instability_dps']:.4f} / {b['yaw_turn_on_bias_dps']:.4f} °/s"
+
+    def drift(s, key):
+        d = (s.get("drift") or {}).get(key)
+        return "—" if not d else f"{fmt(d['time_to_tolerance_s'], 1)} s"
+
+    def sit(s):
+        st = s.get("sit_stand")
+        return "—" if not st else f"{st['rise_mean_cm']:.1f} / {st['drop_mean_cm']:.1f} cm"
+
+    conv = nat.get("quaternion_convention") or []
+    reference = "—"
+    if conv:
+        reference = f"MWDAT fused quaternion, read as {conv[0]['convention']}"
+        if len(conv) > 1:
+            reference += (f" (gravity residual {conv[0]['residual_ms2']:.2f} m/s², next best "
+                          f"{conv[1]['residual_ms2']:.2f})")
+
+    rows = [
+        ("Completed sessions", web.get("sessions_completed", "—"), nat["sessions_completed"]),
+        ("Gyro axes: adopted mapping vs best alternative (gravity residual)", axes(web), axes(nat)),
+        ("Accelerometer resolution as recorded", resolution(web), resolution(nat)),
+        ("Platform orientation", "W3C α/β/γ, `absolute = true`", reference),
+        ("Its roll and pitch vs the IMU-only filter", tilt(web), tilt(nat)),
+        ("Its heading vs gyro yaw (0.25 s increments)", agreement(web.get("heading_survey")),
+         agreement(nat.get("heading_survey"))),
+        ("Raw magnetometer heading vs gyro yaw", "not recorded (web path)", magnetometer(nat)),
+        ("Yaw bias instability / turn-on bias", bias(web), bias(nat)),
+        ("Time to 10 cm unaided, glasses at rest", drift(web, "static"), drift(nat, "static")),
+        ("Time to 10 cm unaided, seated head turns", drift(web, "moving"), drift(nat, "moving")),
+        ("Sit-to-stand rise / drop with ZUPT", sit(web), sit(nat)),
+    ]
+    lines = [
+        "## Web vs. native capture (MWDAT 1.0 head-motion lab)",
         "",
-        "- **Orientation:** Mahony complementary filter, Kp = 1.0, Ki = 0.02, accelerometer correction "
-        "weighted by exp(−(‖a‖−g)²/0.8²) so head acceleration does not pull the tilt estimate. Heading "
-        "origin is arbitrary (no compass).",
-        "- **Gravity removal:** specific force rotated to world, minus local g estimated in-run from "
-        "near-static samples.",
-        "- **ZUPT:** stationary when mean |ω| < 5 °/s and max ‖a‖−g < 0.3 m/s² over 0.2 s, for ≥ 0.2 s. "
-        "Velocity is zeroed there and de-drifted linearly across each movement.",
-        "- **Step dead reckoning:** steps are peaks of 0.8–3.5 Hz band-passed vertical acceleration; "
-        "heading is filter yaw averaged per step; step length is an assumed 0.70 m.",
-        f"- **Walking trial note:** C3 asks for a straight path, but the recording shows "
-        f"{w['total_turn_deg']:,.0f}° of cumulative leftward turning (~{w['total_turn_deg']/360:.1f} laps), "
-        "so the wearer walked a loop.",
+        "The Android head-motion lab records the same trials through MWDAT 1.0's Motion capability. "
+        "Every number below comes from the same code; the native column uses native recordings only.",
         "",
     ]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines), encoding="utf-8")
+    if nat.get("synthetic"):
+        lines += ["> **The native column includes synthetic sessions. They validate the code and are "
+                  "not measurements.**", ""]
+    lines += ["| Measure | Web (DeviceMotion) | Native (MWDAT Motion) |", "|---|---|---|"]
+    lines += [f"| {name} | {a} | {b} |" for name, a, b in rows]
+    lines += [
+        "",
+        "What the native path can settle that the web path could not:",
+        "",
+        "- **Where the heading fails (finding 2).** The raw magnetometer row is the decisive check the "
+        "capability analysis proposes. A raw-field heading that tracks the gyro (gain ≈ +1, r ≈ +1) puts the "
+        "web heading failure in the platform's fusion; one that does not puts it in the sensor or its "
+        "surroundings. MWDAT's own fused quaternion is a second, independent heading reference.",
+        "- **The rounding floor (finding 3).** Native values are recorded at the SDK's float resolution, so "
+        "the 0.05 m/s² rounding term does not apply; the measured times to 10 cm show what the sensor's own "
+        "bias and noise allow.",
+        "- **The axis convention.** The same gravity-consistency test that settled the web channels checks "
+        "the SDK's axes on every native data set; an adopted residual well below the best alternative "
+        "confirms the shared body frame (x right, y up, z backward).",
+        "",
+    ]
+    if figure is not None:
+        lines += ["**Roll, pitch and yaw from the IMU alone, against MWDAT's fused orientation.**\n",
+                  f"![orientation native]({assets_rel}/{figure.name})\n"]
+    return lines
 
 
-# ============================ main ============================
+# ============================ per-platform analysis ============================
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--in", dest="indir", default=str(DEFAULT_IN))
-    parser.add_argument("--assets", default=str(DEFAULT_ASSETS))
-    parser.add_argument("--report", default=str(DEFAULT_REPORT))
-    parser.add_argument("--summary", default=str(DEFAULT_SUMMARY))
-    args = parser.parse_args()
+def accel_resolution(sessions: list[loader.Session]) -> float | None:
+    """Smallest step between distinct recorded accelerometer values (m/s²).
 
-    indir = Path(args.indir)
-    if not indir.exists():
-        sys.exit(f"No session directory at {indir}. Run analysis/fetch_sessions.py first.")
-    report.apply_style()
-    assets = Path(args.assets)
-    assets.mkdir(parents=True, exist_ok=True)
+    0.1 on the web path, where the browser rounds; the native path records the
+    SDK's floats to six decimals.
+    """
+    steps = []
+    for s in sessions:
+        if "agy" not in s.motion:
+            continue
+        diffs = np.diff(np.unique(s.motion["agy"].dropna().to_numpy(dtype="float64")))
+        diffs = diffs[diffs > 1e-9]
+        if diffs.size:
+            steps.append(float(diffs.min()))
+    return float(np.median(steps)) if steps else None
 
-    print(f"Loading sessions from {indir} …")
-    sessions = loader.load_directory(indir)
+
+def analyze_platform(sessions: list[loader.Session], convention: dict[str, Any] | None = None
+                     ) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Every pose result for one capture path, and what its figures are drawn from."""
     done = completed(sessions)
     print(f"  {len(sessions)} loaded, {len(done)} completed")
-
-    figures: dict[str, Path] = {}
-    summary: dict[str, Any] = {"generated": date.today().isoformat()}
-
-    figures["pipeline"] = figs.fig_pipeline(assets / "pose_pipeline.png")
+    summary: dict[str, Any] = {"sessions_completed": len(done),
+                               "accel_resolution_ms2": accel_resolution(done),
+                               "synthetic": any(s.meta.get("synthetic") for s in done)}
+    art: dict[str, Any] = {}
 
     print("  axis identification …")
     shares, mapping = axis_identification(done)
     if len(shares) and len(mapping):
-        figures["axes"] = figs.fig_axis_identification(shares, mapping,
-                                                       assets / "pose_axis_identification.png")
+        art["axes"] = (shares, mapping)
         summary["axis_mapping"] = {
             "adopted_residual": float(mapping[mapping["is_adopted"]]["residual_ms2"].iloc[0]),
             "w3c_residual": float(mapping[mapping["is_w3c_spec"]]["residual_ms2"].iloc[0]),
+            "best_alternative_residual": float(mapping[~mapping["is_adopted"]]["residual_ms2"].iloc[0]),
             "ranking": mapping[["mapping", "residual_ms2"]].head(8).to_dict("records"),
             "energy_share": shares.round(4).to_dict("index"),
         }
 
     print("  orientation …")
-    panels, ostats = orientation_panels(done)
-    if panels:
-        figures["orientation"] = figs.fig_orientation(panels, assets / "pose_orientation.png")
+    panels, ostats = orientation_panels(done, convention)
+    art["panels"] = panels
     rms_all = [r[f"{k}_rms_deg"] for r in ostats for k in ("pitch", "roll")]
+    art["rms_all"] = rms_all
     summary["orientation"] = {"per_trial": ostats,
                               "pitch_roll_rms_range": (f"{min(rms_all):.1f}–{max(rms_all):.1f}°"
                                                        if rms_all else "n/a")}
-    survey = heading_survey(done)
+    survey = heading_survey(done, convention)
     summary["heading_survey"] = survey
     rs = [h["r"] for h in survey]
     summary["heading_r_range"] = [min(rs), max(rs)] if rs else [float("nan")] * 2
@@ -378,7 +527,7 @@ def main() -> None:
     if scan_session is not None:
         angles = pose.mahony(pose.imu_arrays(scan_session)).head_angles()
         sweeps = pose.yaw_sweeps(angles)
-        figures["scan"] = figs.fig_scan_map(angles, sweeps, assets / "pose_scan_map.png", label(scan_session))
+        art["scan"] = (angles, sweeps, scan_session)
         left = sweeps[sweeps["direction"] == "left"]["amplitude_deg"]
         right = sweeps[sweeps["direction"] == "right"]["amplitude_deg"]
         summary["scan"] = {
@@ -415,18 +564,17 @@ def main() -> None:
         accel_noise = float(np.mean([np.std(static.motion[a].dropna()) for a in ("agy", "agz")]))
         fs = metrics.estimate_fs(static.motion)
     tau = np.logspace(np.log10(0.05), np.log10(60), 200)
-    bounds = pose.position_error_bounds(tau, accel_noise, fs)
-    figures["drift"] = figs.fig_position_drift(curves, bounds, tau, assets / "pose_position_drift.png",
-                                               TOLERANCE_M)
+    art["drift"] = (curves, pose.position_error_bounds(tau, accel_noise, fs), tau)
 
     # ---- drift budget: angles from the static recording's yaw channel
     yaw_bi = yaw_turn_on = None
     if static is not None:
         fs_s = metrics.estimate_fs(static.motion)
-        taus, adev = metrics.allan_deviation(static.motion["rrBeta"].to_numpy(dtype="float64"), fs_s)
+        yaw = static.motion[metrics.YAW_AXIS].to_numpy(dtype="float64")
+        taus, adev = metrics.allan_deviation(yaw, fs_s)
         yaw_bi = metrics.allan_params(taus, adev)["bias_instability"]
-        yaw_turn_on = abs(float(static.motion["rrBeta"].mean()))
-    budget = {
+        yaw_turn_on = abs(float(np.nanmean(yaw)))
+    summary["budget"] = {
         "yaw_calibrated_s": TOLERANCE_DEG / yaw_bi if yaw_bi else float("nan"),
         "yaw_uncalibrated_s": TOLERANCE_DEG / yaw_turn_on if yaw_turn_on else float("nan"),
         "quantization_s": pose.time_to_position_error(TOLERANCE_M, 0.05),
@@ -434,7 +582,6 @@ def main() -> None:
         "tilt_0p1deg_s": pose.time_to_position_error(TOLERANCE_M, metrics.GRAVITY * np.sin(np.deg2rad(0.1))),
         "yaw_bias_instability_dps": yaw_bi, "yaw_turn_on_bias_dps": yaw_turn_on,
     }
-    summary["budget"] = budget
 
     print("  sit-to-stand …")
     c4 = pick(done, "C4_sit_stand")
@@ -451,10 +598,7 @@ def main() -> None:
             "drop_mean_cm": float(drop.mean()), "drop_sd_cm": float(drop.std(ddof=1)),
             "merged": int(tr["merged"].sum()),
         }
-        figures["zupt"] = figs.fig_zupt_height(res["zupt"], tr, res["cues"], assets / "pose_zupt_height.png",
-                                               label(c4))
-        figures["pose3d"] = figs.fig_pose_3d(res["zupt"], res["track"].R, tr, assets / "pose_6dof_3d.png",
-                                             label(c4))
+        art["sit_stand"] = (res, tr, c4)
 
     print("  walking …")
     c3 = pick(done, "C3_walk_straight")
@@ -464,7 +608,7 @@ def main() -> None:
         pdr = pose.pedestrian_dead_reckoning(imu, track)
         angles = track.head_angles()
         if pdr is not None:
-            figures["walking"] = figs.fig_walking(pdr, angles, assets / "pose_walking_pdr.png", label(c3))
+            art["walking"] = (pdr, angles, c3)
             summary["walking"] = {
                 "session": label(c3), "steps": int(len(pdr.step_t)), "cadence_hz": pdr.cadence_hz,
                 "assumed_step_length_m": pdr.step_length_m,
@@ -472,8 +616,35 @@ def main() -> None:
                 "bob_rms_cm": float(np.std(pdr.bob) * 100),
                 "bob_p5_p95_cm": (np.percentile(pdr.bob, [5, 95]) * 100).tolist(),
             }
+    return summary, art
+
+
+def draw_figures(summary: dict[str, Any], art: dict[str, Any], assets: Path) -> dict[str, Path]:
+    """The web report's figures, in the order the report argues."""
+    figures: dict[str, Path] = {"pipeline": figs.fig_pipeline(assets / "pose_pipeline.png")}
+    if "axes" in art:
+        figures["axes"] = figs.fig_axis_identification(*art["axes"], assets / "pose_axis_identification.png")
+    if art["panels"]:
+        figures["orientation"] = figs.fig_orientation(art["panels"], assets / "pose_orientation.png")
+    if "scan" in art:
+        angles, sweeps, s = art["scan"]
+        figures["scan"] = figs.fig_scan_map(angles, sweeps, assets / "pose_scan_map.png", label(s))
+    curves, bounds, tau = art["drift"]
+    figures["drift"] = figs.fig_position_drift(curves, bounds, tau, assets / "pose_position_drift.png",
+                                               TOLERANCE_M)
+    if "sit_stand" in art:
+        res, tr, c4 = art["sit_stand"]
+        figures["zupt"] = figs.fig_zupt_height(res["zupt"], tr, res["cues"], assets / "pose_zupt_height.png",
+                                               label(c4))
+        figures["pose3d"] = figs.fig_pose_3d(res["zupt"], res["track"].R, tr, assets / "pose_6dof_3d.png",
+                                             label(c4))
+    if "walking" in art:
+        pdr, angles, c3 = art["walking"]
+        figures["walking"] = figs.fig_walking(pdr, angles, assets / "pose_walking_pdr.png", label(c3))
 
     # Budget rows need the drift results, so the figure is drawn last.
+    budget = summary["budget"]
+    drift_summary = summary["drift"]
     ms = summary["orientation"]["pitch_roll_rms_range"]
     rows = [
         {"header": True, "label": "Orientation (1°)"},
@@ -497,16 +668,72 @@ def main() -> None:
 
     # Report order follows the argument, not the order figures were computed.
     order = ["pipeline", "axes", "orientation", "scan", "drift", "budget", "zupt", "pose3d", "walking"]
-    figures = {k: figures[k] for k in order if k in figures}
+    return {k: figures[k] for k in order if k in figures}
+
+
+# ============================ main ============================
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--in", dest="indir", default=str(DEFAULT_IN))
+    parser.add_argument("--assets", default=str(DEFAULT_ASSETS))
+    parser.add_argument("--report", default=str(DEFAULT_REPORT))
+    parser.add_argument("--summary", default=str(DEFAULT_SUMMARY))
+    args = parser.parse_args()
+
+    indir = Path(args.indir)
+    if not indir.exists():
+        sys.exit(f"No session directory at {indir}. Run analysis/fetch_sessions.py first.")
+    report.apply_style()
+    assets = Path(args.assets)
+    assets.mkdir(parents=True, exist_ok=True)
+
+    print(f"Loading sessions from {indir} …")
+    sessions = loader.load_directory(indir)
+    web = [s for s in sessions if not s.is_native]
+    native = [s for s in sessions if s.is_native]
+
+    summary: dict[str, Any] = {"generated": date.today().isoformat()}
+    figures: dict[str, Path] = {}
+    include_web = False
+    if web:
+        print("Web IMU Lab recordings (DeviceMotion):")
+        web_summary, art = analyze_platform(web)
+        summary.update(web_summary)
+        figures = draw_figures(web_summary, art, assets)
+        include_web = bool(all(k in summary for k in ("sit_stand", "walking", "axis_mapping"))
+                           and "moving" in summary["drift"] and art["rms_all"])
+
+    native_figure = None
+    if native:
+        print("Head-motion lab recordings (MWDAT Motion):")
+        # The quaternion's frame is a property of the SDK, so it is settled
+        # once, over every completed native recording, and then applied to each.
+        ranked = pose.quaternion_convention(completed(native))
+        convention = ranked.iloc[0].to_dict() if len(ranked) else None
+        native_summary, native_art = analyze_platform(native, convention)
+        native_summary["quaternion_convention"] = (
+            ranked[["convention", "residual_ms2"]].head(4).to_dict("records") if len(ranked) else [])
+        if native_art["panels"]:
+            native_figure = figs.fig_orientation(
+                native_art["panels"], assets / "pose_orientation_native.png",
+                title="Orientation from gyro + accelerometer only — head-motion lab (MWDAT)",
+                reference="MWDAT fused orientation (quaternion)",
+                note=("Nothing is fitted between the two estimates. The reference is MWDAT's fused "
+                      f"quaternion read as {convention['convention']}, a convention chosen by gravity "
+                      "consistency because the SDK does not document one. Its roll and pitch share our "
+                      "accelerometer; its heading is the independent part."))
+        summary["native"] = native_summary
 
     report_path = Path(args.report)
     try:
         assets_rel = assets.resolve().relative_to(report_path.resolve().parent).as_posix()
     except ValueError:
         assets_rel = "../assets/imu/pose"
-    if (all(k in summary for k in ("sit_stand", "walking", "axis_mapping"))
-            and "moving" in summary["drift"] and rms_all):
-        write_report(report_path, assets_rel, figures, summary)
+    if include_web or "native" in summary:
+        write_report(report_path, assets_rel, figures, summary, include_web, native_figure)
         print(f"\nReport  -> {report_path}")
 
     summary_path = Path(args.summary)

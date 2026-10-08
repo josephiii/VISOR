@@ -28,7 +28,14 @@ private val helpTopics = listOf(
     HelpTopic(
         "Pairing your glasses",
         "Use the Pair tab to connect your Meta glasses through the Meta AI app. " +
-                "You'll need to pair before you can start streaming or capture photos.",
+                "You'll need to pair before you can start streaming or capture photos. " +
+                "Once paired, the Pair tab shows your glasses' battery, whether you're " +
+                "wearing them, and their temperature, and can read all of it aloud.",
+    ),
+    HelpTopic(
+        "Opening VISOR by voice",
+        "With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, " +
+                "goes to Home and starts a session — no need to find or unlock your phone.",
     ),
     HelpTopic(
         "Capturing and describing a photo",

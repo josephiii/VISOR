@@ -25,3 +25,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# sherpa-onnx (lib/sherpa-onnx-*.aar, the wake-word spotter): its native code
+# reads the Kotlin config classes' fields by name through JNI, and the local
+# AAR ships no consumer rules. Without this, R8 renames those fields and every
+# minified release crashes on launch with
+# NoSuchFieldError: "maxActivePaths" in KeywordSpotterConfig.
+-keep class com.k2fsa.sherpa.onnx.** { *; }

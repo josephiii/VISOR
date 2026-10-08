@@ -36,10 +36,9 @@ jobs:
         working-directory: frontend/visor
         run: chmod +x gradlew
 
+      # MWDAT resolves from Maven Central since 1.0.0 — no GitHub Packages token.
       - name: Assemble ${{ inputs.build_type }} APK
         working-directory: frontend/visor
-        env:
-          GITHUB_TOKEN: ${{ secrets.MWDAT_PACKAGES_TOKEN }}
         run: |
           TYPE="${{ inputs.build_type }}"
           ./gradlew "assemble${TYPE^}"

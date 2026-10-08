@@ -127,6 +127,7 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         "settings" -> "Settings"
         "hardware_pairing" -> "Pair Glasses"
         "help" -> "Help"
+        "motion_lab" -> "Head-Motion Lab"
         else -> "VISOR"
     }
     return GlassesNavScreen(title = title, items = items)

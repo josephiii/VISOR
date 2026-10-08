@@ -30,6 +30,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ucf.visor.ui.voice.VoiceCommand
+import ucf.visor.wearables.GlassesLease
+import ucf.visor.wearables.describeSessionError
+import ucf.visor.wearables.isWarningOnly
 
 /**
  * On-glasses tap-fallback navigation, rendered through the mwdat-display module.
@@ -121,9 +124,11 @@ class GlassesNavigationController(
 
     /**
      * A session is only viable once the glasses' own transport is up
-     * ([LinkState.CONNECTED]) *and* the app has completed MWDAT's on-device
+     * ([LinkState.CONNECTED]), the app has completed MWDAT's on-device
      * registration handshake (the "Register" button on HardwarePairingScreen ->
-     * `Wearables.startRegistration`).
+     * `Wearables.startRegistration`), and no other VISOR feature holds the
+     * glasses' single session ([GlassesLease] — the head-motion lab takes it for
+     * the length of a trial, and this reconnects when the trial ends).
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun startWatchingForDevice() {
@@ -134,14 +139,17 @@ class GlassesNavigationController(
                         ?: flowOf<LinkState?>(null)
                 },
                 Wearables.registrationState,
-            ) { linkState, registration -> linkState to registration }
+                GlassesLease.holder,
+            ) { linkState, registration, leaseHolder -> Triple(linkState, registration, leaseHolder) }
                 .distinctUntilChanged()
-                .collect { (linkState, registration) ->
+                .collect { (linkState, registration, leaseHolder) ->
                     val ready = linkState == LinkState.CONNECTED &&
-                            registration == RegistrationState.REGISTERED
+                            registration == RegistrationState.REGISTERED &&
+                            leaseHolder == null
                     Log.i(
                         TAG,
-                        "Glasses nav gate: link=$linkState registration=$registration ready=$ready"
+                        "Glasses nav gate: link=$linkState registration=$registration " +
+                                "lease=${leaseHolder ?: "free"} ready=$ready"
                     )
                     if (ready) {
                         if (session == null) createSession()
@@ -160,7 +168,8 @@ class GlassesNavigationController(
                     created.errors.collect { error ->
                         Log.w(
                             TAG,
-                            "Glasses display session error: ${error.name} (${error.description})"
+                            "Glasses display session ${if (error.isWarningOnly) "warning" else "error"}: " +
+                                    "${error.name} (${error.description}) — ${describeSessionError(error)}"
                         )
                     }
                 }
