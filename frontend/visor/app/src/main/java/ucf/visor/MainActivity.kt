@@ -56,6 +56,8 @@ import ucf.visor.capture.SceneDescriber
 import ucf.visor.network.VlmClient
 
 import ucf.visor.tts.ThinkingBeeper
+import ucf.visor.capture.GlassesPhotoSource
+
 
 class MainActivity : ComponentActivity() {
 
@@ -150,6 +152,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var sceneDescriber: ReadRequester
     private lateinit var objectDetector: ObjectDetector
     private lateinit var thinkingBeeper: ThinkingBeeper
+    private lateinit var glassesCamera: GlassesPhotoSource
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -184,6 +188,11 @@ class MainActivity : ComponentActivity() {
 
             }
         }
+
+        glassesCamera = GlassesPhotoSource(
+            requestPermission = ::requestWearablesPermission,
+            onCapturing = { speaker.speak("Taking picture") },
+        )
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
         speaker = Speaker(this)
@@ -202,7 +211,7 @@ class MainActivity : ComponentActivity() {
         )
 
         sceneDescriber = SceneDescriber(
-            photoSource = FakePhotoSource(this, "photo_test/living_room.png"),
+            photoSource = glassesCamera,
             vlm = VlmClient(),
             fallback = objectDetector,
         )
@@ -313,5 +322,6 @@ class MainActivity : ComponentActivity() {
         voiceNav.shutdown()
         glassesNav.shutdown()
         thinkingBeeper.stop()
+        glassesCamera.close()
     }
 }

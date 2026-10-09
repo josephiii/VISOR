@@ -28,6 +28,7 @@ import kotlinx.coroutines.withTimeout
 
 class GlassesPhotoSource(
     private val requestPermission: suspend (Permission) -> PermissionStatus,
+    private val onCapturing: () -> Unit = {},
 ) : PhotoSource {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -39,6 +40,7 @@ class GlassesPhotoSource(
         scope.launch {
             try {
                 val activeStream = ensureStream()
+                onCapturing()
                 activeStream.capturePhoto()
                     .onSuccess { data ->
                         val bitmap = toBitmap(data)
@@ -57,6 +59,7 @@ class GlassesPhotoSource(
             }
         }
     }
+
 
     private suspend fun ensureStream(): Stream = startLock.withLock {
         stream?.let { return@withLock it }
