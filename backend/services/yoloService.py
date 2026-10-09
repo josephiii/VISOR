@@ -14,6 +14,7 @@ class YoloService:
     def runModel(self, image:str):
         objects = []
         res = self.model(image)
+        print(res[0].names)
         for box in res[0].boxes:
             name = res[0].names[int(box.cls)]
             objects.append({"object": name, "classID": int(box.cls), "coords":box.xyxy.tolist()[0], "conf": float(box.conf)})
@@ -34,5 +35,4 @@ if __name__=="__main__":
     path = os.path.join(path, "..", "..", "tests")
     service= YoloService()
     res = service.runModel(os.path.abspath(os.path.join(path, "qwen2-vl/images.jpg")))
-    print(res, res[0]["coords"])
     

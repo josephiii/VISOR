@@ -2,10 +2,10 @@ from fastapi import APIRouter, UploadFile, File
 from services.yoloService import YoloService
 from services.DepthEstService import Depth
 from PIL import Image
+from util import dservice
 
 yoloRouter = APIRouter(prefix="/yolo", tags=["yolo"])
 service = YoloService()
-dservice = Depth()
 
 
 @yoloRouter.post("/runHazardDetection")
