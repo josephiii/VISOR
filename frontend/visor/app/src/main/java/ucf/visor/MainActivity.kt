@@ -55,6 +55,7 @@ import kotlin.coroutines.resume
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.network.VlmClient
 
+import ucf.visor.tts.ThinkingBeeper
 
 class MainActivity : ComponentActivity() {
 
@@ -148,6 +149,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var sceneReader: ReadRequester
     private lateinit var sceneDescriber: ReadRequester
     private lateinit var objectDetector: ObjectDetector
+    private lateinit var thinkingBeeper: ThinkingBeeper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -185,6 +187,7 @@ class MainActivity : ComponentActivity() {
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
         speaker = Speaker(this)
+        thinkingBeeper = ThinkingBeeper(isSpeaking = { speaker.isSpeaking() })
 
         // OCR reads the label image (swap for RealPhoto source once session exists)
         reader = RealCapture(
@@ -223,7 +226,14 @@ class MainActivity : ComponentActivity() {
             when (normalizeKeyword(phrase)) {
                 in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
                 in OBJECT_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
-                in SCENE_WAKE_PHRASES -> sceneDescriber.requestRead { text -> speaker.speak(text) }
+                in SCENE_WAKE_PHRASES -> {
+                    speaker.speak("Awaiting scene description")
+                    thinkingBeeper.start()
+                    sceneDescriber.requestRead { text ->
+                        thinkingBeeper.stop()
+                        speaker.speak(text)
+                    }
+                }
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
@@ -302,5 +312,6 @@ class MainActivity : ComponentActivity() {
         listener.shutdown()
         voiceNav.shutdown()
         glassesNav.shutdown()
+        thinkingBeeper.stop()
     }
 }
