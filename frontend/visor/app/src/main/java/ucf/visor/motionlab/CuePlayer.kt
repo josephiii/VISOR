@@ -31,7 +31,13 @@ class CuePlayer {
         START(listOf(Tone(523.25, 0.0, 0.14, 0.5), Tone(783.99, 0.15, 0.22, 0.5))),
 
         /** Falling three-tone, deliberately unlike the start chime. */
-        FINISH(listOf(Tone(783.99, 0.0, 0.14, 0.55), Tone(659.25, 0.16, 0.14, 0.55), Tone(523.25, 0.32, 0.30, 0.55))),
+        FINISH(
+            listOf(
+                Tone(783.99, 0.0, 0.14, 0.55),
+                Tone(659.25, 0.16, 0.14, 0.55),
+                Tone(523.25, 0.32, 0.30, 0.55)
+            )
+        ),
 
         /** Low double tone: the trial was stopped or failed. */
         ABORT(listOf(Tone(392.00, 0.0, 0.16, 0.5), Tone(311.13, 0.18, 0.28, 0.5))),
@@ -47,7 +53,12 @@ class CuePlayer {
     }
 
     /** One sine burst: [frequency] Hz, starting [offsetSec] in, lasting [durationSec], at [gain] 0..1. */
-    data class Tone(val frequency: Double, val offsetSec: Double, val durationSec: Double, val gain: Double)
+    data class Tone(
+        val frequency: Double,
+        val offsetSec: Double,
+        val durationSec: Double,
+        val gain: Double
+    )
 
     private val tracks = mutableMapOf<Sound, AudioTrack>()
 
@@ -93,7 +104,9 @@ class CuePlayer {
                 }
             }
         }
-        return ShortArray(pcm.size) { (pcm[it].coerceIn(-1.0, 1.0) * Short.MAX_VALUE * 0.8).toInt().toShort() }
+        return ShortArray(pcm.size) {
+            (pcm[it].coerceIn(-1.0, 1.0) * Short.MAX_VALUE * 0.8).toInt().toShort()
+        }
     }
 
     private fun buildTrack(pcm: ShortArray): AudioTrack {

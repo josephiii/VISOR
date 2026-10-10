@@ -25,9 +25,6 @@ import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.mockdevice.MockDeviceKit
 import com.meta.wearable.dat.mockdevice.api.GlassesModel
 import com.meta.wearable.dat.mockdevice.api.MockGlasses
-import java.util.zip.GZIPInputStream
-import kotlin.math.PI
-import kotlin.math.abs
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -47,6 +44,9 @@ import ucf.visor.motionlab.protocol.Trials
 import ucf.visor.wearables.VoiceLaunches
 import ucf.visor.wearables.preferredDevice
 import ucf.visor.wearables.toGlassesStatus
+import java.util.zip.GZIPInputStream
+import kotlin.math.PI
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
@@ -82,7 +82,9 @@ class MwdatMockDeviceTest {
         glasses.don()
         composeTestRule.waitUntil(15_000) { composeTestRule.activity.viewModel.uiState.value.canRegister }
         composeTestRule.waitUntil(15_000) {
-            runCatching { preferredDevice()?.second?.linkState == LinkState.CONNECTED }.getOrDefault(false)
+            runCatching { preferredDevice()?.second?.linkState == LinkState.CONNECTED }.getOrDefault(
+                false
+            )
         }
         return glasses
     }
@@ -169,7 +171,8 @@ class MwdatMockDeviceTest {
 
         val result = lab.uiState.value.lastResult!!
         assertEquals("reason: ${result.reason} ($mime)", TrialOutcome.COMPLETED, result.outcome)
-        val json = JSONObject(GZIPInputStream(result.file!!.inputStream()).bufferedReader().readText())
+        val json =
+            JSONObject(GZIPInputStream(result.file!!.inputStream()).bufferedReader().readText())
         val videoStream = json.getJSONObject("streams").getJSONObject("dat_video")
         val columns = videoStream.getJSONObject("columns")
         val frames = videoStream.getInt("n")
@@ -192,8 +195,14 @@ class MwdatMockDeviceTest {
         assertTrue("only ${shifts.size} analyzed frames", shifts.size >= 30)
         val median = shifts.sorted()[shifts.size / 2]
         // The feed loops: the one frame where it jumps back is an outlier the median ignores.
-        assertTrue("median shift $median px/frame, expected $expected", abs(median - expected) < 0.75)
-        assertTrue("median peak ${peaks.sorted()[peaks.size / 2]}", peaks.sorted()[peaks.size / 2] > 0.2)
+        assertTrue(
+            "median shift $median px/frame, expected $expected",
+            abs(median - expected) < 0.75
+        )
+        assertTrue(
+            "median peak ${peaks.sorted()[peaks.size / 2]}",
+            peaks.sorted()[peaks.size / 2] > 0.2
+        )
         if (!keepRecordings) result.file.delete()
         video.delete()
     }
@@ -227,7 +236,12 @@ class MwdatMockDeviceTest {
     fun balanceLostEndsARombergHoldAndTheBatteryMovesOn() {
         val glasses = pairWornGlasses()
         glasses.services.motion.setMotionFeed(
-            SyntheticMotion.yawOscillation(durationSec = 60.0, frequencyHz = 0.5, amplitudeDeg = 0.5), loop = true)
+            SyntheticMotion.yawOscillation(
+                durationSec = 60.0,
+                frequencyHz = 0.5,
+                amplitudeDeg = 0.5
+            ), loop = true
+        )
         val romberg = Trials.byId("S1_romberg_eyes_open")!!.copy(prepSec = 1)
         val lab = startLabTrial(romberg)
         // Long enough to leave a sway window (2 s in, 1 s before the press, 5 s minimum).
@@ -265,7 +279,10 @@ class MwdatMockDeviceTest {
         val glasses = pairWornGlasses()
         // One quick 15° turn a second, alternately left and right, peaking at
         // 187.5 °/s; long enough not to loop (and so reset its clock) mid-trial.
-        glasses.services.motion.setMotionFeed(SyntheticMotion.headImpulses(durationSec = 60.0), loop = true)
+        glasses.services.motion.setMotionFeed(
+            SyntheticMotion.headImpulses(durationSec = 60.0),
+            loop = true
+        )
         val trial = Trials.byId("S4_head_impulse")!!.copy(
             id = "T0_instrumentation_impulses",
             prepSec = 1,

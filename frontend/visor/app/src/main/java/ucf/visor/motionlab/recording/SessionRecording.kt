@@ -1,5 +1,8 @@
 package ucf.visor.motionlab.recording
 
+import ucf.visor.motionlab.recording.SessionRecording.Companion.MOTION_COLUMNS
+import ucf.visor.motionlab.recording.SessionRecording.Companion.MOTION_SOURCE_CODES
+import ucf.visor.motionlab.recording.SessionRecording.Companion.VIDEO_COLUMNS
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileOutputStream

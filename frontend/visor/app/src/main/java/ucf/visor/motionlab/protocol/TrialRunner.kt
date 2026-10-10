@@ -1,7 +1,5 @@
 package ucf.visor.motionlab.protocol
 
-import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -12,6 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.random.Random
 
 enum class TrialOutcome {
     COMPLETED,
@@ -113,11 +113,13 @@ class TrialRunner(
 
     private class Run(val trial: Trial) {
         lateinit var job: Job
-        @Volatile var recording = false
+        @Volatile
+        var recording = false
         val finished = AtomicBoolean(false)
     }
 
-    @Volatile private var current: Run? = null
+    @Volatile
+    private var current: Run? = null
 
     val isRunning: Boolean get() = current?.finished?.get() == false
 

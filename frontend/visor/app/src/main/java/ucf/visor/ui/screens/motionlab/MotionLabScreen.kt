@@ -44,8 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
-import java.util.Locale
-import kotlin.math.roundToInt
 import ucf.visor.motionlab.LabResult
 import ucf.visor.motionlab.LiveStats
 import ucf.visor.motionlab.MotionLabUiState
@@ -59,6 +57,8 @@ import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.wearables.GlassesStatus
+import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * The head-motion lab: a research tool that records the glasses' IMU — and,
@@ -130,8 +130,8 @@ fun MotionLabScreen(
         )
         Text(
             "A research tool. It records your glasses' motion sensors, and for the " +
-                "head-motion-versus-camera trials, how far the camera image moves. " +
-                "It uses experimental glasses features, so it only works on test builds.",
+                    "head-motion-versus-camera trials, how far the camera image moves. " +
+                    "It uses experimental glasses features, so it only works on test builds.",
             style = MaterialTheme.typography.bodyLarge,
         )
 
@@ -154,7 +154,8 @@ fun MotionLabScreen(
                 ResultCard(
                     result = result,
                     onShare = { file ->
-                        val share = Intent.createChooser(labViewModel.shareIntent(file), "Share recording")
+                        val share =
+                            Intent.createChooser(labViewModel.shareIntent(file), "Share recording")
                         activity?.startActivity(share)
                     },
                 )
@@ -285,8 +286,8 @@ private fun TrialDetails(trial: Trial) {
     LabCard {
         Text(
             "${formatDuration(trial.durationSec)} · " +
-                (if (trial.camera) "camera and motion sensors" else "motion sensors only") +
-                if (trial.worn) " · worn" else " · glasses set down",
+                    (if (trial.camera) "camera and motion sensors" else "motion sensors only") +
+                    if (trial.worn) " · worn" else " · glasses set down",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
@@ -316,7 +317,11 @@ private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceL
         )
         Text(state.selectedTrial.title, style = MaterialTheme.typography.titleLarge)
         when (runner) {
-            is RunnerState.Preparing -> BigText("${runner.secondsLeft}", "Recording starts in ${runner.secondsLeft} seconds")
+            is RunnerState.Preparing -> BigText(
+                "${runner.secondsLeft}",
+                "Recording starts in ${runner.secondsLeft} seconds"
+            )
+
             is RunnerState.Recording -> {
                 BigText(
                     runner.cueLabel ?: formatDuration((runner.elapsedMs / 1000).toInt()),
@@ -327,6 +332,7 @@ private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceL
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
+
             else -> Unit
         }
         state.selectedTrial.instructions.forEach {
@@ -362,7 +368,16 @@ private fun LiveNumbers(live: LiveStats, camera: Boolean) {
         live.headSpeedDps?.let { add("Head turning: ${it.roundToInt()}° a second") }
         if (camera) {
             add("Camera: ${live.videoFps.roundToInt()} frames a second (${live.analyzedFrames} measured)")
-            live.imageShiftPx?.let { add("Image moved ${"%.1f".format(Locale.US, it)} px between frames") }
+            live.imageShiftPx?.let {
+                add(
+                    "Image moved ${
+                        "%.1f".format(
+                            Locale.US,
+                            it
+                        )
+                    } px between frames"
+                )
+            }
             live.trackingPeak?.let {
                 add(
                     "Tracking: " + when {
@@ -398,9 +413,14 @@ private fun ResultCard(result: LabResult, onShare: (java.io.File) -> Unit) {
         result.quickLook?.fit?.takeIf { it.reliable }?.let { fit ->
             Text(
                 "Rotation axis ${fit.gyroAxis.uppercase()} → image ${fit.imageAxis.uppercase()} · " +
-                    "lag ${fit.lagMs.roundToInt()} ms · r = ${"%.2f".format(Locale.US, fit.correlation)} · " +
-                    "${"%.1f".format(Locale.US, fit.pixelsPerDegree)} px/° · " +
-                    "residual ${"%.1f".format(Locale.US, fit.residualDps)}°/s",
+                        "lag ${fit.lagMs.roundToInt()} ms · r = ${
+                            "%.2f".format(
+                                Locale.US,
+                                fit.correlation
+                            )
+                        } · " +
+                        "${"%.1f".format(Locale.US, fit.pixelsPerDegree)} px/° · " +
+                        "residual ${"%.1f".format(Locale.US, fit.residualDps)}°/s",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -435,8 +455,8 @@ private fun SavedSessionsNote(count: Int, folder: String) {
     if (count == 0) return
     Text(
         "$count recording${if (count == 1) "" else "s"} saved on this phone " +
-            "(Android/data/…/files/$folder). Share each one after its trial, or copy them " +
-            "with adb pull for analysis/analyze.py.",
+                "(Android/data/…/files/$folder). Share each one after its trial, or copy them " +
+                "with adb pull for analysis/analyze.py.",
         style = MaterialTheme.typography.bodyMedium,
     )
 }

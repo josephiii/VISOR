@@ -115,9 +115,10 @@ object Trials {
         "D" to "System constraints",
     )
 
-    private const val SPOTTER = "Stand next to a wall or counter you can reach, with someone beside you. " +
-        "If you need to step, put a foot down or open your eyes, do: the tester presses Balance lost, " +
-        "and that is the result, not a failure."
+    private const val SPOTTER =
+        "Stand next to a wall or counter you can reach, with someone beside you. " +
+                "If you need to step, put a foot down or open your eyes, do: the tester presses Balance lost, " +
+                "and that is the result, not a failure."
 
     private fun eyesBrief(eyes: String) =
         if (eyes == "closed") "Close your eyes at the start tones and keep them closed until the end chime."
@@ -131,10 +132,14 @@ object Trials {
         prepSec = 10,
         durationSec = 30,
         purpose = "Head sway standing with the feet together, eyes $eyes. Eyes closed against eyes " +
-            "open is the Romberg comparison: how much balance leans on vision.",
+                "open is the Romberg comparison: how much balance leans on vision.",
         setup = "Stand with your feet together and your arms by your sides. ${eyesBrief(eyes)} " +
-            "Stay as still as you comfortably can until the three falling tones. $SPOTTER",
-        instructions = listOf("Feet together, arms by your sides", "Eyes $eyes", "Spotter beside you"),
+                "Stay as still as you comfortably can until the three falling tones. $SPOTTER",
+        instructions = listOf(
+            "Feet together, arms by your sides",
+            "Eyes $eyes",
+            "Spotter beside you"
+        ),
         brief = "Feet together, arms by your sides. ${eyesBrief(eyes)}",
         timedHold = true,
         condition = mapOf("task" to "romberg", "eyes" to eyes),
@@ -150,11 +155,15 @@ object Trials {
             prepSec = 12,
             durationSec = 30,
             purpose = "Head sway standing heel to toe, $front foot in front, eyes $eyes: a narrower base " +
-                "than the Romberg, side to side.",
+                    "than the Romberg, side to side.",
             setup = "Stand heel to toe: your $front foot straight in front of your $back, the front heel " +
-                "touching the back toes. Arms by your sides. Get into position during the countdown. " +
-                "${eyesBrief(eyes)} $SPOTTER",
-            instructions = listOf("Heel to toe, $front foot in front", "Eyes $eyes", "Spotter beside you"),
+                    "touching the back toes. Arms by your sides. Get into position during the countdown. " +
+                    "${eyesBrief(eyes)} $SPOTTER",
+            instructions = listOf(
+                "Heel to toe, $front foot in front",
+                "Eyes $eyes",
+                "Spotter beside you"
+            ),
             brief = "Heel to toe, $front foot in front. ${eyesBrief(eyes)}",
             timedHold = true,
             condition = mapOf("task" to "tandem", "eyes" to eyes, "front" to front),
@@ -172,12 +181,18 @@ object Trials {
             durationSec = 20,
             purpose = "How long, and how steadily, the $name leg holds a single-leg stance with eyes $eyes.",
             setup = "Stand on your $name leg (your dominant leg is the one you would kick a ball with). " +
-                "Keep both feet down during the countdown. At the start tones, lift the other foot just off " +
-                "the floor, not touching your standing leg, hands on your hips or by your sides. " +
-                "${eyesBrief(eyes)} $SPOTTER",
-            instructions = listOf("Stand on your $name leg", "Lift the other foot at the start tones",
-                "Eyes $eyes · spotter beside you"),
-            brief = "Stand on your $name leg, and lift the other foot at the start tones. ${eyesBrief(eyes)}",
+                    "Keep both feet down during the countdown. At the start tones, lift the other foot just off " +
+                    "the floor, not touching your standing leg, hands on your hips or by your sides. " +
+                    "${eyesBrief(eyes)} $SPOTTER",
+            instructions = listOf(
+                "Stand on your $name leg", "Lift the other foot at the start tones",
+                "Eyes $eyes · spotter beside you"
+            ),
+            brief = "Stand on your $name leg, and lift the other foot at the start tones. ${
+                eyesBrief(
+                    eyes
+                )
+            }",
             timedHold = true,
             condition = mapOf("task" to "single_leg", "eyes" to eyes, "leg" to leg),
         )
@@ -185,8 +200,9 @@ object Trials {
 
     private fun gazeStabilization(plane: String): Trial {
         val horizontal = plane == "horizontal"
-        val movement = if (horizontal) "turn your head gently left on the high tone and right on the low tone"
-        else "nod gently up on the high tone and down on the low tone"
+        val movement =
+            if (horizontal) "turn your head gently left on the high tone and right on the low tone"
+            else "nod gently up on the high tone and down on the low tone"
         return Trial(
             id = "S5_gaze_stabilization_$plane",
             tier = "S",
@@ -195,16 +211,21 @@ object Trials {
             prepSec = 12,
             durationSec = 30,
             purpose = "Reading while the head moves ${if (horizontal) "side to side" else "up and down"} at a " +
-                "paced 1 Hz (the VOR x1 exercise, with a near target). Records the head movement achieved and " +
-                "the camera's view of the text; compare with ${if (horizontal) "V1" else "V2"}, the same " +
-                "movement at a distant target.",
+                    "paced 1 Hz (the VOR x1 exercise, with a near target). Records the head movement achieved and " +
+                    "the camera's view of the text; compare with ${if (horizontal) "V1" else "V2"}, the same " +
+                    "movement at a distant target.",
             setup = "Tape a page of large print to a wall at eye level and sit about an arm's length from it. " +
-                "Keep reading while you $movement. Small movements: the words should stay clear. If they blur " +
-                "or jump, tell the tester. Stop if you feel dizzy.",
-            instructions = listOf("Seated, reading the page", if (horizontal) "Left and right with the tones"
-            else "Up and down with the tones", "Stop if dizzy"),
-            cue = Cue(intervalMs = 500, steps = if (horizontal) listOf("LEFT", "RIGHT") else listOf("UP", "DOWN"),
-                style = CueStyle.METRONOME),
+                    "Keep reading while you $movement. Small movements: the words should stay clear. If they blur " +
+                    "or jump, tell the tester. Stop if you feel dizzy.",
+            instructions = listOf(
+                "Seated, reading the page", if (horizontal) "Left and right with the tones"
+                else "Up and down with the tones", "Stop if dizzy"
+            ),
+            cue = Cue(
+                intervalMs = 500,
+                steps = if (horizontal) listOf("LEFT", "RIGHT") else listOf("UP", "DOWN"),
+                style = CueStyle.METRONOME
+            ),
             camera = true,
             brief = "Keep reading, and ${movement.replace("turn your head", "turn")}.",
             condition = mapOf("task" to "gaze_stabilization", "plane" to plane),
@@ -231,17 +252,21 @@ object Trials {
             prepSec = 12,
             durationSec = 40,
             purpose = "Ten brief, fast head turns on unpredictable tones, with the camera measuring how far " +
-                "the view moves. Gives each impulse's side, peak head speed and size. Head movement only: " +
-                "the glasses do not track the eyes, so this is not a VOR gain.",
+                    "the view moves. Gives each impulse's side, peak head speed and size. Head movement only: " +
+                    "the glasses do not track the eyes, so this is not a VOR gain.",
             setup = "Sit facing a detailed scene about two metres away, eyes on one point straight ahead. At " +
-                "each tone, the tester, standing behind you with hands on your head, turns your head quickly " +
-                "and briefly about 15 degrees to either side, holds it, then brings it slowly back to the " +
-                "middle. You will not know which side. Without a tester, make the quick turn yourself. Skip " +
-                "this test if you have neck pain or a neck injury, and stop if you feel dizzy.",
-            instructions = listOf("Seated, eyes on one point", "A quick, small turn at each tone",
-                "Skip with neck pain · stop if dizzy"),
-            cue = Cue(intervalMs = 3_000, steps = listOf("IMPULSE"), style = CueStyle.TONE,
-                jitterMs = 750, firstAtMs = 3_000, count = 10),
+                    "each tone, the tester, standing behind you with hands on your head, turns your head quickly " +
+                    "and briefly about 15 degrees to either side, holds it, then brings it slowly back to the " +
+                    "middle. You will not know which side. Without a tester, make the quick turn yourself. Skip " +
+                    "this test if you have neck pain or a neck injury, and stop if you feel dizzy.",
+            instructions = listOf(
+                "Seated, eyes on one point", "A quick, small turn at each tone",
+                "Skip with neck pain · stop if dizzy"
+            ),
+            cue = Cue(
+                intervalMs = 3_000, steps = listOf("IMPULSE"), style = CueStyle.TONE,
+                jitterMs = 750, firstAtMs = 3_000, count = 10
+            ),
             camera = true,
             brief = "Eyes on the point ahead. At each tone, one quick, small turn, then slowly back to the middle.",
             condition = mapOf("task" to "head_impulse", "plane" to "horizontal"),
@@ -258,15 +283,23 @@ object Trials {
             prepSec = 10,
             durationSec = 45,
             purpose = "Yaw head rotation and the camera image shift it produces, at a paced " +
-                "1 Hz — the movement of the VOR x1 gaze-stabilization exercise. Gives the " +
-                "IMU-to-image lag, the pixels-per-degree scale and the residual discrepancy.",
+                    "1 Hz — the movement of the VOR x1 gaze-stabilization exercise. Gives the " +
+                    "IMU-to-image lag, the pixels-per-degree scale and the residual discrepancy.",
             setup = "Sit facing a wall or scene with plenty of detail — shelves, pictures, " +
-                "furniture — about two metres away. Not a blank wall: the camera needs " +
-                "texture to measure. Pick one point at eye level and keep your eyes on it. " +
-                "Turn your head gently left and right, about a hand's width each way, on each " +
-                "tone: high tone left, low tone right.",
-            instructions = listOf("Eyes on one point", "Turn left and right with the tones", "Small, steady turns"),
-            cue = Cue(intervalMs = 500, steps = listOf("LEFT", "RIGHT"), style = CueStyle.METRONOME),
+                    "furniture — about two metres away. Not a blank wall: the camera needs " +
+                    "texture to measure. Pick one point at eye level and keep your eyes on it. " +
+                    "Turn your head gently left and right, about a hand's width each way, on each " +
+                    "tone: high tone left, low tone right.",
+            instructions = listOf(
+                "Eyes on one point",
+                "Turn left and right with the tones",
+                "Small, steady turns"
+            ),
+            cue = Cue(
+                intervalMs = 500,
+                steps = listOf("LEFT", "RIGHT"),
+                style = CueStyle.METRONOME
+            ),
             camera = true,
         ),
         Trial(
@@ -277,9 +310,9 @@ object Trials {
             prepSec = 10,
             durationSec = 45,
             purpose = "Pitch rotation against vertical image shift at 1 Hz; checks the " +
-                "second camera axis and the IMU-to-camera axis alignment.",
+                    "second camera axis and the IMU-to-camera axis alignment.",
             setup = "Same place as the side-to-side trial. Keep your eyes on the same point " +
-                "and nod gently up and down on each tone: high tone up, low tone down.",
+                    "and nod gently up and down on each tone: high tone up, low tone down.",
             instructions = listOf("Eyes on one point", "Nod with the tones", "Small, steady nods"),
             cue = Cue(intervalMs = 500, steps = listOf("UP", "DOWN"), style = CueStyle.METRONOME),
             camera = true,
@@ -292,13 +325,17 @@ object Trials {
             prepSec = 10,
             durationSec = 30,
             purpose = "Yaw at 2 Hz: higher head velocity, where motion blur and the camera's " +
-                "frame rate start to limit the image measurement. Brackets how fast a " +
-                "VOR-style exercise can be tracked.",
+                    "frame rate start to limit the image measurement. Brackets how fast a " +
+                    "VOR-style exercise can be tracked.",
             setup = "Sit down, same scene and target. Turn your head left and right on the " +
-                "faster tones, keeping the turns small. Stop at once if you feel dizzy or " +
-                "unwell — you can end the trial from the phone at any time.",
+                    "faster tones, keeping the turns small. Stop at once if you feel dizzy or " +
+                    "unwell — you can end the trial from the phone at any time.",
             instructions = listOf("Sit down", "Small, quick turns with the tones", "Stop if dizzy"),
-            cue = Cue(intervalMs = 250, steps = listOf("LEFT", "RIGHT"), style = CueStyle.METRONOME),
+            cue = Cue(
+                intervalMs = 250,
+                steps = listOf("LEFT", "RIGHT"),
+                style = CueStyle.METRONOME
+            ),
             camera = true,
         ),
         Trial(
@@ -309,10 +346,10 @@ object Trials {
             prepSec = 10,
             durationSec = 45,
             purpose = "Slow, smooth head turns with little motion blur, for calibrating the " +
-                "camera's pixels-per-degree scale and the IMU-to-camera lag.",
+                    "camera's pixels-per-degree scale and the IMU-to-camera lag.",
             setup = "Sit facing a detailed scene. When VISOR says left or right, turn your " +
-                "head slowly and smoothly that way — about as far as you would to look at " +
-                "someone sitting beside you. Let your eyes move with your head.",
+                    "head slowly and smoothly that way — about as far as you would to look at " +
+                    "someone sitting beside you. Let your eyes move with your head.",
             instructions = listOf("Slow, smooth turns", "Follow the spoken cue"),
             cue = Cue(intervalMs = 3000, steps = listOf("LEFT", "RIGHT")),
             camera = true,
@@ -328,8 +365,8 @@ object Trials {
             durationSec = 120,
             purpose = "Noise floor, accelerometer bias, gyroscope zero-rate offset, Allan deviation.",
             setup = "Start the trial, then take the glasses off and lay them flat on a solid " +
-                "surface before the countdown ends. Do not touch them again until you hear " +
-                "the three falling tones.",
+                    "surface before the countdown ends. Do not touch them again until you hear " +
+                    "the three falling tones.",
             instructions = listOf("Start, then set glasses down", "Hands off until the end chime"),
         ),
         Trial(
@@ -341,8 +378,8 @@ object Trials {
             durationSec = 300,
             purpose = "Bias instability and low-frequency drift at longer averaging times.",
             setup = "As for Static rest, but five minutes. Start the trial, lay the glasses flat " +
-                "before the countdown ends, and leave them completely undisturbed. " +
-                "Do not lean on or bump the table.",
+                    "before the countdown ends, and leave them completely undisturbed. " +
+                    "Do not lean on or bump the table.",
             instructions = listOf("Start, then set glasses down", "5 minutes undisturbed"),
         ),
 
@@ -356,7 +393,7 @@ object Trials {
             durationSec = 60,
             purpose = "Yaw-axis response and repeatability at a controlled cadence.",
             setup = "Wear the glasses and sit or stand comfortably. Turn your head left and " +
-                "right, following the spoken cue. Use your full comfortable range.",
+                    "right, following the spoken cue. Use your full comfortable range.",
             instructions = listOf("Turn head to the cue", "Full comfortable range"),
             cue = Cue(intervalMs = 2000, steps = listOf("LEFT", "RIGHT")),
         ),
@@ -393,7 +430,7 @@ object Trials {
             durationSec = 30,
             purpose = "Angular-rate range and saturation; aliasing at the reported sample rate.",
             setup = "Wear the glasses and sit down. Turn your head left and right as fast as is " +
-                "comfortable and safe. Stop immediately if you feel dizzy.",
+                    "comfortable and safe. Stop immediately if you feel dizzy.",
             instructions = listOf("Turn as FAST as comfortable", "Sit down · stop if dizzy"),
             cue = Cue(intervalMs = 1000, steps = listOf("FAST LEFT", "FAST RIGHT")),
         ),
@@ -407,9 +444,9 @@ object Trials {
             prepSec = 8,
             durationSec = 60,
             purpose = "Worn-but-still baseline. Sets the head-stability threshold VISOR would " +
-                "use to gate camera capture on the wearer having settled.",
+                    "use to gate camera capture on the wearer having settled.",
             setup = "Wear the glasses. Sit still and look steadily at one fixed point across " +
-                "the room. Breathe normally — do not try to freeze.",
+                    "the room. Breathe normally — do not try to freeze.",
             instructions = listOf("Sit still", "Fix gaze on one point"),
         ),
         Trial(
@@ -420,10 +457,10 @@ object Trials {
             prepSec = 8,
             durationSec = 90,
             purpose = "Systematic horizontal scanning as taught in visual-field-loss training. " +
-                "Tests whether scan amplitude, rate and left/right symmetry are " +
-                "recoverable from the IMU alone.",
+                    "Tests whether scan amplitude, rate and left/right symmetry are " +
+                    "recoverable from the IMU alone.",
             setup = "Wear the glasses. Sweep your gaze and head across the room in wide, " +
-                "deliberate left-and-right scans, following the cue.",
+                    "deliberate left-and-right scans, following the cue.",
             instructions = listOf("Wide deliberate scans", "Sweep the full field"),
             cue = Cue(intervalMs = 3000, steps = listOf("SCAN LEFT", "SCAN RIGHT")),
         ),
@@ -435,9 +472,9 @@ object Trials {
             prepSec = 12,
             durationSec = 60,
             purpose = "Step cadence and head-bob amplitude from a head-mounted IMU; " +
-                "ambulation detection for context-aware assistance.",
+                    "ambulation detection for context-aware assistance.",
             setup = "Wear the glasses. Walk at a natural, comfortable pace along a clear, " +
-                "level path. Have someone nearby if your balance is at all uncertain.",
+                    "level path. Have someone nearby if your balance is at all uncertain.",
             instructions = listOf("Walk naturally", "Clear level path"),
         ),
         Trial(
@@ -449,7 +486,7 @@ object Trials {
             durationSec = 75,
             purpose = "Postural-transition signature; mobility-event detection feasibility.",
             setup = "Wear the glasses and sit in a stable chair with no wheels. Stand up and " +
-                "sit down following the cue. Use the armrests if you need them.",
+                    "sit down following the cue. Use the armrests if you need them.",
             instructions = listOf("Stand / sit on cue", "Stable chair, no wheels"),
             cue = Cue(intervalMs = 5000, steps = listOf("STAND UP", "SIT DOWN")),
         ),
@@ -461,9 +498,9 @@ object Trials {
             prepSec = 8,
             durationSec = 60,
             purpose = "Sustained near-task head pose. Separating reading from walking is the " +
-                "basis for context-appropriate assistance.",
+                    "basis for context-appropriate assistance.",
             setup = "Wear the glasses and read printed text held at a comfortable distance. " +
-                "Read normally — do not hold unnaturally still.",
+                    "Read normally — do not hold unnaturally still.",
             instructions = listOf("Read printed text", "Natural posture"),
         ),
         Trial(
@@ -474,9 +511,9 @@ object Trials {
             prepSec = 8,
             durationSec = 300,
             purpose = "Realistic mixed activity for classifier training data and " +
-                "false-positive rate estimation.",
+                    "false-positive rate estimation.",
             setup = "Wear the glasses and go about ordinary activity for five minutes: sit, " +
-                "stand, walk about, look around. Nothing scripted.",
+                    "stand, walk about, look around. Nothing scripted.",
             instructions = listOf("Ordinary activity", "5 minutes"),
         ),
 
@@ -489,9 +526,9 @@ object Trials {
             prepSec = 8,
             durationSec = 600,
             purpose = "Sample-rate stability, dropout rate and battery drain over a " +
-                "sustained session.",
+                    "sustained session.",
             setup = "Wear the glasses for ten minutes of ordinary activity. Keep VISOR open on " +
-                "the phone. The glasses' battery level is recorded at the start and the end.",
+                    "the phone. The glasses' battery level is recorded at the start and the end.",
             instructions = listOf("Keep VISOR open", "10 minutes"),
         ),
     )

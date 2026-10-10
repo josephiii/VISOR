@@ -9,7 +9,6 @@ import com.meta.wearable.dat.core.voiceinvocations.types.SessionState
 import com.meta.wearable.dat.core.voiceinvocations.types.VoiceInvocationError
 import com.meta.wearable.dat.core.voiceinvocations.types.actions.LaunchApp
 import com.meta.wearable.dat.core.voiceinvocations.types.actions.ResponseHandle
-import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +23,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * "Hey Meta, start VISOR" — MWDAT 1.0 voice invocations, for a wearer who
@@ -44,7 +44,11 @@ class VoiceLaunches private constructor(
     private val streamFactory: () -> VoiceInvocationsStream,
 ) {
     /** A voice launch VISOR has not answered yet. */
-    data class PendingLaunch(val id: Long, val receivedAtMs: Long, internal val handle: ResponseHandle)
+    data class PendingLaunch(
+        val id: Long,
+        val receivedAtMs: Long,
+        internal val handle: ResponseHandle
+    )
 
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
         Log.e(TAG, "Uncaught exception in the voice invocation stream", throwable)
@@ -116,7 +120,11 @@ class VoiceLaunches private constructor(
      * @param message optional text returned to the glasses as the action output.
      * @return whether the answer reached the glasses.
      */
-    suspend fun acknowledge(launch: PendingLaunch, success: Boolean, message: String? = null): Boolean {
+    suspend fun acknowledge(
+        launch: PendingLaunch,
+        success: Boolean,
+        message: String? = null
+    ): Boolean {
         var removed = false
         _pending.update { current ->
             if (current.any { it.id == launch.id }) {
@@ -142,11 +150,13 @@ class VoiceLaunches private constructor(
         private const val TAG = "VisorVoiceLaunch"
         private const val MAX_PENDING = 8
 
-        @Volatile private var instance: VoiceLaunches? = null
+        @Volatile
+        private var instance: VoiceLaunches? = null
 
         fun get(): VoiceLaunches = instance ?: synchronized(this) {
-            instance ?: VoiceLaunches { Wearables.startVoiceInvocationsStream(AutoDeviceSelector()) }
-                .also { instance = it }
+            instance
+                ?: VoiceLaunches { Wearables.startVoiceInvocationsStream(AutoDeviceSelector()) }
+                    .also { instance = it }
         }
     }
 }

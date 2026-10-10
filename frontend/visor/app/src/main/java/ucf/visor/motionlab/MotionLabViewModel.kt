@@ -16,14 +16,6 @@ import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.core.types.RegistrationState
 import com.meta.wearable.dat.motion.types.MotionSample
 import com.meta.wearable.dat.motion.types.MotionSource
-import java.io.File
-import java.time.Instant
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.PI
-import kotlin.math.hypot
-import kotlin.math.roundToInt
-import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -52,6 +44,14 @@ import ucf.visor.wearables.GlassesLease
 import ucf.visor.wearables.GlassesStatus
 import ucf.visor.wearables.preferredDevice
 import ucf.visor.wearables.toGlassesStatus
+import java.io.File
+import java.time.Instant
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.PI
+import kotlin.math.hypot
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /** Live numbers for the recording screen, refreshed twice a second. */
 data class LiveStats(
@@ -91,7 +91,7 @@ data class MotionLabUiState(
     val selectedTrial: Trial get() = Trials.byId(selectedTrialId) ?: Trials.all.first()
     val isRunning: Boolean
         get() = runner is RunnerState.Preparing || runner is RunnerState.WaitingForGlasses ||
-            runner is RunnerState.Recording
+                runner is RunnerState.Recording
     val isBusy: Boolean get() = connecting || isRunning
 }
 
@@ -121,11 +121,16 @@ class MotionLabViewModel(application: Application) :
     val uiState: StateFlow<MotionLabUiState> = _uiState.asStateFlow()
 
     /** Spoken output — VISOR's shared TTS, attached by the screen. */
-    @Volatile var speak: (String) -> Unit = {}
+    @Volatile
+    var speak: (String) -> Unit = {}
 
     private var link: LabGlassesLink? = null
-    @Volatile private var recording: SessionRecording? = null
-    @Volatile private var analyzer: FrameAnalyzer? = null
+
+    @Volatile
+    private var recording: SessionRecording? = null
+
+    @Volatile
+    private var analyzer: FrameAnalyzer? = null
     private var statsJob: Job? = null
     private var lastRecordedStatus: GlassesStatus? = null
 
@@ -133,9 +138,15 @@ class MotionLabViewModel(application: Application) :
     private val motionCount = AtomicInteger()
     private val frameCount = AtomicInteger()
     private val analyzedCount = AtomicInteger()
-    @Volatile private var headSpeedDps: Double? = null
-    @Volatile private var imageShift: Double? = null
-    @Volatile private var trackingPeak: Double? = null
+
+    @Volatile
+    private var headSpeedDps: Double? = null
+
+    @Volatile
+    private var imageShift: Double? = null
+
+    @Volatile
+    private var trackingPeak: Double? = null
 
     init {
         viewModelScope.launch {
@@ -159,7 +170,8 @@ class MotionLabViewModel(application: Application) :
                 // Between trials the preferred pair is read straight from the
                 // SDK's device list; during a trial the session reports it live.
                 if (!_uiState.value.isRunning) {
-                    val status = runCatching { preferredDevice()?.second?.toGlassesStatus() }.getOrNull()
+                    val status =
+                        runCatching { preferredDevice()?.second?.toGlassesStatus() }.getOrNull()
                     _uiState.update { it.copy(glasses = status) }
                 }
                 delay(1_000)
@@ -317,7 +329,10 @@ class MotionLabViewModel(application: Application) :
             "condition" to trial.condition.ifEmpty { null },
             "timedHold" to trial.timedHold,
             "platform" to "android-mwdat",
-            "sdk" to mapOf("name" to "Meta Wearables Device Access Toolkit", "version" to BuildConfig.MWDAT_VERSION),
+            "sdk" to mapOf(
+                "name" to "Meta Wearables Device Access Toolkit",
+                "version" to BuildConfig.MWDAT_VERSION
+            ),
             "motion" to mapOf("samplingRateHz" to LabGlassesLink.Config(trial.camera).samplingRateHz),
             "video" to if (trial.camera) {
                 val config = LabGlassesLink.Config(camera = true)
@@ -329,7 +344,7 @@ class MotionLabViewModel(application: Application) :
                         "longSide" to LumaGridSampler.DEFAULT_LONG_SIDE,
                         "shortSide" to LumaGridSampler.DEFAULT_SHORT_SIDE,
                         "method" to "phase correlation; Hann window; Gaussian spectral weight " +
-                            "${PhaseCorrelator.DEFAULT_BANDWIDTH} cycles/px; 3-point Gaussian sub-pixel fit",
+                                "${PhaseCorrelator.DEFAULT_BANDWIDTH} cycles/px; 3-point Gaussian sub-pixel fit",
                         "imagesStored" to false,
                     ),
                 )
@@ -340,9 +355,13 @@ class MotionLabViewModel(application: Application) :
                 "model" to Build.MODEL,
                 "androidSdk" to Build.VERSION.SDK_INT,
             ),
-            "app" to mapOf("versionName" to BuildConfig.VERSION_NAME, "versionCode" to BuildConfig.VERSION_CODE),
+            "app" to mapOf(
+                "versionName" to BuildConfig.VERSION_NAME,
+                "versionCode" to BuildConfig.VERSION_CODE
+            ),
         )
-        val newRecording = SessionRecording(meta, nowNanos, epochMs, Instant.ofEpochMilli(epochMs).toString())
+        val newRecording =
+            SessionRecording(meta, nowNanos, epochMs, Instant.ofEpochMilli(epochMs).toString())
         if (trial.camera) {
             analyzer = FrameAnalyzer(viewModelScope) { result ->
                 newRecording.frameAnalysis(
@@ -367,7 +386,12 @@ class MotionLabViewModel(application: Application) :
         recording?.mark(SystemClock.elapsedRealtimeNanos(), label, extra)
     }
 
-    override suspend fun endTrial(trial: Trial, outcome: TrialOutcome, reason: String?, recorded: Boolean) {
+    override suspend fun endTrial(
+        trial: Trial,
+        outcome: TrialOutcome,
+        reason: String?,
+        recorded: Boolean
+    ) {
         val finished = recording
         recording = null
         finished?.stop(SystemClock.elapsedRealtimeNanos())
@@ -376,7 +400,16 @@ class MotionLabViewModel(application: Application) :
 
         if (!recorded || finished == null) {
             _uiState.update {
-                it.copy(lastResult = LabResult(trial, outcome, reason, null, null, outcomeSentence(trial, outcome, reason)))
+                it.copy(
+                    lastResult = LabResult(
+                        trial,
+                        outcome,
+                        reason,
+                        null,
+                        null,
+                        outcomeSentence(trial, outcome, reason)
+                    )
+                )
             }
             return
         }
@@ -404,10 +437,17 @@ class MotionLabViewModel(application: Application) :
         // next one is selected, so the tester only has to press Start again.
         val next = nextInBattery(trial, outcome)
         val summary = summarize(trial, outcome, reason, quickLook, saved) +
-            (next?.let { " Next: ${it.title}." } ?: "")
+                (next?.let { " Next: ${it.title}." } ?: "")
         _uiState.update {
             it.copy(
-                lastResult = LabResult(trial, outcome, reason, file.takeIf { saved }, quickLook, summary),
+                lastResult = LabResult(
+                    trial,
+                    outcome,
+                    reason,
+                    file.takeIf { saved },
+                    quickLook,
+                    summary
+                ),
                 selectedTrialId = next?.id ?: it.selectedTrialId,
             )
         }
@@ -429,6 +469,7 @@ class MotionLabViewModel(application: Application) :
                 when {
                     trial.brief != null ->
                         "${trial.title}. ${trial.brief} Recording starts in $secondsLeft seconds."
+
                     trial.worn -> "${trial.title}. Get ready. Recording starts in $secondsLeft seconds."
                     else -> "${trial.title}. Set the glasses down now. Recording starts in $secondsLeft seconds."
                 },
@@ -454,6 +495,7 @@ class MotionLabViewModel(application: Application) :
         when (style) {
             CueStyle.METRONOME ->
                 cues.play(if (index % 2 == 0) CuePlayer.Sound.BEAT_HIGH else CuePlayer.Sound.BEAT_LOW)
+
             CueStyle.TONE -> cues.play(CuePlayer.Sound.BEAT_HIGH)
             CueStyle.SPOKEN -> {
                 cues.play(CuePlayer.Sound.CUE)
@@ -575,7 +617,11 @@ class MotionLabViewModel(application: Application) :
         }
     }
 
-    private fun quickLook(trial: Trial, outcome: TrialOutcome, rec: SessionRecording): QuickLookResult {
+    private fun quickLook(
+        trial: Trial,
+        outcome: TrialOutcome,
+        rec: SessionRecording
+    ): QuickLookResult {
         val phone = rec.motionColumn("tPhone")
         val device = rec.motionColumn("tDevice")
         val gx = rec.motionColumn("gx")
@@ -600,7 +646,17 @@ class MotionLabViewModel(application: Application) :
         val start = rec.markTimes("trial_start").firstOrNull()
         val end = rec.markTimes("trial_end").lastOrNull()
         val balance = if (trial.timedHold && start != null && end != null) {
-            QuickLook.balance(phone, device, gx, gy, gz, source, start, end, outcome == TrialOutcome.BALANCE_LOST)
+            QuickLook.balance(
+                phone,
+                device,
+                gx,
+                gy,
+                gz,
+                source,
+                start,
+                end,
+                outcome == TrialOutcome.BALANCE_LOST
+            )
         } else null
         // Yaw is rotation about the glasses' +Y (up) axis: positive turns left.
         val impulses = if (trial.condition["task"] == "head_impulse") {
@@ -609,12 +665,13 @@ class MotionLabViewModel(application: Application) :
         return look.copy(balance = balance, impulses = impulses)
     }
 
-    private fun outcomeSentence(trial: Trial, outcome: TrialOutcome, reason: String?): String = when (outcome) {
-        TrialOutcome.COMPLETED -> "${trial.title} complete."
-        TrialOutcome.ABORTED -> "${trial.title} stopped."
-        TrialOutcome.FAILED -> "${trial.title} could not finish. ${reason.orEmpty()}".trim()
-        TrialOutcome.BALANCE_LOST -> "${trial.title}: balance lost."
-    }
+    private fun outcomeSentence(trial: Trial, outcome: TrialOutcome, reason: String?): String =
+        when (outcome) {
+            TrialOutcome.COMPLETED -> "${trial.title} complete."
+            TrialOutcome.ABORTED -> "${trial.title} stopped."
+            TrialOutcome.FAILED -> "${trial.title} could not finish. ${reason.orEmpty()}".trim()
+            TrialOutcome.BALANCE_LOST -> "${trial.title}: balance lost."
+        }
 
     /** What a balance or head impulse task found, for listening: whole numbers, plain words. */
     private fun taskSentences(trial: Trial, look: QuickLookResult): List<String> = buildList {
@@ -623,17 +680,27 @@ class MotionLabViewModel(application: Application) :
                 if (b.lost) "The hold lasted ${b.holdSec.roundToInt()} of ${trial.durationSec} seconds."
                 else "Held for the full ${trial.durationSec} seconds.",
             )
-            b.headSpeedRmsDps?.let { add("Head movement averaged ${"%.1f".format(Locale.US, it)} degrees per second.") }
+            b.headSpeedRmsDps?.let {
+                add(
+                    "Head movement averaged ${
+                        "%.1f".format(
+                            Locale.US,
+                            it
+                        )
+                    } degrees per second."
+                )
+            }
         }
         look.impulses?.let { i ->
             add(
                 "Found ${i.detected} impulses for ${i.tones} tones: ${i.left} to the left and ${i.right} to the right." +
-                    (i.medianPeakDps?.let { " Typical peak head speed ${it.roundToInt()} degrees per second." } ?: ""),
+                        (i.medianPeakDps?.let { " Typical peak head speed ${it.roundToInt()} degrees per second." }
+                            ?: ""),
             )
             if (i.slow > 0) {
                 add(
                     "${i.slow} ${if (i.slow == 1) "was" else "were"} slower than " +
-                        "${QuickLook.IMPULSE_RAPID_DPS.roundToInt()} degrees per second; the test needs quick, brief turns.",
+                            "${QuickLook.IMPULSE_RAPID_DPS.roundToInt()} degrees per second; the test needs quick, brief turns.",
                 )
             }
             if (i.detected < i.tones) add("${i.tones - i.detected} tones had no clear head turn after them.")
@@ -653,7 +720,7 @@ class MotionLabViewModel(application: Application) :
         look.motion?.let { m ->
             add(
                 "Recorded ${m.samples} motion samples at ${m.effectiveHz.roundToInt()} hertz" +
-                    if (m.dropouts == 0) ", with no dropouts." else ", with ${m.dropouts} dropouts."
+                        if (m.dropouts == 0) ", with no dropouts." else ", with ${m.dropouts} dropouts."
             )
         }
         look.video?.let { v ->
@@ -664,13 +731,23 @@ class MotionLabViewModel(application: Application) :
             if (f.reliable) {
                 add(
                     "The image followed your head with a lag of ${f.lagMs.roundToInt()} milliseconds, " +
-                        "a correlation of ${"%.2f".format(Locale.US, kotlin.math.abs(f.correlation))}, " +
-                        "and a scale of ${"%.1f".format(Locale.US, f.pixelsPerDegree)} pixels per degree.",
+                            "a correlation of ${
+                                "%.2f".format(
+                                    Locale.US,
+                                    kotlin.math.abs(f.correlation)
+                                )
+                            }, " +
+                            "and a scale of ${
+                                "%.1f".format(
+                                    Locale.US,
+                                    f.pixelsPerDegree
+                                )
+                            } pixels per degree.",
                 )
             } else {
                 add(
                     "The camera image did not follow your head movement closely enough to measure. " +
-                        "Try again facing a still scene with plenty of detail.",
+                            "Try again facing a still scene with plenty of detail.",
                 )
             }
         }
@@ -688,7 +765,14 @@ class MotionLabViewModel(application: Application) :
             val participant = (rec.metaValue("participant") as? String) ?: "anon"
             val trialId = rec.metaValue("trialId") as? String ?: "unknown"
             val sessionId = rec.metaValue("sessionId") as? String ?: "session"
-            runCatching { rec.writeGzip(File(sessionsRoot(), "$participant/$trialId/$sessionId.json.gz")) }
+            runCatching {
+                rec.writeGzip(
+                    File(
+                        sessionsRoot(),
+                        "$participant/$trialId/$sessionId.json.gz"
+                    )
+                )
+            }
         }
         recording = null
         releaseGlasses()

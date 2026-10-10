@@ -31,9 +31,15 @@ data class GridGeometry(
          * One scale for both axes, so a grid pixel is square in source pixels
          * and a diagonal shift is not distorted on its way back out.
          */
-        fun fit(sourceWidth: Int, sourceHeight: Int, gridWidth: Int, gridHeight: Int): GridGeometry {
+        fun fit(
+            sourceWidth: Int,
+            sourceHeight: Int,
+            gridWidth: Int,
+            gridHeight: Int
+        ): GridGeometry {
             require(sourceWidth > 0 && sourceHeight > 0) { "Empty source frame" }
-            val scale = min(sourceWidth.toDouble() / gridWidth, sourceHeight.toDouble() / gridHeight)
+            val scale =
+                min(sourceWidth.toDouble() / gridWidth, sourceHeight.toDouble() / gridHeight)
             return GridGeometry(
                 sourceWidth = sourceWidth,
                 sourceHeight = sourceHeight,

@@ -114,8 +114,8 @@ def fig_stance(task: str, rows: list[dict[str, Any]], series: dict[str, balance.
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     # Clear of the two-line axis labels, which reach further down a one-row figure.
     _note(fig, "Head tilt integrated from the gyroscope in the trial's gravity-levelled mean pose, bias fitted "
-               "against the accelerometer; about its mean, from 2 s after the start tones and without the last "
-               "1 s before a lost hold. Head sway is not centre-of-pressure sway.",
+               "against the accelerometer. About its mean, from 2s after the start tones and without the last "
+               "1s before a lost hold. Head sway is not centre-of-pressure sway.",
           y=-0.07 if nrows == 1 else -0.025)
     fig.savefig(out)
     plt.close(fig)
@@ -237,9 +237,9 @@ def fig_head_impulses(session: Session, impulses: pd.DataFrame, image: pd.DataFr
     fig.legend(handles, labels, loc="upper right", ncol=len(labels), fontsize=7.5, bbox_to_anchor=(0.99, 0.99))
     fig.suptitle(f"Head impulse test — {who}", x=0.01, ha="left", fontsize=11, fontweight="bold", color=INK)
     fig.tight_layout(rect=(0, 0, 1, 0.92))
-    _note(fig, "Head kinematics only: a clinical head impulse test also records the eyes, so this is not a "
-               "VOR gain. Camera points are the image motion the head-fixed camera saw, converted to °/s; "
-               "frames blurred by fast turns fail the quality gates and are absent.")
+    _note(fig, "NOTE: Head kinematics only. This test does not record the eyes, therefore is not a representation of "
+               "VOR gain. Camera points are the image motion the head-fixed camera saw, converted to °/s. "
+               "Frames blurred by fast turns were removed from the sample.")
     fig.savefig(out)
     plt.close(fig)
     return out
@@ -277,8 +277,8 @@ def fig_gaze(rows: list[dict[str, Any]], out: Path, who: str, window_s: float = 
     fig.suptitle(f"Gaze stabilization while reading — {who}", x=0.01, ha="left", fontsize=11,
                  fontweight="bold", color=INK, y=1.0)
     fig.tight_layout()
-    _note(fig, "Camera velocity uses the pixels-per-degree measured on the slow look-around (V4), at a "
-               "distant scene. The camera sits a few centimetres in front of the neck's rotation axis, so "
+    _note(fig, "Camera velocity uses the pixels-per-degree measured from the slow look-around trial (V4), at a "
+               "distant scene. The camera sits a few cm in front of the neck's rotation axis, so "
                "near text slides further across the image than a distant scene for the same head turn: a "
                "camera ÷ head ratio above 1 is that parallax (about 1 + r/d), the same geometry that makes "
                "a near target need a VOR gain above 1.", y=0.0)

@@ -88,7 +88,13 @@ class Fft2d(val width: Int, val height: Int) {
             "Expected ${width}x$height values"
         }
         for (y in 0 until height) rows.transform(re, im, offset = y * width, inverse = inverse)
-        for (x in 0 until width) cols.transform(re, im, offset = x, stride = width, inverse = inverse)
+        for (x in 0 until width) cols.transform(
+            re,
+            im,
+            offset = x,
+            stride = width,
+            inverse = inverse
+        )
         if (inverse) {
             val scale = 1.0 / (width * height)
             for (i in re.indices) {

@@ -69,18 +69,30 @@ object PanningVideo {
                         val y = image.planes[0]
                         for (row in 0 until height) {
                             for (col in 0 until width) {
-                                y.buffer.put(row * y.rowStride + col * y.pixelStride, scene.at(originX + col, row))
+                                y.buffer.put(
+                                    row * y.rowStride + col * y.pixelStride,
+                                    scene.at(originX + col, row)
+                                )
                             }
                         }
                         for (p in 1..2) {
                             val plane = image.planes[p]
                             for (row in 0 until height / 2) {
                                 for (col in 0 until width / 2) {
-                                    plane.buffer.put(row * plane.rowStride + col * plane.pixelStride, 128.toByte())
+                                    plane.buffer.put(
+                                        row * plane.rowStride + col * plane.pixelStride,
+                                        128.toByte()
+                                    )
                                 }
                             }
                         }
-                        codec.queueInputBuffer(index, 0, width * height * 3 / 2, frame * 1_000_000L / fps, 0)
+                        codec.queueInputBuffer(
+                            index,
+                            0,
+                            width * height * 3 / 2,
+                            frame * 1_000_000L / fps,
+                            0
+                        )
                         frame++
                     }
                 }
@@ -92,6 +104,7 @@ object PanningVideo {
                     muxer.start()
                     muxing = true
                 }
+
                 outIndex >= 0 -> {
                     val data = codec.getOutputBuffer(outIndex)!!
                     if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) info.size = 0
@@ -136,9 +149,10 @@ object PanningVideo {
                         val fx = x.toDouble() / cell
                         val x0 = floor(fx).toInt()
                         val tx = fx - x0
-                        val top = grid[y0 * gw + x0] + (grid[y0 * gw + x0 + 1] - grid[y0 * gw + x0]) * tx
+                        val top =
+                            grid[y0 * gw + x0] + (grid[y0 * gw + x0 + 1] - grid[y0 * gw + x0]) * tx
                         val bottom = grid[(y0 + 1) * gw + x0] +
-                            (grid[(y0 + 1) * gw + x0 + 1] - grid[(y0 + 1) * gw + x0]) * tx
+                                (grid[(y0 + 1) * gw + x0 + 1] - grid[(y0 + 1) * gw + x0]) * tx
                         values[y * width + x] += amplitude * (top + (bottom - top) * ty)
                     }
                 }
