@@ -144,9 +144,9 @@ private suspend fun runHazardDetection(frame: Bitmap)=
         )
         .build()
 
-    val url = "http://10.0.2.2:8000/yolo/runHazardDetection"
+    //val url = "http://10.0.2.2:8000/yolo/runHazardDetection"
         //Use above for local below for server
-        //val url = "http://54.173.104.183:8000/yolo/runHazardDetection"
+        val url = "http://54.173.104.183:8000/yolo/runHazardDetection"
     val request = Request.Builder().url(url).post(requestBody).build()
 
 
@@ -160,11 +160,15 @@ private suspend fun runHazardDetection(frame: Bitmap)=
         .build()
 
         try {
-            val response = client.newCall(request).execute()
-            Log.d("Hazard Detection", response.body!!.string())
-            //TTS objects and depths
+            client.newCall(request).execute().use { response->
+                //TTS objects and depths
+
+                Log.d("Hazard Detection", response.body!!.string())
+            }
+
         }
         catch (e: Exception){
             Log.d("Hazard Detection", "Error running hazard detection: $e")
         }
+
 }
