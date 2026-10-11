@@ -96,8 +96,15 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
      * back mid-trial.
      */
     fun startSyntheticHeadMotion(deviceInfo: MockDeviceInfo) {
-        executeMockDeviceOperation(deviceInfo, "Loading synthetic head motion", deviceInfo.copy(hasMotionFeed = true)) { device ->
-            device.services.motion.setMotionFeed(SyntheticMotion.yawOscillation(durationSec = 300.0), loop = true)
+        executeMockDeviceOperation(
+            deviceInfo,
+            "Loading synthetic head motion",
+            deviceInfo.copy(hasMotionFeed = true)
+        ) { device ->
+            device.services.motion.setMotionFeed(
+                SyntheticMotion.yawOscillation(durationSec = 300.0),
+                loop = true
+            )
         }
     }
 
@@ -110,7 +117,11 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
 
     /** MWDAT 1.0 device state simulation: glasses temperature. */
     fun setThermalLevel(deviceInfo: MockDeviceInfo, level: ThermalLevel) {
-        executeMockDeviceOperation(deviceInfo, "Setting thermal level to $level", deviceInfo) { device ->
+        executeMockDeviceOperation(
+            deviceInfo,
+            "Setting thermal level to $level",
+            deviceInfo
+        ) { device ->
             device.setThermalLevel(level)
         }
     }
