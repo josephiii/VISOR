@@ -87,11 +87,13 @@ class JsonWriter(private val out: Writer) {
                 }
                 endObject()
             }
+
             is Iterable<*> -> {
                 beginArray()
                 for (v in value) any(v)
                 endArray()
             }
+
             is Array<*> -> any(value.asList())
             is DoubleArray -> doubles(value)
             else -> value(value.toString())

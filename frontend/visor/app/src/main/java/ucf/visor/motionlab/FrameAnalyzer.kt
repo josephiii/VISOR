@@ -1,7 +1,6 @@
 package ucf.visor.motionlab
 
 import android.os.SystemClock
-import java.util.concurrent.ArrayBlockingQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,6 +11,7 @@ import ucf.visor.motionlab.analysis.LumaGridSampler
 import ucf.visor.motionlab.analysis.PhaseCorrelator
 import ucf.visor.motionlab.analysis.ShiftEstimate
 import java.nio.ByteBuffer
+import java.util.concurrent.ArrayBlockingQueue
 
 /**
  * Measures the image shift between consecutive camera frames without ever
@@ -54,7 +54,8 @@ class FrameAnalyzer(
     }
     private val queue = Channel<Work>(capacity = QUEUE_CAPACITY)
 
-    @Volatile var droppedFrames = 0
+    @Volatile
+    var droppedFrames = 0
         private set
 
     private val worker: Job = scope.launch(Dispatchers.Default) {

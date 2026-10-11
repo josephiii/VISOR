@@ -113,7 +113,8 @@ class LabGlassesLink(
     private var lastSessionError: DeviceSessionError? = null
     private var streamHasStreamed = false
 
-    @Volatile private var closing = false
+    @Volatile
+    private var closing = false
 
     /**
      * Creates and starts a session on [deviceId]. Returns null once the session
@@ -143,12 +144,14 @@ class LabGlassesLink(
                 when (state) {
                     DeviceSessionState.STARTED ->
                         if (config.camera) attachCamera(created) else attachMotion(created)
+
                     DeviceSessionState.STOPPED -> if (!closing) {
                         sink.onFatal(
                             lastSessionError?.let { describeSessionError(it) }
                                 ?: "The glasses ended the session.",
                         )
                     }
+
                     else -> Unit
                 }
             }
@@ -178,6 +181,7 @@ class LabGlassesLink(
         return when {
             wantsCamera && !firstVideoFrame.isCompleted ->
                 "No camera frames arrived from the glasses. Check that VISOR has camera access in the Meta AI app."
+
             else ->
                 "No motion data arrived from the glasses. Check that Motion is enabled for VISOR in the Wearables Developer Center."
         }
@@ -245,17 +249,22 @@ class LabGlassesLink(
                             streamHasStreamed = true
                             attachMotion(session)
                         }
+
                         StreamState.STOPPED, StreamState.CLOSED ->
                             if (streamHasStreamed && !closing) {
                                 sink.onFatal("The glasses camera stopped.")
                             }
+
                         else -> Unit
                     }
                 }
             }
             jobs += scope.launch {
                 stream.errorStream.collect { error ->
-                    sink.onEvent("stream_error", mapOf("error" to error.name, "description" to error.description))
+                    sink.onEvent(
+                        "stream_error",
+                        mapOf("error" to error.name, "description" to error.description)
+                    )
                     if (error == StreamError.PERMISSIONS_DENIED && !closing) {
                         sink.onFatal("VISOR does not have camera access. Allow it in the Meta AI app.")
                     }
@@ -295,7 +304,10 @@ class LabGlassesLink(
                 jobs += scope.launch {
                     attached.errors.collect { error ->
                         if (error != null) {
-                            sink.onEvent("motion_error", mapOf("error" to error.name, "description" to error.description))
+                            sink.onEvent(
+                                "motion_error",
+                                mapOf("error" to error.name, "description" to error.description)
+                            )
                         }
                     }
                 }
@@ -307,7 +319,11 @@ class LabGlassesLink(
                     if (error == DeviceSessionError.CAPABILITY_DENIED) {
                         "Motion has not been enabled for VISOR in the Wearables Developer Center."
                     } else {
-                        "The glasses' motion sensors could not be attached. ${describeSessionError(error)}"
+                        "The glasses' motion sensors could not be attached. ${
+                            describeSessionError(
+                                error
+                            )
+                        }"
                     },
                 )
             }

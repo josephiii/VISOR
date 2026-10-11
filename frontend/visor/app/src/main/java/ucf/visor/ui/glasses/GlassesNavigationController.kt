@@ -140,7 +140,13 @@ class GlassesNavigationController(
                 },
                 Wearables.registrationState,
                 GlassesLease.holder,
-            ) { linkState, registration, leaseHolder -> Triple(linkState, registration, leaseHolder) }
+            ) { linkState, registration, leaseHolder ->
+                Triple(
+                    linkState,
+                    registration,
+                    leaseHolder
+                )
+            }
                 .distinctUntilChanged()
                 .collect { (linkState, registration, leaseHolder) ->
                     val ready = linkState == LinkState.CONNECTED &&
@@ -169,7 +175,11 @@ class GlassesNavigationController(
                         Log.w(
                             TAG,
                             "Glasses display session ${if (error.isWarningOnly) "warning" else "error"}: " +
-                                    "${error.name} (${error.description}) — ${describeSessionError(error)}"
+                                    "${error.name} (${error.description}) — ${
+                                        describeSessionError(
+                                            error
+                                        )
+                                    }"
                         )
                     }
                 }

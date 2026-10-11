@@ -77,7 +77,9 @@ object SyntheticMotion {
         turnSec: Double = 0.15,
         returnSec: Double = 0.6,
     ): List<MotionSample> {
-        fun step(s: Double) = s.coerceIn(0.0, 1.0).let { it * it * it * (10 - 15 * it + 6 * it * it) }
+        fun step(s: Double) =
+            s.coerceIn(0.0, 1.0).let { it * it * it * (10 - 15 * it + 6 * it * it) }
+
         fun rate(s: Double) = if (s <= 0 || s >= 1) 0.0 else 30 * s * s * (1 - s) * (1 - s)
         val amplitude = amplitudeDeg * PI / 180
         val count = (durationSec * rateHz).toInt()
@@ -86,14 +88,21 @@ object SyntheticMotion {
             val side = if ((t / periodSec).toInt() % 2 == 0) 1.0 else -1.0
             val local = t % periodSec
             val backAt = turnSec + 0.15
-            val yaw = side * amplitude * (step(local / turnSec) - step((local - backAt) / returnSec))
-            val yawRate = side * amplitude * (rate(local / turnSec) / turnSec - rate((local - backAt) / returnSec) / returnSec)
+            val yaw =
+                side * amplitude * (step(local / turnSec) - step((local - backAt) / returnSec))
+            val yawRate =
+                side * amplitude * (rate(local / turnSec) / turnSec - rate((local - backAt) / returnSec) / returnSec)
             MotionSample(
                 timestampNs = (i * 1_000_000_000L) / rateHz,
                 accelerometer = Vector3(0f, GRAVITY, 0f),
                 gyroscope = Vector3(0f, yawRate.toFloat(), 0f),
                 magnetometer = null,
-                orientation = Quaternion(x = 0f, y = sin(yaw / 2).toFloat(), z = 0f, w = cos(yaw / 2).toFloat()),
+                orientation = Quaternion(
+                    x = 0f,
+                    y = sin(yaw / 2).toFloat(),
+                    z = 0f,
+                    w = cos(yaw / 2).toFloat()
+                ),
                 source = MotionSource.GLASSES,
             )
         }

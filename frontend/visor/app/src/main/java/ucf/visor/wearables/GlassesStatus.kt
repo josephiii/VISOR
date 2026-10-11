@@ -48,8 +48,8 @@ data class GlassesStatus(
     /** Whether the glasses are hot enough that the SDK is already throttling. */
     val isThrottling: Boolean
         get() = thermal == ThermalLevel.MODERATE || thermal == ThermalLevel.SEVERE ||
-            thermal == ThermalLevel.CRITICAL || thermal == ThermalLevel.EMERGENCY ||
-            thermal == ThermalLevel.SHUTDOWN
+                thermal == ThermalLevel.CRITICAL || thermal == ThermalLevel.EMERGENCY ||
+                thermal == ThermalLevel.SHUTDOWN
 
     /**
      * One sentence per fact, in the order a wearer asks them, for TTS. Facts

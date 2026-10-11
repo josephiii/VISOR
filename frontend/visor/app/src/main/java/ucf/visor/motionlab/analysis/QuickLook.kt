@@ -202,8 +202,11 @@ object QuickLook {
         var right = 0
         val peaks = ArrayList<Double>()
         for ((index, cue) in cueMs.withIndex()) {
-            val limit = minOf(cue + IMPULSE_WINDOW_MS, cueMs.getOrElse(index + 1) { Double.POSITIVE_INFINITY })
-            val run = runs.firstOrNull { times[it.first] >= cue && times[it.first] < limit } ?: continue
+            val limit = minOf(
+                cue + IMPULSE_WINDOW_MS,
+                cueMs.getOrElse(index + 1) { Double.POSITIVE_INFINITY })
+            val run =
+                runs.firstOrNull { times[it.first] >= cue && times[it.first] < limit } ?: continue
             val peak = run.maxBy { abs(yaw[it]) }
             if (yaw[peak] > 0) left++ else right++
             peaks += abs(yaw[peak])
@@ -254,7 +257,7 @@ object QuickLook {
         // rigid body, and mixing it into a head-rotation signal describes neither.
         val keep = motionSource.indices.filter {
             motionSource[it] == SOURCE_GLASSES &&
-                motionDeviceMs[it].isFinite() && motionPhoneMs[it].isFinite()
+                    motionDeviceMs[it].isFinite() && motionPhoneMs[it].isFinite()
         }
         if (keep.size < motionSource.size) {
             notes += "${motionSource.size - keep.size} motion samples were not from the glasses and were set aside."
@@ -269,12 +272,13 @@ object QuickLook {
         var trackedFraction: Double? = null
         var fit: ImageMotionFit? = null
         if (videoTiming != null && motionTiming != null) {
-            val intervals = frameIntervals(videoPhoneMs, videoPtsMs, shiftX, shiftY, peak, textureSd, refIndex)
+            val intervals =
+                frameIntervals(videoPhoneMs, videoPtsMs, shiftX, shiftY, peak, textureSd, refIndex)
             val analyzable = refIndex.count { it.isFinite() }
             trackedFraction = if (analyzable > 0) intervals.size.toDouble() / analyzable else 0.0
             if (intervals.size < MIN_INTERVALS) {
                 notes += "Only ${intervals.size} frame pairs tracked reliably — point the glasses " +
-                    "at a scene with more detail, in good light."
+                        "at a scene with more detail, in good light."
             } else {
                 val gyro = arrayOf(
                     DoubleArray(keep.size) { gyroX[keep[it]] },
@@ -305,7 +309,12 @@ object QuickLook {
     }
 
     /** A frame-to-frame image displacement over a phone-clock interval. */
-    internal data class Interval(val startMs: Double, val endMs: Double, val vx: Double, val vy: Double)
+    internal data class Interval(
+        val startMs: Double,
+        val endMs: Double,
+        val vx: Double,
+        val vy: Double
+    )
 
     private fun frameIntervals(
         videoPhoneMs: DoubleArray,
@@ -351,7 +360,7 @@ object QuickLook {
         val headRmsDps = sqrt(meanSquare(rate)) * 180.0 / PI
         if (headRmsDps < MIN_HEAD_SPEED_DPS) {
             notes += "Too little head rotation to relate to the image " +
-                "(%.1f deg/s RMS).".format(headRmsDps)
+                    "(%.1f deg/s RMS).".format(headRmsDps)
             return null
         }
         val cumulative = cumulativeIntegral(times, rate)
@@ -396,7 +405,7 @@ object QuickLook {
         }
         if (abs(bestLag) >= MAX_LAG_MS - LAG_STEP_MS) {
             notes += "The best lag sits at the edge of the search window; the clocks may be " +
-                "further apart than expected — check in the full analysis."
+                    "further apart than expected — check in the full analysis."
         }
         return ImageMotionFit(
             gyroAxis = axisNames[gyroAxis],
@@ -473,14 +482,18 @@ object QuickLook {
     private fun mean(v: DoubleArray): Double {
         var s = 0.0
         var n = 0
-        for (x in v) if (x.isFinite()) { s += x; n++ }
+        for (x in v) if (x.isFinite()) {
+            s += x; n++
+        }
         return if (n > 0) s / n else 0.0
     }
 
     private fun meanSquare(v: DoubleArray): Double {
         var s = 0.0
         var n = 0
-        for (x in v) if (x.isFinite()) { s += x * x; n++ }
+        for (x in v) if (x.isFinite()) {
+            s += x * x; n++
+        }
         return if (n > 0) s / n else 0.0
     }
 
@@ -488,7 +501,9 @@ object QuickLook {
         val m = mean(v)
         var s = 0.0
         var n = 0
-        for (x in v) if (x.isFinite()) { s += (x - m) * (x - m); n++ }
+        for (x in v) if (x.isFinite()) {
+            s += (x - m) * (x - m); n++
+        }
         return if (n > 1) s / (n - 1) else 0.0
     }
 
