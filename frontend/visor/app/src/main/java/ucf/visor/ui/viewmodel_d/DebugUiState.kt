@@ -1,17 +1,3 @@
-/*
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- * All rights reserved.
- *
- * This source code is licensed under the license found in the
- * LICENSE file in the root directory of this source tree.
- */
-
-// MockDeviceKitUiState - DAT MockDeviceKit Testing State
-//
-// These data classes manage the state of simulated wearable devices for DAT testing. MockDeviceKit
-// provides a complete testing environment for DAT applications without requiring physical wearable
-// devices.
-//
 // MockDeviceInfo encapsulates:
 // - device: the MockGlasses instance returned by MockDeviceKit.pairGlasses(model)
 // - model: which glasses it simulates (META_RAYBAN_DISPLAY adds the 1.0 mock display)

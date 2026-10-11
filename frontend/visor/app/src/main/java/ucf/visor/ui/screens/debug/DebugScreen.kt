@@ -579,7 +579,12 @@ private fun MockDeviceCard(
                         ActionButton(
                             modifier = Modifier.weight(1f),
                             text = stringResource(R.string.mock_thermal_hot),
-                            onClick = { viewModel.setThermalLevel(deviceInfo, ThermalLevel.SEVERE) },
+                            onClick = {
+                                viewModel.setThermalLevel(
+                                    deviceInfo,
+                                    ThermalLevel.SEVERE
+                                )
+                            },
                         )
                         ActionButton(
                             modifier = Modifier.weight(1f),

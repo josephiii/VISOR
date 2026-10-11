@@ -209,8 +209,8 @@ def main() -> None:
         "",
         "Five standardized tasks recorded through MWDAT 1.0 Motion on the glasses, with the camera on for "
         "the head impulse and gaze-stabilization tasks. Sway is the head's angular sway in its "
-        "gravity-levelled mean pose; it is head sway, not centre-of-pressure sway. Head impulses are head "
-        "kinematics; with no eye tracking, nothing here is a VOR gain. Protocol: "
+        "gravity-levelled mean pose. It is head sway, not center-of-pressure sway. Head impulses are head "
+        "kinematics. With no eye tracking, nothing here is a VOR gain. Protocol: "
         "[imu-test-protocol.md](./imu-test-protocol.md), Tier S.",
         "",
     ]
