@@ -10,9 +10,7 @@ Required Technology:
 
 1. Clone the repo. If you're a developer, at this step you would want to create a new branch (for whatever iterative feature you are working on).
 2. Open Android Studio at the file `/VISOR/frontend/visor/`
-3. Unless you have already added the Meta Wearables SDK to your Gradle project on local machine, you will need to add a **personal access token** (classic) with at least **read:packages** through a property named `github_token` in your `local.properties`
-
-> You can create and edit a PAT (classic) by going to your GitHub account **Settings**, then **Developer Settings**. After select **Personal access tokens** > **Tokens (classic)**.
+3. Optionally, add VISOR's Meta Wearables Developer Center credentials to your `local.properties`. The Meta Wearables SDK (MWDAT 1.0) now comes from Maven Central, so **no GitHub token is needed** any more; a leftover `github_token` line is simply ignored.
 
 ```python
 # VISOR/frontend/visor/local.properties
@@ -27,11 +25,14 @@ Required Technology:
 # For customization when using a Version Control System, please read the  
 # header note.  
 sdk.dir=<absolute path to android SDK>
-github_token=<insert PAT string here, no quotes> 
+# From the Wearables Developer Center. Leave both out to use "0", Meta's
+# Developer Mode placeholder; "Hey Meta, start VISOR" and release channels
+# need the real values with Developer Mode off.
+mwdat_application_id=<application id>
+mwdat_client_token=<client token>
 
 # e.g.
 sdk.dir=C\:\\Users\\visor\\AppData\\Local\\Android\\Sdk  # WINDOWS
-github_token=randomdomstringoftokencharactersnumsn_s
 ```
 
 **That's it!** 
@@ -49,3 +50,4 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 
 - Get started on frontend development with our [frontend-jumpstart](./documentation/developer/frontend-jumpstart.md).
 - See our [VLM](./documentation/developer/VLM.md) overview.
+- The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.

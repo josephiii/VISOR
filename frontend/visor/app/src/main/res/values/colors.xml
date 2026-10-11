@@ -1,5 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?><!--
+  Framework-level colors only - anything Compose draws comes from
+  ui/theme/Color.kt instead. These cover the window and the Android 12+ splash
+  screen, which are painted before the Compose theme exists.
+
+  values-night/colors.xml carries the dark counterparts.
+-->
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- VISOR brand navy, matching the launcher icon's background. -->
+    <color name="visor_brand_navy">#FF0A2E57</color>
+
+    <!-- Painted behind the activity until Compose draws its first frame. Kept in
+         step with the Clarity theme's background so users never get a flash of a
+         brighter screen than the one they chose - light sensitivity is one of the
+         low-vision conditions VISOR is built for. -->
+    <color name="visor_window_background">#FFFFFFFF</color>
+
+    <!-- Splash screen: the field behind the icon, and the circle beneath it. -->
+    <color name="visor_splash_background">#FFFFFFFF</color>
+    <color name="visor_splash_icon_background">@color/visor_brand_navy</color>
 </resources>

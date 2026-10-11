@@ -2,7 +2,11 @@ package ucf.visor.ui.screens.auth
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,10 +26,16 @@ import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.ui.components.AuthCodeInput
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
+
+/**
+ * How much of the screen the code card is allowed to occupy, measured from the
+ * top. The remaining bottom third is left clear so the card does not sit where
+ * the keyboard appears once the code field takes focus.
+ */
+private const val BottomThirdKeptClear = 2f / 3f
 
 @Composable
 fun EnterCodeScreen(
@@ -37,57 +47,62 @@ fun EnterCodeScreen(
     var code by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .padding(vertical = 24.dp)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState)
-    ) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val viewportHeight = maxHeight
 
-        VisorHeader()
-
-        Card(
-            shape = VisorShapes.Control,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             modifier = Modifier
-                .padding(
-                    horizontal = 35.dp,
-                    vertical = 20.dp
-                )
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = VisorShapes.Control
-                ),
+                .fillMaxWidth()
+                .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+                .verticalScroll(scrollState)
+                .heightIn(min = viewportHeight * BottomThirdKeptClear)
+                .padding(vertical = 24.dp)
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Card(
+                shape = VisorShapes.Control,
                 modifier = Modifier
-                    .padding(vertical = 20.dp)
+                    .padding(
+                        horizontal = 35.dp,
+                        vertical = 20.dp
+                    )
+                    .border(
+                        width = 2.dp,
+                        color = MaterialTheme.colorScheme.outline,
+                        shape = VisorShapes.Control
+                    ),
             ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(vertical = 20.dp)
+                ) {
 
-                Text(
-                    text = stringResource(R.string.enter_code_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+                    Text(
+                        text = stringResource(R.string.enter_code_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
-                AuthCodeInput(
-                    onCodeComplete = {
-                        onCodeComplete()
-                    }
-                )
+                    AuthCodeInput(
+                        onCodeComplete = {
+                            onCodeComplete()
+                        }
+                    )
 
-                VisorButton(
-                    text = stringResource(R.string.resend_code_button_text),
-                    onClick = {
-                        onResendCodeClick()
-                    }
-                )
+                    VisorButton(
+                        text = stringResource(R.string.resend_code_button_text),
+                        onClick = {
+                            onResendCodeClick()
+                        }
+                    )
 
 
+                }
             }
         }
     }
 }
+

@@ -8,15 +8,15 @@
 
 package ucf.visor
 
-import android.util.Log
+import android.Manifest
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
-import androidx.test.platform.app.InstrumentationRegistry
-import java.io.IOException
-import org.junit.Before
+import androidx.test.rule.GrantPermissionRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,43 +33,33 @@ import org.junit.runner.RunWith
 @LargeTest
 class RegistrationButtonTest {
 
-  companion object {
-    private const val TAG = "RegistrationButtonTest"
-  }
+  @get:Rule(order = 0)
+  val permissions: GrantPermissionRule =
+      GrantPermissionRule.grant(
+          Manifest.permission.BLUETOOTH_CONNECT,
+          Manifest.permission.RECORD_AUDIO,
+          Manifest.permission.CAMERA,
+      )
 
-  @get:Rule val composeTestRule = createAndroidComposeRule<MainActivity>()
-
-  @Before
-  fun setup() {
-    grantPermissions()
-  }
+  @get:Rule(order = 1) val composeTestRule = createAndroidComposeRule<MainActivity>()
 
   @Test
   fun clickingConnectMyGlassesDoesNotCrash() {
-    val buttonText = composeTestRule.activity.getString(R.string.register_button_title)
-    composeTestRule.onNodeWithText(buttonText).performClick()
+    val activity = composeTestRule.activity
+    // The button lives on the Pair Glasses screen, which is reached after login.
+    composeTestRule.waitUntil(15_000) { activity.viewModel.uiState.value.canRegister }
+    composeTestRule.runOnUiThread {
+      activity.viewModel.home()
+      activity.viewModel.hardwarePairing()
+    }
+    val buttonText = activity.getString(R.string.register_button_title)
+    composeTestRule.waitUntil(10_000) {
+      composeTestRule.onAllNodes(hasText(buttonText)).fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithText(buttonText).performScrollTo().performClick()
 
     // Verify the app is still alive after the registration coroutine executes.
     // If FragmentActivity is missing, the app crashes and this assertion fails.
     composeTestRule.onNodeWithText(buttonText).assertExists()
-  }
-
-  private fun grantPermissions() {
-    grantPermission("android.permission.BLUETOOTH")
-    grantPermission("android.permission.BLUETOOTH_CONNECT")
-    grantPermission("android.permission.CAMERA")
-    grantPermission("android.permission.INTERNET")
-  }
-
-  private fun grantPermission(permission: String) {
-    val packageName = InstrumentationRegistry.getInstrumentation().targetContext.packageName
-    try {
-      InstrumentationRegistry.getInstrumentation()
-          .uiAutomation
-          .executeShellCommand("pm grant $packageName $permission")
-      Log.d(TAG, "Granted permission: $permission")
-    } catch (e: IOException) {
-      Log.e(TAG, "Failed to grant permission", e)
-    }
   }
 }

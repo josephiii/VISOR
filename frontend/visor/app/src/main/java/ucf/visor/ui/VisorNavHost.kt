@@ -6,6 +6,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.ui.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -18,6 +20,7 @@ import ucf.visor.ui.screens.auth.SignUpScreen
 import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HomeScreen
+import ucf.visor.ui.screens.motionlab.MotionLabScreen
 import ucf.visor.ui.screens.profile.SettingsScreen
 import ucf.visor.ui.screens.title.TitleScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -29,6 +32,7 @@ fun VisorNavHost(
     viewModel: VisorViewModel,
     talk: (String) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
+    onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -127,20 +131,30 @@ fun VisorNavHost(
 
         composable("hardware_pairing") {
             HardwarePairingScreen(
-                viewModel = viewModel
+                viewModel = viewModel,
+                talk = talk,
             );
         }
 
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
-                speak = talk,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
                 // TODO: POST /auth/deleteAccount once it exists.
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
+                onMotionLab = { viewModel.motionLab() },
             );
+        }
+
+        composable("motion_lab") {
+            MotionLabScreen(
+                wearablesReady = uiState.canRegister,
+                talk = talk,
+                onRequestWearablesPermission = onRequestWearablesPermission,
+                onPairGlasses = { viewModel.hardwarePairing() },
+            )
         }
 
         composable("help") {

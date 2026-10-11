@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,8 +89,6 @@ fun TitleScreen(
                 .semantics { heading() },
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
         VisorButton(
             text = stringResource(R.string.login_title),
             onClick = onLoginClick,
@@ -101,8 +98,6 @@ fun TitleScreen(
             width = 0.75f,
             onClick = onSignUpClick,
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         SelectableChip(
             label = if (profile.voiceNavigationEnabled) "Voice Navigation: On" else "Voice Navigation: Off",

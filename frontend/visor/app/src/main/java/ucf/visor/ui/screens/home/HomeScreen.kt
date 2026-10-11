@@ -1,10 +1,11 @@
 package ucf.visor.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -20,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
-import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 @Composable
@@ -31,40 +31,40 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val viewportHeight = maxHeight
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .heightIn(min = viewportHeight)
                 .padding(all = 24.dp)
                 .navigationBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        VisorHeader()
-        Spacer(modifier = Modifier.height(100.dp))
-
-        SessionToggleButton(
-            isSessionActive = uiState.isSessionActive,
-            onToggle = {
-                viewModel.toggleSession()
-                if (uiState.isSessionActive) {
-                    talk("Ending Session")
-                } else {
-                    talk("Starting Session")
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        ) {
+            SessionToggleButton(
+                isSessionActive = uiState.isSessionActive,
+                onToggle = {
+                    viewModel.toggleSession()
+                    if (uiState.isSessionActive) {
+                        talk("Ending Session")
+                    } else {
+                        talk("Starting Session")
+                    }
                 }
-            }
-        )
+            )
 
-        Spacer(modifier = Modifier.height(40.dp))
-        Text(
-            text =
-                if (uiState.isSessionActive) {
-                    stringResource(R.string.end_session)
-                } else {
-                    stringResource(R.string.start_session)
-                },
-            style = MaterialTheme.typography.headlineSmall
-        )
+            Text(
+                text =
+                    if (uiState.isSessionActive) {
+                        stringResource(R.string.end_session)
+                    } else {
+                        stringResource(R.string.start_session)
+                    },
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
     }
 }

@@ -23,6 +23,7 @@ class Listener(
     private var spotter: KeywordSpotter? = null
     private var stream: OnlineStream? = null
     private var audioRecord: AudioRecord? = null
+    private var worker: Thread? = null
 
     @Volatile
     private var isRunning = false
@@ -59,7 +60,8 @@ class Listener(
         if (isRunning) return
         isRunning = true
 
-        stream = s.createStream()
+        val st = s.createStream()
+        stream = st
 
         val minBuf = AudioRecord.getMinBufferSize(
             sampleRate,
@@ -68,32 +70,32 @@ class Listener(
         )
 
         // FIXME?
-        audioRecord = AudioRecord(
+        val record = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             sampleRate,
             AudioFormat.CHANNEL_IN_MONO,
             AudioFormat.ENCODING_PCM_16BIT,
             minBuf * 2,
         )
+        audioRecord = record
+        record.startRecording()
 
-        audioRecord?.startRecording()
-
-        thread(name = "visor-kws") {
+        // The thread works on its own references to the recorder, spotter and
+        // stream: stop() may null the fields at any moment, and it waits for
+        // this loop to finish before the native objects are released.
+        worker = thread(name = "visor-kws") {
             val buffer = ShortArray(minBuf)
             while (isRunning) {
-                val n = audioRecord?.read(buffer, 0, buffer.size) ?: 0
-                if (n > 0) {
+                val n = record.read(buffer, 0, buffer.size)
+                if (n > 0 && isRunning) {
                     val samples = FloatArray(n) { buffer[it] / 32768.0f }
-                    feed(samples)
+                    feed(s, st, samples)
                 }
             }
         }
     }
 
-    private fun feed(samples: FloatArray) {
-        val s = spotter ?: return
-        val st = stream ?: return
-
+    private fun feed(s: KeywordSpotter, st: OnlineStream, samples: FloatArray) {
         st.acceptWaveform(samples, sampleRate)
         while (s.isReady(st)) {
             s.decode(st)
@@ -105,18 +107,42 @@ class Listener(
         }
     }
 
+    /**
+     * Stops listening. Waits for the audio thread to leave [feed] before the
+     * native stream is released: releasing it underneath a decode in progress
+     * crashed the app (SIGSEGV in sherpa-onnx), both on activity teardown and
+     * whenever "VISOR GO" paused wake listening mid-buffer.
+     */
     fun stop() {
-        isRunning = false
-        audioRecord?.stop()
-        audioRecord?.release()
-        audioRecord = null
-        stream?.release()
-        stream = null
+        stopAndJoin()
     }
 
     fun shutdown() {
-        stop()
-        spotter?.release()
+        // A thread still decoding is inside the spotter too; leave it be.
+        if (!stopAndJoin()) spotter?.release()
         spotter = null
+    }
+
+    /** @return true when the audio thread was still running after the timeout. */
+    private fun stopAndJoin(): Boolean {
+        isRunning = false
+        audioRecord?.stop() // unblocks a pending read()
+        val stuck = worker?.let { it.join(JOIN_TIMEOUT_MS); it.isAlive } ?: false
+        worker = null
+        audioRecord?.release()
+        audioRecord = null
+        if (stuck) {
+            // Still decoding after the timeout: leaking one stream is better
+            // than freeing it under the thread that is using it.
+            Log.w("VISOR", "KWS thread did not stop in time; not releasing its stream")
+        } else {
+            stream?.release()
+        }
+        stream = null
+        return stuck
+    }
+
+    private companion object {
+        const val JOIN_TIMEOUT_MS = 1_000L
     }
 }

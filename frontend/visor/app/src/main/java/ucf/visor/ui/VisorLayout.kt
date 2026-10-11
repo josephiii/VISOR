@@ -49,9 +49,14 @@ import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
+import ucf.visor.ui.glasses.GlassesNavigationController
+import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.phase1.Phase1NavigationBar
+import ucf.visor.ui.profile.SpeechRates
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionMode
@@ -71,6 +76,7 @@ fun VisorLayout(
     talk: (String) -> Unit = {},
     lastSpoken: () -> String? = { null },
     voiceNav: VoiceNavigationController? = null,
+    glassesNav: GlassesNavigationController? = null,
     modifier: Modifier = Modifier,
 ) {
 
@@ -111,6 +117,7 @@ fun VisorLayout(
             navController.navigate("title") {
                 popUpTo(0) { inclusive = true }
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -118,6 +125,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isLoggingIn) {
         if (uiState.isLoggingIn) {
             navController.navigate("login") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -125,6 +133,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isSigningUp) {
         if (uiState.isSigningUp) {
             navController.navigate("sign_up") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -132,6 +141,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.hasForgottenPassword) {
         if (uiState.hasForgottenPassword) {
             navController.navigate("forgot_password") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -139,6 +149,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isEnteringCode) {
         if (uiState.isEnteringCode) {
             navController.navigate("enter_code") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -156,6 +167,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isResettingPassword) {
         if (uiState.isResettingPassword) {
             navController.navigate("reset_password") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -164,9 +176,14 @@ fun VisorLayout(
         if (uiState.goingHome) { // FIXME: for PHASE 1, remove "&& uiState.isAuthComplete"
             navController.navigate("home") {
                 launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
+                if (uiState.phase1Initiated) {
+                    popUpTo(0) { inclusive = true }
+                } else {
+                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    restoreState = true
+                }
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -178,6 +195,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -189,6 +207,7 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -196,6 +215,7 @@ fun VisorLayout(
     LaunchedEffect(uiState.isOnboarding) {
         if (uiState.isOnboarding) {
             navController.navigate("onboarding") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -207,6 +227,19 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
+        }
+    }
+
+    // Observe MotionLabScreen (Settings → Research)
+    LaunchedEffect(uiState.atMotionLab) {
+        if (uiState.atMotionLab) {
+            navController.navigate("motion_lab") {
+                launchSingleTop = true
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
+            }
+            viewModel.onNavigationHandled()
         }
     }
 
@@ -220,13 +253,23 @@ fun VisorLayout(
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
                 restoreState = true
             }
+            viewModel.onNavigationHandled()
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // Voice Navigation Observer
-    LaunchedEffect(voiceNav) {
-        voiceNav?.commands?.collect { command ->
+    // On-Glasses Tap Navigation Observer
+    LaunchedEffect(glassesNav, currentRoute, uiState) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Voice + Glasses-Tap Navigation Observer
+    LaunchedEffect(voiceNav, glassesNav) {
+        merge(
+            voiceNav?.commands ?: emptyFlow(),
+            glassesNav?.commands ?: emptyFlow()
+        ).collect { command ->
             when (command) {
                 // Home/Settings/Help/Pairing/sessions are all post-login-only —
                 // none of them have a touch equivalent before uiState.isAuthComplete
@@ -255,12 +298,11 @@ fun VisorLayout(
                 VoiceCommand.ToggleSession -> {
                     if (!uiState.isAuthComplete) {
                         talk("Log in first to start a session.")
-                    } else if (currentRoute == "home") {
+                    } else {
+                        if (currentRoute != "home") viewModel.home()
                         val startingUp = !uiState.isSessionActive
                         viewModel.toggleSession()
                         talk(if (startingUp) "Starting session" else "Ending session")
-                    } else {
-                        talk("Go to Home to start or end a session.")
                     }
                 }
 
@@ -297,6 +339,18 @@ fun VisorLayout(
 
                 is VoiceCommand.SetSpeechRate ->
                     viewModel.updateProfile(profile.copy(speechRate = command.rate))
+
+                VoiceCommand.SpeakFaster -> {
+                    val rate = SpeechRates.faster(profile.speechRate)
+                    viewModel.updateProfile(profile.copy(speechRate = rate))
+                    talk("Faster. ${SpeechRates.spokenLabel(rate)}.")
+                }
+
+                VoiceCommand.SpeakSlower -> {
+                    val rate = SpeechRates.slower(profile.speechRate)
+                    viewModel.updateProfile(profile.copy(speechRate = rate))
+                    talk("Slower. ${SpeechRates.spokenLabel(rate)}.")
+                }
 
                 is VoiceCommand.SetVerbosity ->
                     viewModel.updateProfile(profile.copy(verbosity = command.verbosity))
@@ -411,6 +465,7 @@ fun VisorLayout(
                                 viewModel = viewModel,
                                 talk = talk,
                                 voiceNav = voiceNav,
+                                onRequestWearablesPermission = onRequestWearablesPermission,
                             )
                         }
 

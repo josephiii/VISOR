@@ -1,0 +1,11 @@
+# package.json must ship: api/ingest.js depends on @vercel/blob.
+# The project's framework preset is pinned to null (static + /api functions);
+# if it ever reverts to "node", Vercel treats the browser-side app.js as a
+# server entrypoint and every request fails with FUNCTION_INVOCATION_FAILED.
+
+# Local dev server only — never deployed.
+server.js
+node_modules
+
+# Device-setup artifact, no reason to publish it
+qr-test-on-device.png

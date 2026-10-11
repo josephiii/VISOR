@@ -35,7 +35,12 @@
         android:usesCleartextTraffic="true"><!--REMOVE LINE LATER ONLY FOR HTTP REQUST -->
 
         <!-- Meta Wearables Device Access Toolkit Setup -->
-        <!-- Without Developer Mode, these values need to be set with credentials from the app registered in Wearables Developer Center -->
+        <!-- Supply them via local.properties (mwdat_application_id / mwdat_client_token) -
+             see the manifestPlaceholders block in app/build.gradle.kts. Unset, they fall
+             back to "0", which MWDAT 1.0 documents as the Developer Mode placeholder
+             (attestation is skipped in Developer Mode). An *empty* value is not that
+             placeholder: it made the glasses end every session immediately. Release
+             channels and voice launches need the real Developer Center values. -->
         <meta-data
             android:name="com.meta.wearable.mwdat.APPLICATION_ID"
             android:value="${mwdat_application_id}" />
@@ -49,14 +54,20 @@
             android:name="com.meta.wearable.mwdat.ANALYTICS_OPT_OUT"
             android:value="true" />
 
-        <!-- Enable the Device Access Toolkit App Model (DAM) -->
+        <!-- SDK crash capture defaults to ON; VISOR opts out for the same reason it
+             opts out of analytics. (DAM_ENABLED was removed: since MWDAT 0.9 the App
+             Model is always on and the key is ignored.) -->
         <meta-data
-            android:name="com.meta.wearable.mwdat.DAM_ENABLED"
+            android:name="com.meta.wearable.mwdat.CRASH_REPORTING_OPT_OUT"
             android:value="true" />
 
+        <!-- singleTask: a "Hey Meta, start VISOR" voice launch and the Meta AI
+             registration callback must land in the running task (onNewIntent), not
+             stack a second copy of VISOR over a live glasses session. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.VISOR"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
