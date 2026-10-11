@@ -350,7 +350,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atHelp = false) }
     }
 
-    /** The head-motion lab (Settings → Research): MWDAT 1.0 Motion + camera trials. */
+    /** The head-motion lab (Debug menu → Test Suite): MWDAT 1.0 Motion + camera trials. */
     fun motionLab() {
         _uiState.update { it.copy(atMotionLab = true) }
     }

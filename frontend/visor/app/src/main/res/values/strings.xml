@@ -41,7 +41,7 @@
     <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
 
     <!-- User Profile Screen -->
-    <string name="user_profile_navbar_title" description="The title for navigating to the user profile screen">Profile</string>
+    <string name="settings_navbar_title" description="The title for navigating to the settings screen">Settings</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
@@ -79,7 +79,6 @@
     <string name="debug_hardware_pairing_screen" description="hardware pairing screen debug option">HARDWARE PAIRING SCREEN</string>
     <string name="debug_onboarding" description="view the onboarding process debug option">ONBOARDING PROCESS</string>
     <string name="debug_settings_screen" description="settings screen debug option">SETTINGS SCREEN</string>
-    <string name="debug_motion_lab_screen" description="head-motion lab debug option">HEAD-MOTION LAB</string>
     <string name="debug_enable_navbar" description="enable navigation bar option">TOGGLE NAVIGATION BAR</string>
 
     <!-- VISOR Onboarding Steps -->
@@ -182,8 +181,15 @@
     <string name="getting_started_tip_photo" description="Tip about photo capture">Capture photos by tapping the camera button.</string>
     <string name="getting_started_continue" description="Continue button">Continue</string>
 
+    <!-- TEST SUITE (debug menu) -->
+    <string name="test_suite_title" description="Title of the Test Suite section in the debug menu">Test Suite</string>
+    <string name="test_suite_description" description="Description of the Test Suite section in the debug menu">Testing environments for VISOR. Choose one to start it.</string>
+    <string name="motion_lab_test_title" description="Head-motion lab title in the debug menu Test Suite">Head-Motion Lab</string>
+    <string name="motion_lab_test_description" description="Head-motion lab description in the debug menu Test Suite">Record the glasses\' motion sensors, and the camera image for head-motion trials, for the VISOR research team. Uses experimental glasses features.</string>
+    <string name="motion_lab_open_button" description="The text for the button that opens the head-motion lab">OPEN HEAD-MOTION LAB</string>
+
     <!-- PHASE 1 -->
-    <string name="p1_test_title" description="Phase 1 test title in debug options">VISOR Phase 1 Test Environment</string>
+    <string name="p1_test_title" description="Phase 1 test title in debug options">Phase 1 Test Environment</string>
     <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
     <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
     <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>

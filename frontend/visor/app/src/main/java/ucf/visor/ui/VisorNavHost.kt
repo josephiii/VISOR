@@ -144,7 +144,6 @@ fun VisorNavHost(
                 // TODO: POST /auth/deleteAccount once it exists.
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
-                onMotionLab = { viewModel.motionLab() },
             );
         }
 
