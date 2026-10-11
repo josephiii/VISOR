@@ -1,35 +1,61 @@
 package ucf.visor.ui.screens.home
 
+import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.meta.wearable.dat.camera.types.PhotoData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.Dispatcher
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import ucf.visor.R
 import ucf.visor.ui.components.SessionToggleButton
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
 
 @Composable
+
 fun HomeScreen(
     viewModel: VisorViewModel,
     talk: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val mode by viewModel.session.collectAsStateWithLifecycle()
+    Log.d("Visor","Mode: ${mode.inHazardAwarenessMode}")
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
@@ -65,6 +91,80 @@ fun HomeScreen(
                     },
                 style = MaterialTheme.typography.headlineSmall
             )
+
+
+            Spacer(modifier = Modifier.size(100.dp))
+            Column(){
+                Row(
+                    modifier= Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Text("OCR")
+                    Switch(checked = mode.inReadingAssistanceMode, onCheckedChange = {viewModel.setMode(SessionMode.READER)})
+                }
+                Row(
+                    modifier= Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Text("Scene Description")
+                    Switch(checked = mode.inSceneDescriptionMode, onCheckedChange = {viewModel.setMode(SessionMode.SCENE)})
+                }
+                Row(
+                    modifier= Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ){
+                    Text("Hazard Detection")
+                    Switch(checked = mode.inHazardAwarenessMode, onCheckedChange = {viewModel.setMode(SessionMode.HAZARD)})
+                }
+
+
+            }
         }
     }
+}
+
+private suspend fun runOCR(){}
+
+//import function from sharephotodialog.kt file
+private suspend fun runSceneDescription(){}
+private suspend fun runHazardDetection(frame: Bitmap)=
+    withContext(Dispatchers.IO){
+    // PREP IMAGE
+    val outputStream = ByteArrayOutputStream()
+    frame.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+    val imageBytes = outputStream.toByteArray()
+
+    val imageBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
+    val requestBody = MultipartBody.Builder()
+        .setType(MultipartBody.FORM)
+        .addFormDataPart(
+            "image",
+            "photo.jpg",
+            imageBody
+        )
+        .build()
+
+    val url = "http://10.0.2.2:8000/yolo/runHazardDetection"
+        //Use above for local below for server
+        //val url = "http://54.173.104.183:8000/yolo/runHazardDetection"
+    val request = Request.Builder().url(url).post(requestBody).build()
+
+
+        val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(
+            300,
+            TimeUnit.SECONDS
+        )   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+        try {
+            val response = client.newCall(request).execute()
+            Log.d("Hazard Detection", response.body!!.string())
+            //TTS objects and depths
+        }
+        catch (e: Exception){
+            Log.d("Hazard Detection", "Error running hazard detection: $e")
+        }
 }
