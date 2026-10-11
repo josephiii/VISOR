@@ -100,21 +100,21 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ){
                     Text("OCR")
-                    Switch(checked = mode.inReadingAssistanceMode, onCheckedChange = {viewModel.setMode(SessionMode.READER)})
+                    Switch(checked = mode.inReadingAssistanceMode && uiState.isSessionActive, onCheckedChange = {viewModel.setMode(SessionMode.READER)})
                 }
                 Row(
                     modifier= Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ){
                     Text("Scene Description")
-                    Switch(checked = mode.inSceneDescriptionMode, onCheckedChange = {viewModel.setMode(SessionMode.SCENE)})
+                    Switch(checked = mode.inSceneDescriptionMode && uiState.isSessionActive, onCheckedChange = {viewModel.setMode(SessionMode.SCENE)})
                 }
                 Row(
                     modifier= Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ){
                     Text("Hazard Detection")
-                    Switch(checked = mode.inHazardAwarenessMode, onCheckedChange = {viewModel.setMode(SessionMode.HAZARD)})
+                    Switch(checked = mode.inHazardAwarenessMode && uiState.isSessionActive, onCheckedChange = {viewModel.setMode(SessionMode.HAZARD)})
                 }
 
 
