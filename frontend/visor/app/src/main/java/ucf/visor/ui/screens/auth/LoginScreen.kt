@@ -15,13 +15,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import ucf.visor.R
+import ucf.visor.net.AuthApi
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
@@ -32,13 +35,17 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 @Composable
 fun LoginScreen(
     viewModel: VisorViewModel,
-    onLoginClick: () -> Unit,
+    onLoginSuccess: (accessToken: String, refreshToken: String) -> Unit,
     onForgotPasswordClick: () -> Unit,
     onSignUpClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()
 
     Column(
@@ -93,9 +100,38 @@ fun LoginScreen(
                 VisorButton(
                     text = stringResource(R.string.login_title),
                     onClick = {
-                        onLoginClick()
+                        if (isLoading) return@VisorButton
+
+                        errorMessage = null
+                        isLoading = true
+                        scope.launch {
+                            when (val result = AuthApi.login(email, password)) {
+                                is AuthApi.Result.Success -> {
+                                    // Backend returns { "access_token", "refresh_token" }.
+                                    // Hand them to the ViewModel, which persists the
+                                    // session and navigates home.
+                                    val accessToken = result.body.optString("access_token")
+                                    val refreshToken = result.body.optString("refresh_token")
+                                    isLoading = false
+                                    onLoginSuccess(accessToken, refreshToken)
+                                }
+
+                                is AuthApi.Result.Error -> {
+                                    isLoading = false
+                                    errorMessage = result.message
+                                }
+                            }
+                        }
                     }
                 )
+
+                errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
 

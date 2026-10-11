@@ -193,14 +193,17 @@ fun DebugScreen(
                     }
                 )
 
-                ActionButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.debug_verify_account_screen),
-                    onClick = {
-                        onDismiss()
-                        navController.navigate("verify_account")
-                    }
-                )
+                // DISABLED: the verify_account route is commented out while email
+                // verification is cut (see VisorNavHost) — navigating here would
+                // crash. Restore alongside the route when verification returns.
+                // ActionButton(
+                //     modifier = Modifier.fillMaxWidth(),
+                //     text = stringResource(R.string.debug_verify_account_screen),
+                //     onClick = {
+                //         onDismiss()
+                //         navController.navigate("verify_account")
+                //     }
+                // )
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),

@@ -17,6 +17,8 @@ import android.content.Context
  */
 class SessionStore(context: Context) {
 
+    // TODO(security): these are auth tokens — move to EncryptedSharedPreferences
+    //  (androidx.security:security-crypto) before shipping. Plain prefs for now.
     private val prefs = context.getSharedPreferences("visor_session", Context.MODE_PRIVATE)
 
     fun isLoggedIn(): Boolean = prefs.getBoolean(KEY_LOGGED_IN, false)
@@ -25,7 +27,30 @@ class SessionStore(context: Context) {
         prefs.edit().putBoolean(KEY_LOGGED_IN, loggedIn).apply()
     }
 
+    fun accessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
+
+    fun refreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
+
+    /** Persist the tokens returned by POST /auth/login. */
+    fun saveTokens(accessToken: String, refreshToken: String) {
+        prefs.edit()
+            .putString(KEY_ACCESS_TOKEN, accessToken)
+            .putString(KEY_REFRESH_TOKEN, refreshToken)
+            .apply()
+    }
+
+    /** Wipe all session data (logout / account deletion). */
+    fun clear() {
+        prefs.edit()
+            .remove(KEY_ACCESS_TOKEN)
+            .remove(KEY_REFRESH_TOKEN)
+            .putBoolean(KEY_LOGGED_IN, false)
+            .apply()
+    }
+
     private companion object {
         const val KEY_LOGGED_IN = "isLoggedIn"
+        const val KEY_ACCESS_TOKEN = "accessToken"
+        const val KEY_REFRESH_TOKEN = "refreshToken"
     }
 }

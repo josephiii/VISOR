@@ -197,6 +197,17 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         sessionStore.setLoggedIn(false)
     }
 
+    /**
+     * Called by LoginScreen after POST /auth/login succeeds. Persists the
+     * session tokens, marks the device logged in, and advances to Home.
+     * This is the single place the session is established — register alone
+     * does NOT log a user in (the backend returns only a user_id).
+     */
+    fun onLoginSuccess(accessToken: String, refreshToken: String) {
+        sessionStore.saveTokens(accessToken, refreshToken)
+        home() // sets isAuthComplete + sessionStore.setLoggedIn(true), navigates home
+    }
+
     /** Explicit "log out" from Settings — returns all the way to TitleScreen
      *  (not just the login form) and clears the whole back stack, so nothing
      *  from the ended session stays reachable by pressing back afterward. */
@@ -215,7 +226,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
                 atTitle = true,
             )
         }
-        sessionStore.setLoggedIn(false)
+        sessionStore.clear() // drops tokens + loggedIn flag
     }
 
     /**
@@ -247,11 +258,14 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isEnteringCode = true) }
     }
 
-    fun verifyAccount() {
-        _uiState.update { it.copy(isLoggingIn = false) }
-        _uiState.update { it.copy(isSigningUp = false) }
-        _uiState.update { it.copy(isVerifyingAccount = true) }
-    }
+    // DISABLED: email verification is cut for now (sign-up goes straight to
+    // login — see SignUpScreen + VisorNavHost). Restore this and its callers
+    // when email verification is added back.
+    // fun verifyAccount() {
+    //     _uiState.update { it.copy(isLoggingIn = false) }
+    //     _uiState.update { it.copy(isSigningUp = false) }
+    //     _uiState.update { it.copy(isVerifyingAccount = true) }
+    // }
 
     fun resetPassword() {
         _uiState.update { it.copy(hasForgottenPassword = false) }

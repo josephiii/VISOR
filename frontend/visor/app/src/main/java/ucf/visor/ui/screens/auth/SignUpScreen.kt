@@ -20,12 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
+import kotlinx.coroutines.launch
 import ucf.visor.R
+import ucf.visor.net.AuthApi
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.VisorTextField
@@ -46,6 +43,8 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var confirmedPassword by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val scrollState = rememberScrollState()
 
     Column(
@@ -112,14 +111,37 @@ fun SignUpScreen(
                 VisorButton(
                     text = stringResource(R.string.sign_up_title),
                     onClick = {
-                        onSignUpClick()
-//                        scope.launch {
-//                            val result = registerUser(email, password, username, confirmedPassword)
-//                        }
+                        if (isLoading) return@VisorButton
+
+                        errorMessage = validateSignUp(email, password, confirmedPassword)
+                        if (errorMessage != null) return@VisorButton
+
+                        isLoading = true
+                        scope.launch {
+                            when (val result = AuthApi.register(username, email, password)) {
+                                is AuthApi.Result.Success -> {
+                                    // Backend returns { "user_id": ... } — no token yet,
+                                    // so the user still logs in next. Advance the flow.
+                                    isLoading = false
+                                    onSignUpClick()
+                                }
+
+                                is AuthApi.Result.Error -> {
+                                    isLoading = false
+                                    errorMessage = result.message
+                                }
+                            }
+                        }
                     }
                 )
 
-
+                errorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
         Text(stringResource(R.string.already_have_account))
@@ -134,37 +156,26 @@ fun SignUpScreen(
     }
 }
 
-private suspend fun registerUser(
+/**
+ * Cheap client-side checks before hitting the network. Returns an error message
+ * to show the user, or null when the input looks valid. Uniqueness and the real
+ * password policy are enforced by the backend.
+ *
+ * NOTE: We only sanity-check the email with a regex here — there is no email
+ * verification yet (no confirmation code / verified flag). A registered account
+ * is immediately usable. TODO: add email verification later (send a code on
+ * register, gate login/onboarding on a verified status) and route sign-up back
+ * through the verify_account / enter_code screens once that exists.
+ */
+private fun validateSignUp(
     email: String,
     password: String,
-    username: String,
     confirmedPassword: String
-): String {
-    // Confirm email is valid email and unique
+): String? {
     val emailRegex = Regex("""^\w+@\w+\.\w+$""")
-    if (!(emailRegex.matches(email))) {
-        return "Invalid email"
-    }
-    // Unique check requires db
-
-    // Check that password and confirm pw match
-    if (password != confirmedPassword) {
-        return "The passwords do not match"
-    }
-    val apiBase = "http://127.0.0.1:8000"
-    val payload =
-        JSONObject().put("email", email).put("username", username).put("password", password)
-    val req = Request.Builder().url("$apiBase/register").post(
-        payload.toString().toRequestBody("application/json".toMediaType())
-    ).build()
-    val client = OkHttpClient()
-    client.newCall(req).execute().use() { response ->
-        if (response.isSuccessful) {
-            return "User registered"
-            //Navigate user to the login page (with information pre-filled )
-        } else {
-            //Throw error and show error message
-            return "Error registering user" //+ errorMessage
-        }
+    return when {
+        !emailRegex.matches(email) -> "Invalid email"
+        password != confirmedPassword -> "The passwords do not match"
+        else -> null
     }
 }
