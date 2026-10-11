@@ -57,6 +57,7 @@ import ucf.visor.network.VlmClient
 
 import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.capture.GlassesPhotoSource
+import ucf.visor.capture.NotifyingPhotoSource
 
 
 class MainActivity : ComponentActivity() {
@@ -75,12 +76,14 @@ class MainActivity : ComponentActivity() {
         )
 
         private val OBJECT_WAKE_PHRASES = setOf(
-            "VISORWHATAMIHOLDING",
+            "VISORIDENTIFY",
+            "VISORWHATISINFRONTOFME",
         )
 
         private val SCENE_WAKE_PHRASES = setOf(
             "VISORWHATDOYOUSEE",
-            "VISORWHATSINFRONTOFME",
+            "VISORDESCRIBESCENE",
+            "VISORSCENEDESCRIPTION",
         )
         private const val NAV_WAKE_PHRASE = "VISORGO"
 
@@ -191,7 +194,6 @@ class MainActivity : ComponentActivity() {
 
         glassesCamera = GlassesPhotoSource(
             requestPermission = ::requestWearablesPermission,
-            onCapturing = { speaker.speak("Taking picture") },
         )
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
@@ -205,13 +207,12 @@ class MainActivity : ComponentActivity() {
         )
 
         // object detector reads the objects image (swap for RealPhoto source once session exists)
-        sceneReader = DescribeObject(
-            FakePhotoSource(this, "photo_test/living_room.png"),
-            objectDetector,
-        )
+        sceneReader = DescribeObject(glassesCamera, objectDetector)
 
         sceneDescriber = SceneDescriber(
-            photoSource = glassesCamera,
+            photoSource = NotifyingPhotoSource(glassesCamera) {
+                speaker.speak("Awaiting scene description")
+            },
             vlm = VlmClient(),
             fallback = objectDetector,
         )
@@ -234,9 +235,16 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
                 in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
-                in OBJECT_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
+                in OBJECT_WAKE_PHRASES -> {
+                    speaker.speak("Taking picture")
+                    thinkingBeeper.start()
+                    sceneReader.requestRead { text ->
+                        thinkingBeeper.stop()
+                        speaker.speak(text)
+                    }
+                }
                 in SCENE_WAKE_PHRASES -> {
-                    speaker.speak("Awaiting scene description")
+                    speaker.speak("Taking picture")
                     thinkingBeeper.start()
                     sceneDescriber.requestRead { text ->
                         thinkingBeeper.stop()
