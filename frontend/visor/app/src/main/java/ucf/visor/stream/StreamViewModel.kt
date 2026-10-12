@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucf.visor.R
+import ucf.visor.ui.screens.home.runHazardDetection
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.isWarningOnly
@@ -386,7 +388,13 @@ class StreamViewModel(
                     decodeHeic(byteArray, transform)
                 }
             }
-        _uiState.update { it.copy(capturedPhoto = capturedPhoto, isShareDialogVisible = true) }
+        //Route the image to each model
+        when(visorViewModel.session.value.mode){
+            SessionMode.SCENE -> {    _uiState.update { it.copy(capturedPhoto = capturedPhoto, isShareDialogVisible = true) }
+            }
+            SessionMode.READER ->{}
+            SessionMode.HAZARD -> viewModelScope.launch { runHazardDetection(capturedPhoto) }
+        }
     }
 
     // HEIC Decoding with EXIF transformation
