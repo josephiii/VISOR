@@ -35,14 +35,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.DescribeObject
 import ucf.visor.capture.FakePhotoSource
+import ucf.visor.capture.GlassesPhotoSource
+import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.RealCapture
+import ucf.visor.capture.SceneDescriber
+import ucf.visor.network.VlmClient
+import ucf.visor.ocr.ObjectDetector
 import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.ocr.ObjectDetector
 import ucf.visor.capture.DescribeObject
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
+import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
@@ -51,6 +58,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
+
 
 class MainActivity : ComponentActivity() {
 
@@ -67,10 +75,16 @@ class MainActivity : ComponentActivity() {
             "VISORWHATISTHIS",
         )
 
+        private val OBJECT_WAKE_PHRASES = setOf(
+            "VISORIDENTIFY",
+            "VISORWHATISINFRONTOFME",
+            "VISORWHATAMIHOLDING"
+        )
+
         private val SCENE_WAKE_PHRASES = setOf(
             "VISORWHATDOYOUSEE",
-            "VISORWHATSINFRONTOFME",
-            "VISORWHATAMIHOLDING"
+            "VISORDESCRIBESCENE",
+            "VISORSCENEDESCRIPTION",
         )
         private const val NAV_WAKE_PHRASE = "VISORGO"
 
@@ -140,6 +154,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var sceneReader: ReadRequester
     private lateinit var objectDetector: ObjectDetector
     private lateinit var glassesNav: GlassesNavigationController
+    private lateinit var sceneReader: ReadRequester
+    private lateinit var sceneDescriber: ReadRequester
+    private lateinit var objectDetector: ObjectDetector
+    private lateinit var thinkingBeeper: ThinkingBeeper
+    private lateinit var glassesCamera: GlassesPhotoSource
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -174,9 +194,14 @@ class MainActivity : ComponentActivity() {
 
             }
         }
+
+        glassesCamera = GlassesPhotoSource(
+            requestPermission = ::requestWearablesPermission,
+        )
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
         speaker = Speaker(this)
+        thinkingBeeper = ThinkingBeeper(isSpeaking = { speaker.isSpeaking() })
 
         // OCR reads the label image (swap for RealPhoto source once session exists)
         reader = RealCapture(
@@ -185,9 +210,14 @@ class MainActivity : ComponentActivity() {
         )
 
         // object detector reads the objects image (swap for RealPhoto source once session exists)
-        sceneReader = DescribeObject(
-            FakePhotoSource(this, "photo_test/living_room.png"),
-            objectDetector,
+        sceneReader = DescribeObject(glassesCamera, objectDetector)
+
+        sceneDescriber = SceneDescriber(
+            photoSource = NotifyingPhotoSource(glassesCamera) {
+                speaker.speak("Awaiting scene description")
+            },
+            vlm = VlmClient(),
+            fallback = objectDetector,
         )
 
         voiceNav = VoiceNavigationController(
@@ -208,7 +238,24 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
                 in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
-                in SCENE_WAKE_PHRASES -> sceneReader.requestRead { text -> speaker.speak(text) }
+                in OBJECT_WAKE_PHRASES -> {
+                    speaker.speak("Taking picture")
+                    thinkingBeeper.start()
+                    sceneReader.requestRead { text ->
+                        thinkingBeeper.stop()
+                        speaker.speak(text)
+                    }
+                }
+
+                in SCENE_WAKE_PHRASES -> {
+                    speaker.speak("Taking picture")
+                    thinkingBeeper.start()
+                    sceneDescriber.requestRead { text ->
+                        thinkingBeeper.stop()
+                        speaker.speak(text)
+                    }
+                }
+
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
@@ -287,5 +334,7 @@ class MainActivity : ComponentActivity() {
         listener.shutdown()
         voiceNav.shutdown()
         glassesNav.shutdown()
+        thinkingBeeper.stop()
+        glassesCamera.close()
     }
 }
