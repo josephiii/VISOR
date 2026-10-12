@@ -51,6 +51,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,7 +86,7 @@ fun DebugScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ///////////////////////////////////////////////////////////////////////
-        // PHASE 1 TEST
+        // TEST SUITE: VISOR's testing environments (Phase 1, head-motion lab)
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -93,31 +95,39 @@ fun DebugScreen(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.p1_test_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
                 Text(
-                    text = stringResource(R.string.p1_test_description),
+                    text = stringResource(R.string.test_suite_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(
+                    text = stringResource(R.string.test_suite_description),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 HorizontalDivider()
 
-                ActionButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.p1_initiate_button),
+                TestSuiteEntry(
+                    title = stringResource(R.string.p1_test_title),
+                    description = stringResource(R.string.p1_test_description),
+                    buttonText = stringResource(R.string.p1_initiate_button),
                     onClick = {
                         onDismiss()
                         visorViewModel.initiatePhase1()
                         visorViewModel.home()
-                    }
+                    },
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                TestSuiteEntry(
+                    title = stringResource(R.string.motion_lab_test_title),
+                    description = stringResource(R.string.motion_lab_test_description),
+                    buttonText = stringResource(R.string.motion_lab_open_button),
+                    onClick = {
+                        onDismiss()
+                        visorViewModel.motionLab()
+                    },
                 )
             }
         }
@@ -195,14 +205,17 @@ fun DebugScreen(
                     }
                 )
 
-                ActionButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.debug_verify_account_screen),
-                    onClick = {
-                        onDismiss()
-                        navController.navigate("verify_account")
-                    }
-                )
+                // DISABLED: the verify_account route is commented out while email
+                // verification is cut (see VisorNavHost) — navigating here would
+                // crash. Restore alongside the route when verification returns.
+                // ActionButton(
+                //     modifier = Modifier.fillMaxWidth(),
+                //     text = stringResource(R.string.debug_verify_account_screen),
+                //     onClick = {
+                //         onDismiss()
+                //         navController.navigate("verify_account")
+                //     }
+                // )
 
                 ActionButton(
                     modifier = Modifier.fillMaxWidth(),
@@ -246,15 +259,6 @@ fun DebugScreen(
                     onClick = {
                         onDismiss()
                         navController.navigate("settings")
-                    }
-                )
-
-                ActionButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(R.string.debug_motion_lab_screen),
-                    onClick = {
-                        onDismiss()
-                        navController.navigate("motion_lab")
                     }
                 )
 
@@ -358,6 +362,33 @@ private fun ActionButton(
         enabled = enabled,
     ) {
         Text(text, fontWeight = FontWeight.Medium)
+    }
+}
+
+/** One testing environment in the Test Suite: a titled, described launch button. */
+@Composable
+private fun TestSuiteEntry(
+    title: String,
+    description: String,
+    buttonText: String,
+    onClick: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        ActionButton(
+            modifier = Modifier.fillMaxWidth(),
+            text = buttonText,
+            onClick = onClick,
+        )
     }
 }
 

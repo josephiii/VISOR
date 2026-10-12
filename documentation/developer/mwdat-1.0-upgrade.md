@@ -114,7 +114,7 @@ channel will not get them until Meta graduates the APIs.
 
 ## What was added, and why
 
-### 1. Head-motion lab (Settings → Research → Head-motion lab)
+### 1. Head-motion lab (debug menu → Test Suite → Head-Motion Lab)
 
 **Why:** this is the measurement the web path could not make. It records the
 glasses' IMU through MWDAT Motion and, in the VOR tier, the image shift the
@@ -223,7 +223,8 @@ or failure with "Please log in on your phone" when logged out.
 
 Pair a mock **Ray-Ban Meta** or **Ray-Ban Display**. Replay a synthetic 1 Hz
 head shake on the mock IMU. Set battery to 12%/95%, make hot or cool. Simulate
-"Hey Meta, start VISOR". Open the head-motion lab directly.
+"Hey Meta, start VISOR". The **Test Suite** section, at the top, holds VISOR's
+testing environments: initiate Phase 1, or open the head-motion lab.
 
 The mock head shake is five minutes long. MockDeviceKit replays a looped feed
 with the feed's own timestamps, so the "device clock" jumps back at every loop.
