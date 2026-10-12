@@ -65,8 +65,8 @@ import com.meta.wearable.dat.mockdevice.api.GlassesModel
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import ucf.visor.R
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.ui.viewmodel_d.DebugViewModel
-import ucf.visor.ui.viewmodel_d.MockDeviceInfo
+import ucf.visor.ui.screens.debug.DebugViewModel
+import ucf.visor.ui.screens.debug.MockDeviceInfo
 
 @Composable
 fun DebugScreen(

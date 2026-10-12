@@ -1,22 +1,41 @@
-# ENVIORMENT
+# ENVIRONMENT
 **/.env*
+# ...but a template with the variable names (no values) is committed.
+!**/.env.example
 
 # Python
 **/__pycache__/
 *.py[cod]
-*.pyc
+**/.ipynb_checkpoints/
+**/.pytest_cache/
 
 # Python virtual environments
 **/venv/
+**/.venv/
 
 # Cache directories
 **/.cache/
+
+# OS and editor files
+**/.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/settings.json
+# Personal Claude Code settings (the shared .claude/settings.json can be committed).
+.claude/settings.local.json
 
 # Kotlin/Android
 frontend/visor/.gradle/
 frontend/visor/build/
 frontend/visor/local.properties
 **/.idea/
+# A real release keystore must never be committed (app/sample.keystore is Meta's public sample key).
+**/*.jks
+
+# Wake-word model downloads (see tools/kws/README.md) and generated depth previews
+**/sherpa-onnx-kws-*/
+**/*.tar.bz2
+backend/**/depth_out.png
 
 # IMU session data — raw recordings and generated analysis artifacts.
 # Synthetic sessions are reproducible from analysis/make_synthetic.py (fixed seed).

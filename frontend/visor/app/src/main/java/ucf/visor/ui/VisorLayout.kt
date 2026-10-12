@@ -55,8 +55,8 @@ import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
-import ucf.visor.ui.phase1.Phase1NavigationBar
-import ucf.visor.ui.profile.SpeechRates
+import ucf.visor.ui.screens.phase1.Phase1NavigationBar
+import ucf.visor.data.SpeechRates
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionMode
@@ -408,7 +408,7 @@ fun VisorLayout(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Error,
-                                    contentDescription = "Camera Access error",
+                                    contentDescription = "Error",
                                     tint = MaterialTheme.colorScheme.onErrorContainer,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))

@@ -8,8 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
-import ucf.visor.ui.phase1.Phase1ModeConfigurationScreen
-import ucf.visor.ui.profile.ProfileFlowHost
+import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
+import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
 import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
@@ -141,7 +141,6 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
-                // TODO: POST /auth/deleteAccount once it exists.
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
             );

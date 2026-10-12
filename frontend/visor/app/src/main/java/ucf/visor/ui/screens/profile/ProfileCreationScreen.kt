@@ -1,5 +1,6 @@
 package ucf.visor.ui.screens.profile
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,20 +25,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import ucf.visor.R
+import ucf.visor.data.Severity
+import ucf.visor.data.SpeechRates
+import ucf.visor.data.UserProfile
+import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionType
+import ucf.visor.data.label
 import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.scrollIndicator
-import ucf.visor.ui.profile.Severity
-import ucf.visor.ui.profile.SpeechRates
-import ucf.visor.ui.profile.UserProfile
-import ucf.visor.ui.profile.Verbosity
-import ucf.visor.ui.profile.VisionType
-import ucf.visor.ui.profile.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
@@ -59,42 +63,16 @@ import ucf.visor.ui.voice.VoiceNavigationController
  * @param onFinished Receives the completed profile — save + POST to backend.
  */
 
-private enum class Step(val title: String, val spokenPrompt: String) {
-    NAME(
-        "What should VISOR call you?",
-        "Welcome to VISOR. What should I call you? Say your name, or tap Skip."
-    ),
-    VOICE_NAV(
-        "Navigate VISOR by voice?",
-        "You can navigate VISOR by voice, any time, by saying \"VISOR GO\" followed by " +
-                "a command, like \"open settings\" or \"go home\". It stays off unless you " +
-                "turn it on. Say yes to turn it on, or no to leave it off — you can always " +
-                "change this later in Settings."
-    ),
-    VISION(
-        "Which of these describe what you experience?",
-        "Which of these describe what you experience? You can pick more than one. Say: center loss, side loss, blurry, light sensitivity, or not sure."
-    ),
-    DESCRIBE(
-        "Tell me about your vision, in your own words",
-        "If you'd like, tell me about your vision in your own words. Anything that doesn't fit the boxes. Or tap Skip."
-    ),
-    SEVERITY(
-        "How much does it affect daily life?",
-        "How much does your vision affect daily life? Say: a little, a moderate amount, or a lot."
-    ),
-    SPEECH_RATE(
-        "How fast should I talk?",
-        "How fast should I talk? Say: slower, normal, or faster."
-    ),
-    VERBOSITY(
-        "How much detail do you want?",
-        "When I describe things, how much detail do you want? Say: brief, standard, or detailed."
-    ),
-    DONE(
-        "You're all set!",
-        "You're all set. You can change any of this later in Settings, or just ask me."
-    ),
+// Each step's question, on screen and spoken, from strings.xml (step_*).
+private enum class Step(@StringRes val title: Int, @StringRes val spokenPrompt: Int) {
+    NAME(R.string.step_name_title, R.string.step_name_spoken_prompt),
+    VOICE_NAV(R.string.step_voice_nav_title, R.string.step_voice_nav_spoken_prompt),
+    VISION(R.string.step_vision_title, R.string.step_vision_spoken_prompt),
+    DESCRIBE(R.string.step_describe_title, R.string.step_describe_spoken_prompt),
+    SEVERITY(R.string.step_severity_title, R.string.step_severity_spoken_prompt),
+    SPEECH_RATE(R.string.step_speech_rate_title, R.string.step_speech_rate_spoken_prompt),
+    VERBOSITY(R.string.step_verbosity_title, R.string.step_verbosity_spoken_prompt),
+    DONE(R.string.step_done_title, R.string.step_done_spoken_prompt),
 }
 
 @Composable
@@ -107,6 +85,7 @@ fun ProfileCreationScreen(
     var step by remember { mutableStateOf(Step.NAME) }
     var profile by remember { mutableStateOf(viewModel.userProfile.value) }
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     fun next() {
         voiceNav?.cancelCapture() // on touch tap
@@ -117,7 +96,7 @@ fun ProfileCreationScreen(
     // VOICE NAVIGATION
     LaunchedEffect(step) {
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
-        speak(step.spokenPrompt)
+        speak(context.getString(step.spokenPrompt))
         val askedStep = step
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()
@@ -215,7 +194,7 @@ fun ProfileCreationScreen(
         )
 
         Text(
-            text = step.title,
+            text = stringResource(step.title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },

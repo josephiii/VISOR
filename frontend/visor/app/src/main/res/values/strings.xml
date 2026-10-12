@@ -4,17 +4,19 @@
     <string name="app_name">VISOR</string>
     <string name="visor_acronym" description="VISOR Acronym and Meaning">Vision Intelligence System for Ocular Rehabilitation</string>
 
+    <!-- Common -->
+    <string name="back" description="Back button">Back</string>
+    <string name="cancel" description="Cancel button">Cancel</string>
+
     <!-- Login Screen -->
-    <string name="login_title" description="The login title">LOGIN</string>.
+    <string name="login_title" description="The login title">LOGIN</string>
     <string name="email_username_label" description="The username / email label">Username / Email</string>
-    <string name="password_label" description="The password label">Password</string>.
+    <string name="password_label" description="The password label">Password</string>
     <string name="example_email_input" description="Placeholder email for the user to overwrite">email@email.com</string> <!--also, ForgotPasswordScreen() -->
-    <string name="example_password_input" descripion="Placeholder password">password</string>
     <string name="sign_up_title" descripion="The sign up title">SIGN UP</string>
 
     <!-- Sign Up Screen -->
-    <string name="username_label" description="The username label">Username</string>.
-    <string name="example_username_input" description="The username sample input">Scott Summers</string>
+    <string name="username_label" description="The username label">Username</string>
     <string name="email_label" description="The email label">Email</string>
     <string name="confirm_password_label" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
     <string name="already_have_account" description="Text for users to see and to prompt them to login">Already have an account?</string>
@@ -27,7 +29,6 @@
 
     <!-- Reset Password Screen -->
     <string name="reset_password_title" description="The title for Reset Password screen">Reset Password?</string>
-    <string name="reset_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
     <string name="old_password_text" description="Text title for user to input their old password">Old Password</string>
     <string name="new_password_text" description="Text title for user to input their new password">New Password</string>
     <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save Password</string>
@@ -40,8 +41,60 @@
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
     <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
 
-    <!-- User Profile Screen -->
+    <!-- Settings Screen -->
     <string name="settings_navbar_title" description="The title for navigating to the settings screen">Settings</string>
+    <string name="settings_title" description="Settings screen heading">Settings</string>
+    <string name="settings_section_about_you" description="Settings section: the user's name and vision">About you</string>
+    <string name="settings_name_label" description="Label for the user's name field">Your name</string>
+    <string name="settings_vision_description_label" description="Label for the free-text vision description field">Describe your vision, in your own words (optional)</string>
+    <string name="settings_section_speech_rate" description="Settings section: speech rate">How fast VISOR talks</string>
+    <string name="settings_speech_rate_description" description="Screen reader description of the speech rate slider">Speech rate: <xliff:g id="rate">%1$s</xliff:g></string>
+    <string name="settings_speech_rate_slower" description="Speech rate slider, slow end">Slower</string>
+    <string name="settings_speech_rate_faster" description="Speech rate slider, fast end">Faster</string>
+    <string name="settings_section_detail" description="Settings section: how much detail VISOR gives">How much detail</string>
+    <string name="settings_verbosity_brief" description="Detail option">Brief</string>
+    <string name="settings_verbosity_standard" description="Detail option">Standard</string>
+    <string name="settings_verbosity_detailed" description="Detail option">Detailed</string>
+    <string name="settings_section_text_size" description="Settings section: text size">Text size</string>
+    <string name="settings_text_size_standard" description="Text size option">Standard</string>
+    <string name="settings_text_size_large" description="Text size option">Large</string>
+    <string name="settings_text_size_extra_large" description="Text size option">Extra large</string>
+    <string name="settings_section_display" description="Settings section: display">Display</string>
+    <string name="settings_high_contrast_on" description="High contrast toggle, on">High contrast: ON</string>
+    <string name="settings_high_contrast_off" description="High contrast toggle, off">High contrast: OFF</string>
+    <string name="settings_section_voice_navigation" description="Settings section: voice navigation">Voice navigation</string>
+    <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then say where you\'d like to go — for example \"open settings\" or \"go home\".</string>
+    <string name="settings_voice_navigation_on" description="Voice navigation toggle, on">Voice navigation: ON</string>
+    <string name="settings_voice_navigation_off" description="Voice navigation toggle, off">Voice navigation: OFF</string>
+    <string name="settings_section_tap_navigation" description="Settings section: glasses tap navigation">Glasses tap navigation</string>
+    <string name="settings_tap_navigation_description" description="How glasses tap navigation works">When your glasses are connected, the same navigation shows up as buttons on their display — tap or swipe on the temple arm or Neural Band to select one, no phone or voice needed.</string>
+    <string name="settings_tap_navigation_on" description="Glasses tap navigation toggle, on">Glasses tap navigation: ON</string>
+    <string name="settings_tap_navigation_off" description="Glasses tap navigation toggle, off">Glasses tap navigation: OFF</string>
+    <string name="settings_section_support" description="Settings section: support">Support</string>
+    <string name="settings_help" description="Opens the Help screen">Help &amp; how VISOR works</string>
+    <string name="settings_section_account" description="Settings section: account">Account</string>
+    <string name="settings_log_out" description="Log out button and confirm button">Log out</string>
+    <string name="settings_delete_account" description="Delete account button">Delete my account</string>
+    <string name="settings_log_out_confirm_title" description="Log out confirmation title">Log out?</string>
+    <string name="settings_log_out_confirm_message" description="Log out confirmation message">You\'ll need to sign in again to use VISOR.</string>
+    <string name="settings_delete_account_confirm_title" description="Delete account confirmation title">Delete your account?</string>
+    <string name="settings_delete_account_confirm_message" description="Delete account confirmation message">This permanently deletes your VISOR account and everything in it. This can\'t be undone.</string>
+    <string name="settings_delete_account_confirm_button" description="Delete account confirm button">Delete</string>
+
+    <!-- Help Screen: one title and body per topic -->
+    <string name="help_title" description="Help screen heading">(WIP) Help &amp; how VISOR works</string>
+    <string name="help_session_title" description="Help topic title">Starting a session</string>
+    <string name="help_session_body" description="Help topic">On the Home screen, the large center button starts and ends a VISOR session. While a session is active, VISOR describes what your glasses see.</string>
+    <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
+    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. You\'ll need to pair before VISOR can use their camera. Once paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
+    <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
+    <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home and starts a session — no need to find or unlock your phone.</string>
+    <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. VISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks.</string>
+    <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
+    <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
+    <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
+    <string name="help_personalize_body" description="Help topic">In Settings, you can change how fast VISOR talks, how much detail it gives, your text size, and turn on High Contrast mode. Changes apply immediately.</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
@@ -54,15 +107,9 @@
     <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
-    <string name="unregister_button_title" description="Disconnect App">Disconnect</string>
+    <string name="unregister_button_title" description="Disconnect App">Disconnect my glasses</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>
     <string name="update_dat_app_button_title" description="Open DAT app update on glasses">Update app on glasses</string>
-    <string name="stream_button_title" description="Start streaming">Start streaming</string>
-    <string name="stop_stream_button_title" description="Stop streaming">Stop streaming</string>
-    <string name="home_tip_audio_title" description="Tip title about audio">Open-Ear Audio</string>
-    <string name="home_tip_hands_title" description="Tip title about hands free">Enjoy On-the-Go</string>
-    <string name="home_tip_audio" description="Tip about audio">Hear notifications while keeping your ears open to the world around you.</string>
-    <string name="home_tip_hands" description="Tip about hands free">Stay hands-free while you move through your day. Move freely, stay connected.</string>
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
 
     <!-- DEBUG -->
@@ -85,6 +132,10 @@
     <!-- NAME Step -->
     <string name="step_name_title">What should VISOR call you?</string>
     <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
+
+    <!-- VOICE_NAV Step -->
+    <string name="step_voice_nav_title">Navigate VISOR by voice?</string>
+    <string name="step_voice_nav_spoken_prompt">You can navigate VISOR by voice, any time, by saying \"VISOR GO\" followed by a command, like \"open settings\" or \"go home\". It stays off unless you turn it on. Say yes to turn it on, or no to leave it off — you can always change this later in Settings.</string>
 
     <!-- VISION Step -->
     <string name="step_vision_title">Which of these describe what you experience?</string>
@@ -110,24 +161,12 @@
     <string name="step_done_title">You\'re all set!</string>
     <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
 
-    <!-- Stream Screen -->
-    <string name="live_stream" description="Live Stream">Live stream</string>
-
-    <!-- Non Stream Screen -->
-    <string name="camera_access_icon_description" description="Camera Access icon description">Camera Access icon</string>
-    <string name="non_stream_screen_description" description="Non stream screen description">Tap the Start streaming button to stream video from your glasses or use the camera button to take a photo from your glasses.</string>
-    <string name="non_stream_screen_title" description="Non stream screen title">Stream Your Glasses Camera</string>
-    <string name="waiting_for_active_device" description="Waiting for active device message">Waiting for an active device</string>
+    <!-- Hardware Pairing Screen: updates the glasses need -->
+    <string name="camera_access_icon_description" description="Camera Access icon description">Glasses camera</string>
     <string name="update_required_title" description="Update required warning title">Update required</string>
-    <string name="update_required_firmware_message" description="Firmware update required warning">Your glasses firmware needs an update before Camera Access can start.</string>
-    <string name="update_required_dat_app_message" description="DAT app update required warning">The app on your glasses needs an update before Camera Access can start.</string>
-    <string name="update_required_both_message" description="Firmware and DAT app update required warning">Your glasses firmware and app need updates before Camera Access can start.</string>
-
-    <!-- SharePhotoDialog -->
-    <string name="photo_captured" description="Photo Captured">Photo Captured</string>
-    <string name="captured_photo" description="Captured Photo">Captured Photo</string>
-    <string name="capture_photo" description="Capture Photo">Capture Photo</string>
-    <string name="share" description="Share">Share</string>
+    <string name="update_required_firmware_message" description="Firmware update required warning">Your glasses firmware needs an update before VISOR can use them.</string>
+    <string name="update_required_dat_app_message" description="DAT app update required warning">The app on your glasses needs an update before VISOR can use them.</string>
+    <string name="update_required_both_message" description="Firmware and DAT app update required warning">Your glasses firmware and app need updates before VISOR can use them.</string>
 
     <!-- Mock Device Kit Screen -->
     <string name="mock_device_kit_title" description="Mock Device Kit Title">Mock Device Kit</string>
@@ -145,22 +184,10 @@
     <string name="mock_thermal_normal" description="Set mock glasses thermal level normal">Cool down</string>
     <string name="mock_voice_launch" description="Simulate a Hey Meta voice launch">Simulate "Hey Meta, start VISOR"</string>
     <string name="unpair" description="Unpair">Unpair</string>
-    <string name="power_on" description="Power On">Power On</string>
-    <string name="power_off" description="Power Off">Power Off</string>
-    <string name="unfold" description="Unfold">Unfold</string>
-    <string name="fold" description="Fold">Fold</string>
-    <string name="don" description="Don">Don</string>
-    <string name="doff" description="Doff">Doff</string>
-    <string name="select_video" description="Select video">Select video</string>
-    <string name="has_camera_feed" description="Has camera feed">Has camera feed</string>
-    <string name="no_camera_feed" description="No camera feed">No camera feed</string>
     <string name="select_image" description="Select image">Select image</string>
     <string name="has_captured_image" description="Has captured image">Has captured image</string>
-    <string name="no_captured_image" description="No captured image">No captured image</string>
     <string name="front_camera" description="Front camera">Front Camera</string>
     <string name="back_camera" description="Back camera">Back Camera</string>
-    <string name="camera_source_active" description="Camera source active">Camera: <xliff:g id="facing">%1$s</xliff:g></string>
-    <string name="no_camera_source" description="No camera source">No camera source</string>
     <string name="camera_source_label" description="Camera source dropdown label">Camera Source: <xliff:g id="source">%1$s</xliff:g></string>
     <string name="camera_source_none" description="Camera source none">None</string>
     <string name="camera_source_video_file" description="Camera source video file">Video File</string>
@@ -174,19 +201,77 @@
     <string name="camera_permission_open_settings" description="Camera permission open settings button">Open Settings</string>
     <string name="camera_permission_cancel" description="Camera permission cancel button">Cancel</string>
 
-    <!-- Getting Started Sheet -->
-    <string name="getting_started_title" description="Getting Started sheet title">Getting started</string>
-    <string name="getting_started_tip_permission" description="Tip about camera permission">First, Camera Access needs permission to use your glasses camera.</string>
-    <string name="getting_started_tip_led" description="Tip about capture LED">The capture LED lets others know when you\'re capturing content or going live.</string>
-    <string name="getting_started_tip_photo" description="Tip about photo capture">Capture photos by tapping the camera button.</string>
-    <string name="getting_started_continue" description="Continue button">Continue</string>
-
     <!-- TEST SUITE (debug menu) -->
     <string name="test_suite_title" description="Title of the Test Suite section in the debug menu">Test Suite</string>
     <string name="test_suite_description" description="Description of the Test Suite section in the debug menu">Testing environments for VISOR. Choose one to start it.</string>
     <string name="motion_lab_test_title" description="Head-motion lab title in the debug menu Test Suite">Head-Motion Lab</string>
     <string name="motion_lab_test_description" description="Head-motion lab description in the debug menu Test Suite">Record the glasses\' motion sensors, and the camera image for head-motion trials, for the VISOR research team. Uses experimental glasses features.</string>
     <string name="motion_lab_open_button" description="The text for the button that opens the head-motion lab">OPEN HEAD-MOTION LAB</string>
+
+    <!-- Head-Motion Lab Screen. Trial names, setups and instructions live in
+         motionlab/protocol/Trials.kt, which mirrors the web IMU Lab's protocol. -->
+    <string name="motion_lab_title" description="Head-motion lab heading">Head-motion lab</string>
+    <string name="motion_lab_intro" description="What the head-motion lab is for">A research tool. It records your glasses\' motion sensors, and for the head-motion-versus-camera trials, how far the camera image moves. It uses experimental glasses features, so it only works on test builds.</string>
+    <string name="motion_lab_glasses_heading" description="Glasses status card heading">Glasses</string>
+    <string name="motion_lab_not_registered" description="VISOR is not registered with the glasses">VISOR is not registered with your glasses yet.</string>
+    <string name="motion_lab_no_glasses" description="No glasses found">No glasses found.</string>
+    <string name="motion_lab_pair_glasses" description="Opens the Pair Glasses screen">Pair glasses</string>
+    <string name="motion_lab_glasses_connected" description="Glasses model and connection"><xliff:g id="model">%1$s</xliff:g>: connected</string>
+    <string name="motion_lab_glasses_not_connected" description="Glasses model and connection"><xliff:g id="model">%1$s</xliff:g>: not connected</string>
+    <string name="motion_lab_battery" description="Glasses battery level">Battery <xliff:g id="percent">%1$d</xliff:g>%%</string>
+    <string name="motion_lab_battery_charging" description="Glasses battery level while charging">Battery <xliff:g id="percent">%1$d</xliff:g>%%, charging</string>
+    <string name="motion_lab_worn" description="Glasses are on the wearer's head">Being worn</string>
+    <string name="motion_lab_not_worn" description="Glasses are not on the wearer's head">Not being worn</string>
+    <string name="motion_lab_temperature" description="Glasses temperature, as a word">Temperature <xliff:g id="level">%1$s</xliff:g></string>
+    <string name="motion_lab_throttling" description="Glasses are hot and slowing down">The glasses are warm and may slow down. Let them cool before a long trial.</string>
+    <string name="motion_lab_read_status" description="Reads the glasses status aloud">Read glasses status aloud</string>
+    <string name="motion_lab_participant_label" description="Participant code field label">Participant code</string>
+    <string name="motion_lab_participant_hint" description="Participant code field hint">A code such as bench01 — never a name.</string>
+    <string name="motion_lab_trial_camera" description="Trial records camera and motion">camera and motion sensors</string>
+    <string name="motion_lab_trial_motion_only" description="Trial records motion only">motion sensors only</string>
+    <string name="motion_lab_trial_worn" description="Trial is done wearing the glasses">worn</string>
+    <string name="motion_lab_trial_set_down" description="Trial is done with the glasses set down">glasses set down</string>
+    <string name="motion_lab_trial_why" description="Why a trial is run">Why: <xliff:g id="purpose">%1$s</xliff:g></string>
+    <string name="motion_lab_start_trial" description="Starts the selected trial">Start this trial</string>
+    <string name="motion_lab_connect_to_start" description="Why a trial cannot start">Connect and register your glasses to start a trial.</string>
+    <string name="motion_lab_phase_connecting" description="Trial phase">Connecting to the glasses…</string>
+    <string name="motion_lab_phase_get_ready" description="Trial phase">Get ready</string>
+    <string name="motion_lab_phase_waiting" description="Trial phase">Waiting for the glasses…</string>
+    <string name="motion_lab_phase_recording" description="Trial phase">Recording</string>
+    <!-- What a screen reader says for the countdown before recording. -->
+    <plurals name="motion_lab_countdown_spoken">
+        <item quantity="one">Recording starts in <xliff:g id="seconds">%1$d</xliff:g> second</item>
+        <item quantity="other">Recording starts in <xliff:g id="seconds">%1$d</xliff:g> seconds</item>
+    </plurals>
+    <string name="motion_lab_elapsed" description="Screen reader label for the elapsed time">Elapsed</string>
+    <string name="motion_lab_elapsed_of_total" description="Elapsed time out of the trial length"><xliff:g id="elapsed">%1$s</xliff:g> of <xliff:g id="total">%2$s</xliff:g></string>
+    <string name="motion_lab_balance_lost" description="Ends a timed balance hold">Balance lost</string>
+    <string name="motion_lab_stop_trial" description="Stops the running trial">Stop trial</string>
+    <!-- Live motion sample rate; the quantity is the rate. -->
+    <plurals name="motion_lab_live_motion">
+        <item quantity="one">Motion: <xliff:g id="rate">%1$d</xliff:g> sample a second (<xliff:g id="total">%2$d</xliff:g> total)</item>
+        <item quantity="other">Motion: <xliff:g id="rate">%1$d</xliff:g> samples a second (<xliff:g id="total">%2$d</xliff:g> total)</item>
+    </plurals>
+    <string name="motion_lab_live_head_speed" description="Live head turning speed">Head turning: <xliff:g id="speed">%1$d</xliff:g>° a second</string>
+    <!-- Live camera frame rate; the quantity is the rate. -->
+    <plurals name="motion_lab_live_camera">
+        <item quantity="one">Camera: <xliff:g id="rate">%1$d</xliff:g> frame a second (<xliff:g id="measured">%2$d</xliff:g> measured)</item>
+        <item quantity="other">Camera: <xliff:g id="rate">%1$d</xliff:g> frames a second (<xliff:g id="measured">%2$d</xliff:g> measured)</item>
+    </plurals>
+    <string name="motion_lab_live_image_shift" description="Live image shift between frames">Image moved <xliff:g id="pixels">%1$s</xliff:g> px between frames</string>
+    <string name="motion_lab_tracking_good" description="Image tracking quality">Tracking: good</string>
+    <string name="motion_lab_tracking_fair" description="Image tracking quality">Tracking: fair</string>
+    <string name="motion_lab_tracking_poor" description="Image tracking quality">Tracking: poor — face a scene with more detail</string>
+    <string name="motion_lab_result_completed" description="Trial result">Trial complete</string>
+    <string name="motion_lab_result_aborted" description="Trial result">Trial stopped</string>
+    <string name="motion_lab_result_failed" description="Trial result">Trial could not finish</string>
+    <string name="motion_lab_result_balance_lost" description="Trial result">Balance lost: hold time recorded</string>
+    <string name="motion_lab_fit" description="Head-motion vs. camera fit, for researchers">Rotation axis <xliff:g id="gyro_axis">%1$s</xliff:g> → image <xliff:g id="image_axis">%2$s</xliff:g> · lag <xliff:g id="lag">%3$d</xliff:g> ms · r = <xliff:g id="correlation">%4$s</xliff:g> · <xliff:g id="px_per_degree">%5$s</xliff:g> px/° · residual <xliff:g id="residual">%6$s</xliff:g>°/s</string>
+    <string name="motion_lab_share_recording" description="Shares the trial recording">Share recording</string>
+    <plurals name="motion_lab_saved_recordings">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> recording saved on this phone (Android/data/…/files/<xliff:g id="folder">%2$s</xliff:g>). Share each one after its trial, or copy them with adb pull for analysis/analyze.py.</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> recordings saved on this phone (Android/data/…/files/<xliff:g id="folder">%2$s</xliff:g>). Share each one after its trial, or copy them with adb pull for analysis/analyze.py.</item>
+    </plurals>
 
     <!-- PHASE 1 -->
     <string name="p1_test_title" description="Phase 1 test title in debug options">Phase 1 Test Environment</string>

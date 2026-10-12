@@ -10,9 +10,6 @@ import com.meta.wearable.dat.core.selectors.DeviceSelector
 import com.meta.wearable.dat.core.types.Device
 import com.meta.wearable.dat.core.types.DeviceCompatibility
 import com.meta.wearable.dat.core.types.DeviceIdentifier
-import com.meta.wearable.dat.core.types.Permission
-import com.meta.wearable.dat.core.types.PermissionStatus
-import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,9 +17,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ucf.visor.auth.SessionStore
-import ucf.visor.ui.profile.ProfileStore
-import ucf.visor.ui.profile.UserProfile
+import ucf.visor.data.ProfileStore
+import ucf.visor.data.SessionStore
+import ucf.visor.data.UserProfile
+import ucf.visor.network.ApiResult
+import ucf.visor.network.AuthApi
+import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
 
@@ -51,7 +51,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     // MWDAT
     // AutoDeviceSelector automatically selects the first available wearable device.
     val deviceSelector: DeviceSelector by lazy { AutoDeviceSelector() }
-    private var deviceSelectorJob: Job? = null
 
     private var monitoringStarted = false
     private val deviceMonitoringJobs = mutableMapOf<DeviceIdentifier, Job>()
@@ -66,25 +65,16 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         }
         monitoringStarted = true
 
-        // Monitor device selector for active device
-        deviceSelectorJob = viewModelScope.launch {
-            deviceSelector.activeDeviceFlow().collect { device ->
-                _uiState.update { it.copy(hasActiveDevice = device != null) }
-            }
-        }
-
         // This allows the app to react to registration changes (registered, unregistered, etc.)
         viewModelScope.launch {
             Wearables.registrationState.collect { value ->
-                val previousState = _uiState.value.registrationState
-                val showGettingStartedSheet =
-                    value == RegistrationState.REGISTERED && previousState == RegistrationState.REGISTERING
-                _uiState.update {
-                    it.copy(
-                        registrationState = value,
-                        isGettingStartedSheetVisible = showGettingStartedSheet
-                    )
-                }
+                _uiState.update { it.copy(registrationState = value) }
+            }
+        }
+        // Reported by whichever VISOR feature's glasses session was refused.
+        viewModelScope.launch {
+            GlassesAppUpdate.required.collect { required ->
+                _uiState.update { it.copy(isDatAppUpdateRequired = required) }
             }
         }
         // This automatically updates when devices are discovered, connected, or disconnected
@@ -145,37 +135,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     fun openDATGlassesAppUpdate(activity: Activity) {
         Wearables.openDATGlassesAppUpdate(activity).onFailure { error, _ ->
             setRecentError(error.description)
-        }
-    }
-
-    fun navigateToStreaming(onRequestWearablesPermission: suspend (Permission) -> PermissionStatus) {
-        viewModelScope.launch {
-            val permission = Permission.CAMERA // Camera permission is required for streaming
-            val result = Wearables.checkPermissionStatus(permission)
-
-            // Handle the result
-            result.onFailure { error, _ ->
-                setRecentError("Permission check error: ${error.description}")
-                return@launch
-            }
-
-            val permissionStatus = result.getOrNull()
-            if (permissionStatus == PermissionStatus.Granted) {
-                _uiState.update { it.copy(isStreaming = true) }
-                return@launch
-            }
-
-            // Request permission
-            val requestedPermissionStatus = onRequestWearablesPermission(permission)
-            when (requestedPermissionStatus) {
-                PermissionStatus.Denied -> {
-                    setRecentError("Permission denied")
-                }
-
-                PermissionStatus.Granted -> {
-                    _uiState.update { it.copy(isStreaming = true) }
-                }
-            }
         }
     }
 
@@ -250,10 +209,20 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      * session tokens, marks the device logged in, and advances to Home.
      * This is the single place the session is established — register alone
      * does NOT log a user in (the backend returns only a user_id).
+     *
+     * The profile (speech rate, contrast, text size...) lives only on the
+     * phone, so a login with no saved profile (a new account, or a new phone)
+     * goes through the voice-first setup first, which ends in home() itself.
+     * While email verification is bypassed, this is also the only way a new
+     * account reaches setup (see the DISABLED notes below and in VisorNavHost).
      */
     fun onLoginSuccess(accessToken: String, refreshToken: String) {
         sessionStore.saveTokens(accessToken, refreshToken)
-        home() // sets isAuthComplete + sessionStore.setLoggedIn(true), navigates home
+        if (profileStore.hasProfile()) {
+            home() // sets isAuthComplete + sessionStore.setLoggedIn(true), navigates home
+        } else {
+            onboard()
+        }
     }
 
     /** Explicit "log out" from Settings — returns all the way to TitleScreen
@@ -278,16 +247,34 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Deleting the account is still frontend-only (no backend endpoint yet —
-     * see the TODO on SettingsScreen's onDeleteAccount), but it should still
-     * behave like account deletion locally: wipe the saved profile and end
-     * the session, landing back on TitleScreen same as logout().
+     * Deletes the account on the backend (DELETE /auth/deleteAccount), then
+     * wipes the saved profile and ends the session, landing back on
+     * TitleScreen same as logout(). If the backend refuses, nothing local is
+     * touched and the user is told why, so no one is told an account is gone
+     * when it is not.
      */
     fun confirmDeleteAccount() {
-        profileStore.clear()
-        _userProfile.value = UserProfile()
         _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
-        logout()
+        val token = sessionStore.accessToken()
+        if (token.isNullOrBlank()) {
+            setRecentError(DELETE_ACCOUNT_LOG_IN_AGAIN)
+            return
+        }
+        viewModelScope.launch {
+            when (val result = AuthApi.deleteAccount(token)) {
+                is ApiResult.Success -> {
+                    profileStore.clear()
+                    _userProfile.value = UserProfile()
+                    logout()
+                }
+
+                // 401: access tokens expire, and VISOR does not refresh them yet.
+                is ApiResult.Error -> setRecentError(
+                    if (result.code == 401) DELETE_ACCOUNT_LOG_IN_AGAIN
+                    else "Couldn't delete your account: ${result.message}"
+                )
+            }
+        }
     }
 
     fun signUp() {
@@ -423,14 +410,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
-    internal fun setDatAppUpdateRequired(required: Boolean) {
-        _uiState.update { it.copy(isDatAppUpdateRequired = required) }
-    }
-
-    fun navigateToDeviceSelection() {
-        _uiState.update { it.copy(isStreaming = false) }
-    }
-
     fun onPermissionsResult(permissionsResult: Map<String, Boolean>, onAllGranted: () -> Unit) {
         val granted = permissionsResult.entries.all { it.value }
         _uiState.update { it.copy(canRegister = granted) }
@@ -449,7 +428,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         // Cancel all device monitoring jobs when ViewModel is cleared
         deviceMonitoringJobs.values.forEach { it.cancel() }
         deviceMonitoringJobs.clear()
-        deviceSelectorJob?.cancel()
     }
 
     private fun updateFirmwareUpdateRequired() {
@@ -466,14 +444,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private fun updateGlassesStatus() {
         val best = deviceSnapshots.values.minByOrNull(::rankForSession)
         _uiState.update { it.copy(glassesStatus = best?.toGlassesStatus()) }
-    }
-
-    fun showGettingStartedSheet() {
-        _uiState.update { it.copy(isGettingStartedSheetVisible = true) }
-    }
-
-    fun hideGettingStartedSheet() {
-        _uiState.update { it.copy(isGettingStartedSheetVisible = false) }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,5 +482,10 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             SessionMode.SCENE -> toggleSceneDescriptionMode()
             else -> toggleReadingAssistanceMode()
         }
+    }
+
+    private companion object {
+        const val DELETE_ACCOUNT_LOG_IN_AGAIN =
+            "Couldn't delete your account. Please log out, log back in, and try again."
     }
 }

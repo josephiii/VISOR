@@ -25,7 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ucf.visor.R
-import ucf.visor.net.AuthApi
+import ucf.visor.network.ApiResult
+import ucf.visor.network.AuthApi
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
@@ -105,17 +106,17 @@ fun LoginScreen(
                         isLoading = true
                         scope.launch {
                             when (val result = AuthApi.login(email, password)) {
-                                is AuthApi.Result.Success -> {
+                                is ApiResult.Success -> {
                                     // Backend returns { "access_token", "refresh_token" }.
                                     // Hand them to the ViewModel, which persists the
                                     // session and navigates home.
-                                    val accessToken = result.body.optString("access_token")
-                                    val refreshToken = result.body.optString("refresh_token")
+                                    val accessToken = result.json.optString("access_token")
+                                    val refreshToken = result.json.optString("refresh_token")
                                     isLoading = false
                                     onLoginSuccess(accessToken, refreshToken)
                                 }
 
-                                is AuthApi.Result.Error -> {
+                                is ApiResult.Error -> {
                                     isLoading = false
                                     errorMessage = result.message
                                 }

@@ -35,18 +35,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import ucf.visor.capture.DescribeObject
-import ucf.visor.capture.FakePhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.NotifyingPhotoSource
+import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.ReadRequester
-import ucf.visor.capture.RealCapture
 import ucf.visor.capture.SceneDescriber
+import ucf.visor.capture.TextReader
+import ucf.visor.data.SessionStore
 import ucf.visor.network.VlmClient
-import ucf.visor.ocr.ObjectDetector
-import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.recognition.ObjectDetector
+import ucf.visor.recognition.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
+import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.glasses.GlassesNavigationController
@@ -147,10 +148,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var textReaderOCR: TextReaderOCR
     private lateinit var speaker: Speaker
     private lateinit var listener: Listener
-    private lateinit var reader: ReadRequester
+    private lateinit var textReader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
     private lateinit var glassesNav: GlassesNavigationController
-    private lateinit var sceneReader: ReadRequester
+    private lateinit var objectIdentifier: ReadRequester
     private lateinit var objectDetector: ObjectDetector
     private lateinit var sceneDescriber: ReadRequester
     private lateinit var thinkingBeeper: ThinkingBeeper
@@ -199,20 +200,18 @@ class MainActivity : ComponentActivity() {
         speaker = Speaker(this)
         thinkingBeeper = ThinkingBeeper(isSpeaking = { speaker.isSpeaking() })
 
-        // OCR reads the label image (swap for RealPhoto source once session exists)
-        reader = RealCapture(
-            FakePhotoSource(this, "photo_test/sample_pill_bottle.jpg"),
-            textReaderOCR,
-        )
+        // Without real glasses, pair mock glasses in the debug menu and pick
+        // the photo they should "take" (Select image).
+        textReader = TextReader(glassesCamera.forReading, textReaderOCR)
 
-        // object detector reads the objects image (swap for RealPhoto source once session exists)
-        sceneReader = DescribeObject(glassesCamera, objectDetector)
+        objectIdentifier = ObjectIdentifier(glassesCamera, objectDetector)
 
         sceneDescriber = SceneDescriber(
             photoSource = NotifyingPhotoSource(glassesCamera) {
-                speaker.speak("Awaiting scene description")
+                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION)
             },
-            vlm = VlmClient(),
+            vlm = VlmClient(accessToken = SessionStore(this)::accessToken),
+            scope = lifecycleScope,
             fallback = objectDetector,
         )
 
@@ -233,18 +232,26 @@ class MainActivity : ComponentActivity() {
         listener = Listener(assets) { phrase ->
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
-                in OCR_WAKE_PHRASES -> reader.requestRead { text -> speaker.speak(text) }
-                in OBJECT_WAKE_PHRASES -> {
-                    speaker.speak("Taking picture")
+                in OCR_WAKE_PHRASES -> {
+                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
                     thinkingBeeper.start()
-                    sceneReader.requestRead { text ->
+                    textReader.requestRead { text ->
+                        thinkingBeeper.stop()
+                        speaker.speak(text)
+                    }
+                }
+
+                in OBJECT_WAKE_PHRASES -> {
+                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
+                    thinkingBeeper.start()
+                    objectIdentifier.requestRead { text ->
                         thinkingBeeper.stop()
                         speaker.speak(text)
                     }
                 }
 
                 in SCENE_WAKE_PHRASES -> {
-                    speaker.speak("Taking picture")
+                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
                     thinkingBeeper.start()
                     sceneDescriber.requestRead { text ->
                         thinkingBeeper.stop()

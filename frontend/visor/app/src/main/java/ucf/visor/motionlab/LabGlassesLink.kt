@@ -33,6 +33,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import ucf.visor.tts.SpokenPhrases
+import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.GlassesStatus
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.isWarningOnly
@@ -130,6 +132,7 @@ class LabGlassesLink(
         jobs += scope.launch {
             created.errors.collect { error ->
                 lastSessionError = error
+                GlassesAppUpdate.report(error)
                 Log.w(TAG, "session error ${error.name}: ${error.description}")
                 sink.onEvent(
                     if (error.isWarningOnly) "session_warning" else "session_error",
@@ -142,8 +145,10 @@ class LabGlassesLink(
                 Log.i(TAG, "session state $state")
                 sink.onEvent("session_state", mapOf("state" to state.name))
                 when (state) {
-                    DeviceSessionState.STARTED ->
+                    DeviceSessionState.STARTED -> {
+                        GlassesAppUpdate.onSessionStarted()
                         if (config.camera) attachCamera(created) else attachMotion(created)
+                    }
 
                     DeviceSessionState.STOPPED -> if (!closing) {
                         sink.onFatal(
@@ -214,6 +219,7 @@ class LabGlassesLink(
             if (created != null) return created
             val error = result.errorOrNull()
             lastSessionError = error
+            error?.let(GlassesAppUpdate::report)
             Log.w(TAG, "createSession attempt ${attempt + 1} failed: ${error?.name}")
             if (error != DeviceSessionError.SESSION_ALREADY_EXISTS) return null
             delay(SESSION_RETRY_MS)
@@ -266,7 +272,7 @@ class LabGlassesLink(
                         mapOf("error" to error.name, "description" to error.description)
                     )
                     if (error == StreamError.PERMISSIONS_DENIED && !closing) {
-                        sink.onFatal("VISOR does not have camera access. Allow it in the Meta AI app.")
+                        sink.onFatal(SpokenPhrases.NO_CAMERA_PERMISSION)
                     }
                 }
             }

@@ -27,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -44,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import ucf.visor.R
 import ucf.visor.motionlab.LabResult
 import ucf.visor.motionlab.LiveStats
 import ucf.visor.motionlab.MotionLabUiState
@@ -83,6 +86,7 @@ fun MotionLabScreen(
     val state by labViewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val scrollState = rememberScrollState()
+    val shareTitle = stringResource(R.string.motion_lab_share_recording)
 
     LaunchedEffect(labViewModel, talk) { labViewModel.speak = talk }
     LaunchedEffect(wearablesReady) { if (wearablesReady) labViewModel.observeGlasses() }
@@ -123,15 +127,13 @@ fun MotionLabScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            "Head-motion lab",
+            stringResource(R.string.motion_lab_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            "A research tool. It records your glasses' motion sensors, and for the " +
-                    "head-motion-versus-camera trials, how far the camera image moves. " +
-                    "It uses experimental glasses features, so it only works on test builds.",
+            stringResource(R.string.motion_lab_intro),
             style = MaterialTheme.typography.bodyLarge,
         )
 
@@ -155,7 +157,7 @@ fun MotionLabScreen(
                     result = result,
                     onShare = { file ->
                         val share =
-                            Intent.createChooser(labViewModel.shareIntent(file), "Share recording")
+                            Intent.createChooser(labViewModel.shareIntent(file), shareTitle)
                         activity?.startActivity(share)
                     },
                 )
@@ -168,13 +170,13 @@ fun MotionLabScreen(
             // Short on purpose: SwitchButton shrinks text that does not fit, and
             // the selected trial is named, checked and described just above.
             SwitchButton(
-                label = "Start this trial",
+                label = stringResource(R.string.motion_lab_start_trial),
                 enabled = state.registered && state.glasses?.connected == true,
                 onClick = { labViewModel.startSelectedTrial(onRequestWearablesPermission) },
             )
             if (!state.registered || state.glasses?.connected != true) {
                 Text(
-                    "Connect and register your glasses to start a trial.",
+                    stringResource(R.string.motion_lab_connect_to_start),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -195,41 +197,57 @@ private fun GlassesCard(
 ) {
     LabCard {
         Text(
-            "Glasses",
+            stringResource(R.string.motion_lab_glasses_heading),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.semantics { heading() },
         )
         if (!registered || status == null) {
             Text(
-                if (!registered) "VISOR is not registered with your glasses yet." else "No glasses found.",
+                stringResource(
+                    if (!registered) R.string.motion_lab_not_registered else R.string.motion_lab_no_glasses
+                ),
                 style = MaterialTheme.typography.bodyLarge,
             )
-            SwitchButton(label = "Pair glasses", onClick = onPairGlasses)
+            SwitchButton(label = stringResource(R.string.motion_lab_pair_glasses), onClick = onPairGlasses)
             return@LabCard
         }
         Text(
-            "${status.model}: ${if (status.connected) "connected" else "not connected"}",
+            stringResource(
+                if (status.connected) R.string.motion_lab_glasses_connected
+                else R.string.motion_lab_glasses_not_connected,
+                status.model,
+            ),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         val details = buildList {
-            status.batteryPercent?.let { add("Battery $it%" + if (status.charging == true) ", charging" else "") }
-            status.worn?.let { add(if (it) "Being worn" else "Not being worn") }
-            status.temperatureWord?.let { add("Temperature $it") }
+            status.batteryPercent?.let {
+                add(
+                    stringResource(
+                        if (status.charging == true) R.string.motion_lab_battery_charging
+                        else R.string.motion_lab_battery,
+                        it,
+                    )
+                )
+            }
+            status.worn?.let {
+                add(stringResource(if (it) R.string.motion_lab_worn else R.string.motion_lab_not_worn))
+            }
+            status.temperatureWord?.let { add(stringResource(R.string.motion_lab_temperature, it)) }
         }
         if (details.isNotEmpty()) {
             Text(details.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
         }
         if (status.isThrottling) {
             Text(
-                "The glasses are warm and may slow down. Let them cool before a long trial.",
+                stringResource(R.string.motion_lab_throttling),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.error,
             )
         }
         SelectableChip(
-            label = "Read glasses status aloud",
+            label = stringResource(R.string.motion_lab_read_status),
             selected = false,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
@@ -247,8 +265,8 @@ private fun SetupSection(
     OutlinedTextField(
         value = state.participant,
         onValueChange = onParticipant,
-        label = { Text("Participant code") },
-        supportingText = { Text("A code such as bench01 — never a name.") },
+        label = { Text(stringResource(R.string.motion_lab_participant_label)) },
+        supportingText = { Text(stringResource(R.string.motion_lab_participant_hint)) },
         singleLine = true,
         shape = VisorShapes.Control,
         keyboardOptions = KeyboardOptions(
@@ -285,14 +303,18 @@ private fun SetupSection(
 private fun TrialDetails(trial: Trial) {
     LabCard {
         Text(
-            "${formatDuration(trial.durationSec)} · " +
-                    (if (trial.camera) "camera and motion sensors" else "motion sensors only") +
-                    if (trial.worn) " · worn" else " · glasses set down",
+            listOf(
+                formatDuration(trial.durationSec),
+                stringResource(
+                    if (trial.camera) R.string.motion_lab_trial_camera else R.string.motion_lab_trial_motion_only
+                ),
+                stringResource(if (trial.worn) R.string.motion_lab_trial_worn else R.string.motion_lab_trial_set_down),
+            ).joinToString(" · "),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
         Text(trial.setup, style = MaterialTheme.typography.bodyLarge)
-        Text("Why: ${trial.purpose}", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.motion_lab_trial_why, trial.purpose), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -300,10 +322,10 @@ private fun TrialDetails(trial: Trial) {
 private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceLost: () -> Unit) {
     val runner = state.runner
     val phase = when {
-        state.connecting -> "Connecting to the glasses…"
-        runner is RunnerState.Preparing -> "Get ready"
-        runner is RunnerState.WaitingForGlasses -> "Waiting for the glasses…"
-        runner is RunnerState.Recording -> "Recording"
+        state.connecting -> stringResource(R.string.motion_lab_phase_connecting)
+        runner is RunnerState.Preparing -> stringResource(R.string.motion_lab_phase_get_ready)
+        runner is RunnerState.WaitingForGlasses -> stringResource(R.string.motion_lab_phase_waiting)
+        runner is RunnerState.Recording -> stringResource(R.string.motion_lab_phase_recording)
         else -> ""
     }
     LabCard {
@@ -319,16 +341,20 @@ private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceL
         when (runner) {
             is RunnerState.Preparing -> BigText(
                 "${runner.secondsLeft}",
-                "Recording starts in ${runner.secondsLeft} seconds"
+                pluralStringResource(R.plurals.motion_lab_countdown_spoken, runner.secondsLeft, runner.secondsLeft),
             )
 
             is RunnerState.Recording -> {
                 BigText(
                     runner.cueLabel ?: formatDuration((runner.elapsedMs / 1000).toInt()),
-                    runner.cueLabel ?: "Elapsed",
+                    runner.cueLabel ?: stringResource(R.string.motion_lab_elapsed),
                 )
                 Text(
-                    "${formatDuration((runner.elapsedMs / 1000).toInt())} of ${formatDuration(runner.trial.durationSec)}",
+                    stringResource(
+                        R.string.motion_lab_elapsed_of_total,
+                        formatDuration((runner.elapsedMs / 1000).toInt()),
+                        formatDuration(runner.trial.durationSec),
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -343,9 +369,9 @@ private fun RunningPanel(state: MotionLabUiState, onStop: () -> Unit, onBalanceL
     // For the tester: the wearer stepped, put a foot down or opened their eyes.
     // That ends a timed hold as a result; Stop trial below is for anything else.
     if (runner is RunnerState.Recording && runner.trial.timedHold) {
-        SwitchButton(label = "Balance lost", onClick = onBalanceLost)
+        SwitchButton(label = stringResource(R.string.motion_lab_balance_lost), onClick = onBalanceLost)
     }
-    SwitchButton(label = "Stop trial", isDestructive = true, onClick = onStop)
+    SwitchButton(label = stringResource(R.string.motion_lab_stop_trial), isDestructive = true, onClick = onStop)
 }
 
 @Composable
@@ -364,27 +390,24 @@ private fun BigText(text: String, spoken: String) {
 @Composable
 private fun LiveNumbers(live: LiveStats, camera: Boolean) {
     val lines = buildList {
-        add("Motion: ${live.motionHz.roundToInt()} samples a second (${live.motionSamples} total)")
-        live.headSpeedDps?.let { add("Head turning: ${it.roundToInt()}° a second") }
+        val motionHz = live.motionHz.roundToInt()
+        add(pluralStringResource(R.plurals.motion_lab_live_motion, motionHz, motionHz, live.motionSamples))
+        live.headSpeedDps?.let { add(stringResource(R.string.motion_lab_live_head_speed, it.roundToInt())) }
         if (camera) {
-            add("Camera: ${live.videoFps.roundToInt()} frames a second (${live.analyzedFrames} measured)")
+            val videoFps = live.videoFps.roundToInt()
+            add(pluralStringResource(R.plurals.motion_lab_live_camera, videoFps, videoFps, live.analyzedFrames))
             live.imageShiftPx?.let {
-                add(
-                    "Image moved ${
-                        "%.1f".format(
-                            Locale.US,
-                            it
-                        )
-                    } px between frames"
-                )
+                add(stringResource(R.string.motion_lab_live_image_shift, "%.1f".format(Locale.US, it)))
             }
             live.trackingPeak?.let {
                 add(
-                    "Tracking: " + when {
-                        it >= 0.4 -> "good"
-                        it >= 0.15 -> "fair"
-                        else -> "poor — face a scene with more detail"
-                    },
+                    stringResource(
+                        when {
+                            it >= 0.4 -> R.string.motion_lab_tracking_good
+                            it >= 0.15 -> R.string.motion_lab_tracking_fair
+                            else -> R.string.motion_lab_tracking_poor
+                        }
+                    )
                 )
             }
         }
@@ -396,12 +419,14 @@ private fun LiveNumbers(live: LiveStats, camera: Boolean) {
 private fun ResultCard(result: LabResult, onShare: (java.io.File) -> Unit) {
     LabCard {
         Text(
-            when (result.outcome) {
-                TrialOutcome.COMPLETED -> "Trial complete"
-                TrialOutcome.ABORTED -> "Trial stopped"
-                TrialOutcome.FAILED -> "Trial could not finish"
-                TrialOutcome.BALANCE_LOST -> "Balance lost: hold time recorded"
-            },
+            stringResource(
+                when (result.outcome) {
+                    TrialOutcome.COMPLETED -> R.string.motion_lab_result_completed
+                    TrialOutcome.ABORTED -> R.string.motion_lab_result_aborted
+                    TrialOutcome.FAILED -> R.string.motion_lab_result_failed
+                    TrialOutcome.BALANCE_LOST -> R.string.motion_lab_result_balance_lost
+                }
+            ),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.semantics {
@@ -412,20 +437,20 @@ private fun ResultCard(result: LabResult, onShare: (java.io.File) -> Unit) {
         Text(result.summary, style = MaterialTheme.typography.bodyLarge)
         result.quickLook?.fit?.takeIf { it.reliable }?.let { fit ->
             Text(
-                "Rotation axis ${fit.gyroAxis.uppercase()} → image ${fit.imageAxis.uppercase()} · " +
-                        "lag ${fit.lagMs.roundToInt()} ms · r = ${
-                            "%.2f".format(
-                                Locale.US,
-                                fit.correlation
-                            )
-                        } · " +
-                        "${"%.1f".format(Locale.US, fit.pixelsPerDegree)} px/° · " +
-                        "residual ${"%.1f".format(Locale.US, fit.residualDps)}°/s",
+                stringResource(
+                    R.string.motion_lab_fit,
+                    fit.gyroAxis.uppercase(),
+                    fit.imageAxis.uppercase(),
+                    fit.lagMs.roundToInt(),
+                    "%.2f".format(Locale.US, fit.correlation),
+                    "%.1f".format(Locale.US, fit.pixelsPerDegree),
+                    "%.1f".format(Locale.US, fit.residualDps),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
         result.file?.let { file ->
-            SwitchButton(label = "Share recording", onClick = { onShare(file) })
+            SwitchButton(label = stringResource(R.string.motion_lab_share_recording), onClick = { onShare(file) })
         }
     }
 }
@@ -454,9 +479,7 @@ private fun MessageCard(message: String) {
 private fun SavedSessionsNote(count: Int, folder: String) {
     if (count == 0) return
     Text(
-        "$count recording${if (count == 1) "" else "s"} saved on this phone " +
-                "(Android/data/…/files/$folder). Share each one after its trial, or copy them " +
-                "with adb pull for analysis/analyze.py.",
+        pluralStringResource(R.plurals.motion_lab_saved_recordings, count, count, folder),
         style = MaterialTheme.typography.bodyMedium,
     )
 }

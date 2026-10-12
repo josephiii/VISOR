@@ -9,6 +9,7 @@ from transformers import AutoModelForCausalLM
 class Moondream(VLModel):
 
     def __init__(self):
+        super().__init__()
         self.MODEL_ID = "moondream/moondream3-preview"
 
 

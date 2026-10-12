@@ -9,3 +9,4 @@ app = FastAPI(title="VISOR")
 app.include_router(auth_router)
 app.include_router(vlm_router)
 app.include_router(depth_router)
+# routes/UserRoutes.py (profile sync) is intentionally not mounted yet; see the note there.

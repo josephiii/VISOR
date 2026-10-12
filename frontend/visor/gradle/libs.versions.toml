@@ -16,7 +16,10 @@ testCore = "1.7.0"
 testExtJunit = "1.3.0"
 espresso = "3.7.0"
 uiJunit4 = "1.6.1"
-exifInterface = "1.3.7"
+okhttp = "4.12.0"
+mlkitTextRecognition = "16.0.1"
+mlkitImageLabeling = "17.0.9"
+mlkitImageLabelingCustom = "17.0.3"
 navigationRuntimeKtx = "2.9.8"
 navigationCompose = "2.9.8"
 foundationLayout = "1.11.4"
@@ -46,7 +49,10 @@ androidx-test-core = { group = "androidx.test", name = "core", version.ref = "te
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testExtJunit" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "uiJunit4" }
-androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifInterface" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+mlkit-image-labeling = { group = "com.google.mlkit", name = "image-labeling", version.ref = "mlkitImageLabeling" }
+mlkit-image-labeling-custom = { group = "com.google.mlkit", name = "image-labeling-custom", version.ref = "mlkitImageLabelingCustom" }
 
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }

@@ -19,21 +19,23 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ucf.visor.R
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.scrollIndicator
-import ucf.visor.ui.profile.Severity
-import ucf.visor.ui.profile.SpeechRates
-import ucf.visor.ui.profile.TextScale
-import ucf.visor.ui.profile.UserProfile
-import ucf.visor.ui.profile.Verbosity
-import ucf.visor.ui.profile.VisionType
-import ucf.visor.ui.profile.label
+import ucf.visor.data.Severity
+import ucf.visor.data.SpeechRates
+import ucf.visor.data.TextScale
+import ucf.visor.data.UserProfile
+import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionType
+import ucf.visor.data.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -45,7 +47,7 @@ fun SettingsScreen(
     viewModel: VisorViewModel,
     onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
-    onDeleteAccount: () -> Unit = {},   // TODO: POST /auth/deleteAccount, then ProfileStore.clear()
+    onDeleteAccount: () -> Unit = {},   // VisorViewModel.confirmDeleteAccount: DELETE /auth/deleteAccount, then wipes the profile
     onHelp: () -> Unit = {},
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
@@ -53,6 +55,10 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
     val showLogoutConfirm = uiState.isLogoutConfirmVisible
     val showDeleteConfirm = uiState.isDeleteAccountConfirmVisible
+    val speechRateDescription = stringResource(
+        R.string.settings_speech_rate_description,
+        SpeechRates.spokenLabel(profile.speechRate),
+    )
 
     Column(
         modifier = Modifier
@@ -63,24 +69,24 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
-            "Settings",
+            stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.semantics { heading() },
         )
 
-        SettingSection("About you")
+        SettingSection(stringResource(R.string.settings_section_about_you))
         OutlinedTextField(
             value = profile.displayName,
             onValueChange = { onProfileChange(profile.copy(displayName = it)) },
-            label = { Text("Your name") },
+            label = { Text(stringResource(R.string.settings_name_label)) },
             singleLine = true,
             shape = VisorShapes.Control,
             modifier = Modifier.fillMaxWidth(),
         )
 
         Text(
-            "Which of these describe what you experience?",
+            stringResource(R.string.step_vision_title),
             style = MaterialTheme.typography.bodyLarge
         )
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -102,7 +108,7 @@ fun SettingsScreen(
             }
         }
 
-        Text("How much does it affect daily life?", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.step_severity_title), style = MaterialTheme.typography.bodyLarge)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Severity.entries.forEach { s ->
                 SelectableChip(
@@ -117,12 +123,12 @@ fun SettingsScreen(
         OutlinedTextField(
             value = profile.visionDescription,
             onValueChange = { onProfileChange(profile.copy(visionDescription = it)) },
-            label = { Text("Describe your vision, in your own words (optional)") },
+            label = { Text(stringResource(R.string.settings_vision_description_label)) },
             shape = VisorShapes.Control,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        SettingSection("How fast VISOR talks")
+        SettingSection(stringResource(R.string.settings_section_speech_rate))
         Text(
             text = SpeechRates.label(profile.speechRate),
             style = MaterialTheme.typography.titleMedium,
@@ -138,21 +144,24 @@ fun SettingsScreen(
             steps = SpeechRates.SliderSteps,
             modifier = Modifier
                 .fillMaxWidth()
-                .semantics {
-                    contentDescription =
-                        "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
-                },
+                .semantics { contentDescription = speechRateDescription },
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Slower", style = MaterialTheme.typography.bodySmall)
-            Text("Faster", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.settings_speech_rate_slower), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.settings_speech_rate_faster), style = MaterialTheme.typography.bodySmall)
         }
 
-        SettingSection("How much detail")
+        SettingSection(stringResource(R.string.settings_section_detail))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Verbosity.entries.forEach { v ->
                 SelectableChip(
-                    label = v.name.lowercase().replaceFirstChar { it.uppercase() },
+                    label = stringResource(
+                        when (v) {
+                            Verbosity.BRIEF -> R.string.settings_verbosity_brief
+                            Verbosity.STANDARD -> R.string.settings_verbosity_standard
+                            Verbosity.DETAILED -> R.string.settings_verbosity_detailed
+                        }
+                    ),
                     selected = profile.verbosity == v,
                     showCheckmark = false,
                     modifier = Modifier.weight(1f),
@@ -160,15 +169,17 @@ fun SettingsScreen(
             }
         }
 
-        SettingSection("Text size")
+        SettingSection(stringResource(R.string.settings_section_text_size))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TextScale.entries.forEach { scale ->
                 SelectableChip(
-                    label = when (scale) {
-                        TextScale.STANDARD -> "Standard"
-                        TextScale.LARGE -> "Large"
-                        TextScale.EXTRA_LARGE -> "Extra large"
-                    },
+                    label = stringResource(
+                        when (scale) {
+                            TextScale.STANDARD -> R.string.settings_text_size_standard
+                            TextScale.LARGE -> R.string.settings_text_size_large
+                            TextScale.EXTRA_LARGE -> R.string.settings_text_size_extra_large
+                        }
+                    ),
                     selected = profile.textScale == scale,
                     showCheckmark = false,
                     modifier = Modifier.weight(1f),
@@ -176,34 +187,40 @@ fun SettingsScreen(
             }
         }
 
-        SettingSection("Display")
+        SettingSection(stringResource(R.string.settings_section_display))
         SelectableChip(
-            label = if (profile.appHighContrast) "High contrast: ON" else "High contrast: OFF",
+            label = stringResource(
+                if (profile.appHighContrast) R.string.settings_high_contrast_on
+                else R.string.settings_high_contrast_off
+            ),
             selected = profile.appHighContrast,
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) }
 
-        SettingSection("Voice navigation")
+        SettingSection(stringResource(R.string.settings_section_voice_navigation))
         Text(
-            "Say \"VISOR GO\" any time, then say where you'd like to go — " +
-                    "for example \"open settings\" or \"go home\".",
+            stringResource(R.string.settings_voice_navigation_description),
             style = MaterialTheme.typography.bodyMedium,
         )
         SelectableChip(
-            label = if (profile.voiceNavigationEnabled) "Voice navigation: ON" else "Voice navigation: OFF",
+            label = stringResource(
+                if (profile.voiceNavigationEnabled) R.string.settings_voice_navigation_on
+                else R.string.settings_voice_navigation_off
+            ),
             selected = profile.voiceNavigationEnabled,
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
 
-        SettingSection("Glasses tap navigation")
+        SettingSection(stringResource(R.string.settings_section_tap_navigation))
         Text(
-            "When your glasses are connected, the same navigation shows up as " +
-                    "buttons on their display — tap or swipe on the temple arm or " +
-                    "Neural Band to select one, no phone or voice needed.",
+            stringResource(R.string.settings_tap_navigation_description),
             style = MaterialTheme.typography.bodyMedium,
         )
         SelectableChip(
-            label = if (profile.glassesTapNavigationEnabled) "Glasses tap navigation: ON" else "Glasses tap navigation: OFF",
+            label = stringResource(
+                if (profile.glassesTapNavigationEnabled) R.string.settings_tap_navigation_on
+                else R.string.settings_tap_navigation_off
+            ),
             selected = profile.glassesTapNavigationEnabled,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -211,9 +228,9 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-        SettingSection("Support")
+        SettingSection(stringResource(R.string.settings_section_support))
         SelectableChip(
-            "Help & how VISOR works",
+            stringResource(R.string.settings_help),
             selected = false,
             showCheckmark = false,
             modifier = Modifier.fillMaxWidth(),
@@ -221,9 +238,9 @@ fun SettingsScreen(
         )
 
         Spacer(Modifier.height(24.dp))
-        SettingSection("Account")
+        SettingSection(stringResource(R.string.settings_section_account))
         SelectableChip(
-            "Log out",
+            stringResource(R.string.settings_log_out),
             selected = false,
             vital = true,
             showCheckmark = false,
@@ -231,7 +248,7 @@ fun SettingsScreen(
             onClick = { viewModel.requestLogoutConfirm() },
         )
         SelectableChip(
-            "Delete my account",
+            stringResource(R.string.settings_delete_account),
             selected = false,
             vital = true,
             showCheckmark = false,
@@ -247,15 +264,15 @@ fun SettingsScreen(
     if (showLogoutConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelLogoutConfirm() },
-            title = { Text("Log out?") },
-            text = { Text("You'll need to sign in again to use VISOR.") },
+            title = { Text(stringResource(R.string.settings_log_out_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_log_out_confirm_message)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.cancelLogoutConfirm(); onLogout() }) {
-                    Text("Log out")
+                    Text(stringResource(R.string.settings_log_out))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.cancelLogoutConfirm() }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.cancelLogoutConfirm() }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }
@@ -263,15 +280,15 @@ fun SettingsScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelDeleteAccountConfirm() },
-            title = { Text("Delete your account?") },
-            text = { Text("This permanently deletes your VISOR account and everything in it. This can't be undone.") },
+            title = { Text(stringResource(R.string.settings_delete_account_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_delete_account_confirm_message)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.cancelDeleteAccountConfirm(); onDeleteAccount() }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.settings_delete_account_confirm_button), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.cancelDeleteAccountConfirm() }) { Text("Cancel") }
+                TextButton(onClick = { viewModel.cancelDeleteAccountConfirm() }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

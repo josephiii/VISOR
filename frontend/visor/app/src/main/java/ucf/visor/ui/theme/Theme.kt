@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
-import ucf.visor.ui.profile.UserProfile
+import ucf.visor.data.UserProfile
 
 // The four accessibility-first themes VISOR supports:
 // ClarityLight (default)

@@ -1,5 +1,6 @@
 
-from fastapi import Header, APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from dependencies import get_current_user
 from services.AuthService import AuthService
 from schemas.AuthSchema import RegisterSchema, LoginSchema
 
@@ -40,11 +41,9 @@ def login(userData: LoginSchema):
     }
 
 @auth_router.delete("/deleteAccount")
-def delete_account(authorization: str = Header(...)):
-    token = authorization.replace("Bearer ", "")
-
+def delete_account(user_id: str = Depends(get_current_user)):
     try:
-        service.delete_account(token)
+        service.delete_account(user_id)
 
     except HTTPException:
         raise

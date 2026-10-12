@@ -1,6 +1,33 @@
 package ucf.visor.wearables
 
 import com.meta.wearable.dat.core.types.DeviceSessionError
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+/**
+ * Whether the Device Access Toolkit app on the glasses needs an update.
+ *
+ * MWDAT only says so through a session error
+ * ([DeviceSessionError.DAT_APP_ON_THE_GLASSES_UPDATE_REQUIRED]), and three
+ * VISOR features open sessions (the glasses camera, tap navigation and the
+ * head-motion lab), so each reports its errors here. The Pair Glasses screen
+ * watches [required] to offer its "Update app on glasses" button, which Meta's
+ * docs prescribe for this error. A session that starts clears it.
+ */
+object GlassesAppUpdate {
+
+    private val _required = MutableStateFlow(false)
+    val required: StateFlow<Boolean> = _required.asStateFlow()
+
+    fun report(error: DeviceSessionError) {
+        if (error == DeviceSessionError.DAT_APP_ON_THE_GLASSES_UPDATE_REQUIRED) _required.value = true
+    }
+
+    fun onSessionStarted() {
+        _required.value = false
+    }
+}
 
 /**
  * MWDAT 1.0 added a session error that is *not* an ending:
