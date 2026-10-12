@@ -45,6 +45,8 @@ import ucf.visor.capture.SceneDescriber
 import ucf.visor.network.VlmClient
 import ucf.visor.ocr.ObjectDetector
 import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.ocr.ObjectDetector
+import ucf.visor.capture.DescribeObject
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.ThinkingBeeper
@@ -149,6 +151,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var listener: Listener
     private lateinit var reader: ReadRequester
     private lateinit var voiceNav: VoiceNavigationController
+    private lateinit var sceneReader: ReadRequester
+    private lateinit var objectDetector: ObjectDetector
     private lateinit var glassesNav: GlassesNavigationController
     private lateinit var sceneReader: ReadRequester
     private lateinit var sceneDescriber: ReadRequester

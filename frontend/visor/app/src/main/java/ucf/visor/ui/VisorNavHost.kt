@@ -15,7 +15,8 @@ import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.ResetPasswordScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
-import ucf.visor.ui.screens.auth.VerifyAccountScreen
+// DISABLED: email verification is cut for now — restore with the verify_account route below.
+// import ucf.visor.ui.screens.auth.VerifyAccountScreen
 import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HomeScreen
@@ -56,7 +57,8 @@ fun VisorNavHost(
         composable("login") {
             LoginScreen(
                 viewModel = viewModel,
-                onLoginClick = { viewModel.verifyAccount() },
+                // On a successful login the ViewModel persists tokens + goes home.
+                onLoginSuccess = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
                 onSignUpClick = { viewModel.signUp() }
             )
@@ -65,7 +67,9 @@ fun VisorNavHost(
         composable("sign_up") {
             SignUpScreen(
                 viewModel = viewModel,
-                onSignUpClick = { viewModel.verifyAccount() },
+                // Register only creates the account (no token yet, no email
+                // verification for now) — send the new user to the login screen.
+                onSignUpClick = { viewModel.login() },
                 onLoginClick = { viewModel.login() }
             )
         }
@@ -78,12 +82,16 @@ fun VisorNavHost(
             )
         }
 
-        composable("verify_account") {
-            VerifyAccountScreen(
-                viewModel = viewModel,
-                onSendCodeClick = { viewModel.enterCode() }
-            )
-        }
+        // DISABLED: email verification is cut for now — sign-up routes straight
+        // to login instead of here. Restore this route (and its import,
+        // VisorViewModel.verifyAccount(), the VisorLayout observer, and the
+        // enter_code verify branch below) when email verification is added back.
+        // composable("verify_account") {
+        //     VerifyAccountScreen(
+        //         viewModel = viewModel,
+        //         onSendCodeClick = { viewModel.enterCode() }
+        //     )
+        // }
 
         composable("reset_password") {
             ResetPasswordScreen(
@@ -96,11 +104,17 @@ fun VisorNavHost(
             EnterCodeScreen(
                 viewModel = viewModel,
                 onCodeComplete = {
-                    val lastRoute = navController.previousBackStackEntry?.destination?.route
-                    if (lastRoute == "forgot_password")
-                        viewModel.home()
-                    else // == "verify_account"
-                        viewModel.onboard()
+                    // Email verification is cut for now, so enter_code is only
+                    // reached from the forgot-password flow.
+                    viewModel.home()
+                    // DISABLED: restore the branch below when email verification
+                    // is added back (enter_code would again be reachable from
+                    // verify_account, which should route to onboarding):
+                    // val lastRoute = navController.previousBackStackEntry?.destination?.route
+                    // if (lastRoute == "forgot_password")
+                    //     viewModel.home()
+                    // else // == "verify_account"
+                    //     viewModel.onboard()
                 },
                 onResendCodeClick = {
                     // TODO: RESEND CODE LOGIC
