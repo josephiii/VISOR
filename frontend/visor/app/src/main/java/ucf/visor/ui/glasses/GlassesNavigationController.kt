@@ -158,7 +158,7 @@ class GlassesNavigationController(
                                 "lease=${leaseHolder ?: "free"} ready=$ready"
                     )
                     if (ready) {
-                        if (session == null) createSession()
+                        //if (session == null) createSession()
                     } else {
                         tearDownSession()
                     }
