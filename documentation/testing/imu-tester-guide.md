@@ -220,9 +220,9 @@ trials the web version does not have: **Tier S**, five standard balance and
 vestibular tasks, and **Tier V**, which uses the glasses' **camera** to measure
 how far the view moves while your head turns.
 
-**Where:** VISOR → **Settings** → **Research** → **Head-motion lab**. Your
-glasses must be connected and registered (the lab tells you if they are not,
-with a button to go and do it).
+**Where:** a **debug build** of VISOR → the **bug button** (bottom right) →
+**Test Suite** → **Open Head-Motion Lab**. Your glasses must be connected and
+registered (the lab tells you if they are not, with a button to go and do it).
 
 **What the camera trials record — and what they do not.** While a Tier V trial
 runs, the glasses' camera is on, **and the camera light on the front of the

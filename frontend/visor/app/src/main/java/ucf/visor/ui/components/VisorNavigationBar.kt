@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -33,11 +33,11 @@ fun VisorNavigationBar(
             onClick = { viewModel.settings() },
             icon = {
                 Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Profile Settings"
+                    Icons.Default.Settings,
+                    contentDescription = "Settings"
                 )
             },
-            label = { AutoSizeText(stringResource(R.string.user_profile_navbar_title), style = MaterialTheme.typography.labelMedium) }
+            label = { AutoSizeText(stringResource(R.string.settings_navbar_title), style = MaterialTheme.typography.labelMedium) }
         )
         NavigationBarItem(
             selected = currentRoute == "home",
