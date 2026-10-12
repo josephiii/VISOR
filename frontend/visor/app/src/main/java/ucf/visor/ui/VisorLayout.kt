@@ -231,7 +231,7 @@ fun VisorLayout(
         }
     }
 
-    // Observe MotionLabScreen (Settings → Research)
+    // Observe MotionLabScreen (Debug menu → Test Suite)
     LaunchedEffect(uiState.atMotionLab) {
         if (uiState.atMotionLab) {
             navController.navigate("motion_lab") {

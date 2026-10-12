@@ -129,7 +129,7 @@ read from the display while the glasses are on the table.
 
 ### Tier V — Head motion vs. camera image (worn, native app only)
 
-Run from the Android app's **head-motion lab** (Settings → Research), which
+Run from the Android app's **head-motion lab** (debug menu → Test Suite), which
 records through MWDAT 1.0's Motion capability with the glasses' camera streaming
 in the same session. The Web Apps API has no camera access, so this tier has no
 web counterpart. Every other tier can be run from either capture path, with the
