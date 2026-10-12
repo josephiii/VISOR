@@ -35,14 +35,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.DescribeObject
 import ucf.visor.capture.FakePhotoSource
+import ucf.visor.capture.GlassesPhotoSource
+import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.RealCapture
-import ucf.visor.ocr.TextReaderOCR
+import ucf.visor.capture.SceneDescriber
+import ucf.visor.network.VlmClient
 import ucf.visor.ocr.ObjectDetector
-import ucf.visor.capture.DescribeObject
+import ucf.visor.ocr.TextReaderOCR
 import ucf.visor.stt.Listener
 import ucf.visor.tts.Speaker
+import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
@@ -51,13 +56,6 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
-
-import ucf.visor.capture.SceneDescriber
-import ucf.visor.network.VlmClient
-
-import ucf.visor.tts.ThinkingBeeper
-import ucf.visor.capture.GlassesPhotoSource
-import ucf.visor.capture.NotifyingPhotoSource
 
 
 class MainActivity : ComponentActivity() {
@@ -78,6 +76,7 @@ class MainActivity : ComponentActivity() {
         private val OBJECT_WAKE_PHRASES = setOf(
             "VISORIDENTIFY",
             "VISORWHATISINFRONTOFME",
+            "VISORWHATAMIHOLDING"
         )
 
         private val SCENE_WAKE_PHRASES = setOf(
@@ -243,6 +242,7 @@ class MainActivity : ComponentActivity() {
                         speaker.speak(text)
                     }
                 }
+
                 in SCENE_WAKE_PHRASES -> {
                     speaker.speak("Taking picture")
                     thinkingBeeper.start()
@@ -251,6 +251,7 @@ class MainActivity : ComponentActivity() {
                         speaker.speak(text)
                     }
                 }
+
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
