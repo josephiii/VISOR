@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.meta.wearable.dat.camera.types.PhotoData
+import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Dispatcher
@@ -61,7 +64,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val mode by viewModel.session.collectAsStateWithLifecycle()
-    var objects = {}
+    var objects by ??
 
     //Import the stream model so it starts when a session starts
     val streamViewModel: StreamViewModel = viewModel(
@@ -195,6 +198,7 @@ suspend fun runHazardDetection(frame: Bitmap)=
                 //TTS objects and depths
 
                 Log.d("Hazard Detection", response.body!!.string())
+                return response.body
 
             }
 
@@ -203,5 +207,12 @@ suspend fun runHazardDetection(frame: Bitmap)=
             Log.d("Hazard Detection", "Error running hazard detection: $e")
         }
 
+}
+fun verifyCameraPerms(){
+    //Check perms, if off prompt user to accept
+    val perm = Wearables.checkPermissionStatus(Permission.CAMERA).getOrNull()
+    if(perm!= PermissionStatus.Granted){
+        Wearables.RequestPermrequestPermissionissionContract()
+    }
 }
 //Use glasses capture button to take pictures (change to cron timer for prod)
