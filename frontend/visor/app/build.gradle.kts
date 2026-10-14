@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 
@@ -120,10 +121,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Compose Tooling & Preview Support (for dev purposes)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:image-labeling:17.0.9") // pretrained
@@ -136,4 +133,6 @@ dependencies {
     // Experimental in 1.0: dev and beta release channels only, not production.
     implementation(libs.mwdat.motion)
     implementation(libs.mwdat.mockdevice)
+
+    implementation(libs.kotlinx.serialization.json)
 }

@@ -161,53 +161,7 @@ suspend fun runOCR(){}
 
 //import function from sharephotodialog.kt file
 suspend fun runSceneDescription(){}
-suspend fun runHazardDetection(frame: Bitmap)=
-    withContext(Dispatchers.IO){
-    // PREP IMAGE
-    val outputStream = ByteArrayOutputStream()
-    frame.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-    val imageBytes = outputStream.toByteArray()
 
-    val imageBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
-    val requestBody = MultipartBody.Builder()
-        .setType(MultipartBody.FORM)
-        .addFormDataPart(
-            "image",
-            "photo.jpg",
-            imageBody
-        )
-        .build()
-
-    //val url = "http://10.0.2.2:8000/yolo/runHazardDetection"
-        //Use above for local below for server
-        val url = "http://54.173.104.183:8000/yolo/runHazardDetection"
-    val request = Request.Builder().url(url).post(requestBody).build()
-
-
-        val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(
-            300,
-            TimeUnit.SECONDS
-        )   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
-
-        try {
-            client.newCall(request).execute().use { response->
-                //TTS objects and depths
-
-                Log.d("Hazard Detection", response.body!!.string())
-                return response.body
-
-            }
-
-        }
-        catch (e: Exception){
-            Log.d("Hazard Detection", "Error running hazard detection: $e")
-        }
-
-}
 fun verifyCameraPerms(){
     //Check perms, if off prompt user to accept
     val perm = Wearables.checkPermissionStatus(Permission.CAMERA).getOrNull()

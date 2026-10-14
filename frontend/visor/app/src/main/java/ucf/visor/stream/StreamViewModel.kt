@@ -50,7 +50,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucf.visor.R
-import ucf.visor.ui.screens.home.runHazardDetection
+import ucf.visor.network.HazardClient
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.wearables.describeSessionError
@@ -77,6 +77,8 @@ class StreamViewModel(
 
     private val _uiState = MutableStateFlow(INITIAL_STATE)
     val uiState: StateFlow<StreamUiState> = _uiState.asStateFlow()
+
+    private val hazardClient = HazardClient()
 
     private var videoJob: Job? = null
     private var stateJob: Job? = null
@@ -393,7 +395,10 @@ class StreamViewModel(
             SessionMode.SCENE -> {    _uiState.update { it.copy(capturedPhoto = capturedPhoto, isShareDialogVisible = true) }
             }
             SessionMode.READER ->{}
-            SessionMode.HAZARD -> viewModelScope.launch { runHazardDetection(capturedPhoto) }
+            SessionMode.HAZARD -> viewModelScope.launch {
+                val hazards =hazardClient.runHazardDetection(capturedPhoto)
+                _uiState.update { it.copy(hazards=hazards) }
+            }
         }
     }
 
