@@ -377,7 +377,19 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isOnboarding = true) }
     }
 
-    fun toggleSession() {
+    fun toggleSession( onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
+    ) {
+        // Req camera perms for streams (accessible by voice and home screen btn)
+        viewModelScope.launch {
+            //Only check when turning on (when session = inactive )
+            if(!_uiState.value.isSessionActive){
+                val permission = Wearables.checkPermissionStatus(Permission.CAMERA)
+                if(permission!= PermissionStatus.Granted&& onRequestWearablesPermission(Permission.CAMERA)!= PermissionStatus.Granted){
+                    setRecentError("Camera permission denied")
+                    return@launch
+                }
+            }
+        }
         _uiState.update {
             if (it.isSessionActive)
                 it.copy(isSessionActive = false)

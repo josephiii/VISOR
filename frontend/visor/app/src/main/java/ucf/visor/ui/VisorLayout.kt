@@ -301,7 +301,7 @@ fun VisorLayout(
                     } else {
                         if (currentRoute != "home") viewModel.home()
                         val startingUp = !uiState.isSessionActive
-                        viewModel.toggleSession()
+                        viewModel.toggleSession(onRequestWearablesPermission)
                         talk(if (startingUp) "Starting session" else "Ending session")
                     }
                 }

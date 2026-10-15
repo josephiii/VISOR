@@ -43,6 +43,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 fun HomeScreen(
     viewModel: VisorViewModel,
     talk: (String) -> Unit = {},
+    onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     modifier: Modifier = Modifier,
 
 ) {
@@ -83,7 +84,7 @@ fun HomeScreen(
             SessionToggleButton(
                 isSessionActive = uiState.isSessionActive,
                 onToggle = {
-                    viewModel.toggleSession()
+                    viewModel.toggleSession(onRequestWearablesPermission)
                     if (uiState.isSessionActive) {
                         talk("Ending Session")
                     } else {
@@ -144,13 +145,4 @@ suspend fun runOCR(){}
 
 //import function from sharephotodialog.kt file
 suspend fun runSceneDescription(){}
-
-suspend fun verifyCameraPerms(){
-    //Check perms, if off prompt user to accept
-    val perm = Wearables.checkPermissionStatus(Permission.CAMERA).getOrNull()
-    if(perm!= PermissionStatus.Granted){
-
-
-    }
-}
 //Use glasses capture button to take pictures (change to cron timer for prod)

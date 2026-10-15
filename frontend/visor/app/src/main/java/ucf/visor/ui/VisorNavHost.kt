@@ -125,8 +125,10 @@ fun VisorNavHost(
         composable("home") {
             HomeScreen(
                 viewModel = viewModel,
-                talk = talk
-            )
+                talk = talk,
+                onRequestWearablesPermission = onRequestWearablesPermission,
+
+                )
         }
 
         composable("hardware_pairing") {
