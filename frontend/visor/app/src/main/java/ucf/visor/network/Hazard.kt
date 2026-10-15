@@ -1,9 +1,9 @@
 package ucf.visor.network;
 
-import java.util.List;
 
 import kotlinx.serialization.SerialName;
 import kotlinx.serialization.Serializable;
+import kotlin.collections.List
 
 @Serializable
 data class Hazard (
@@ -11,5 +11,5 @@ data class Hazard (
     @SerialName("coords") val coords: List<Float>,
     @SerialName("depth") val depth: Float,
     @SerialName("object") val name: String,
-    @SerialName("conf") conf: Float,
+    @SerialName("conf") val conf: Float,
 )

@@ -145,11 +145,12 @@ suspend fun runOCR(){}
 //import function from sharephotodialog.kt file
 suspend fun runSceneDescription(){}
 
-fun verifyCameraPerms(){
+suspend fun verifyCameraPerms(){
     //Check perms, if off prompt user to accept
     val perm = Wearables.checkPermissionStatus(Permission.CAMERA).getOrNull()
     if(perm!= PermissionStatus.Granted){
-        Wearables.RequestPermrequestPermissionissionContract()
+
+
     }
 }
 //Use glasses capture button to take pictures (change to cron timer for prod)
