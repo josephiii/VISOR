@@ -397,6 +397,7 @@ class StreamViewModel(
             SessionMode.READER ->{}
             SessionMode.HAZARD -> viewModelScope.launch {
                 val hazards =hazardClient.runHazardDetection(capturedPhoto)
+                if (hazards.isEmpty()) return
                 _uiState.update { it.copy(hazards=hazards) }
             }
         }

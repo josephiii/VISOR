@@ -11,7 +11,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
-import kotlinx.serialization.json.JSON
 import kotlinx.serialization.json.Json
 
 class HazardClient {
@@ -52,11 +51,10 @@ class HazardClient {
         try {
             client.newCall(request).execute().use{ response ->
                 if(response.isSuccessful){
-                    val string = response.body?.string()
+                    val string = response.body?.string() ?: return@use null
                     Log.d("Hazard Detection", "Success: $string" )
                     //Deserialize object
                     json.decodeFromString<List<Hazard>>(string)
-                    string //deserialized object
                 }
                 else{
                     val e = response.body?.string()

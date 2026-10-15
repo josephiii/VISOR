@@ -14,6 +14,7 @@ package ucf.visor.stream
 
 import android.graphics.Bitmap
 import com.meta.wearable.dat.camera.types.StreamState
+import ucf.visor.network.Hazard
 
 
 data class StreamUiState(
