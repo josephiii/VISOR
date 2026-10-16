@@ -384,17 +384,24 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             //Only check when turning on (when session = inactive )
             if(!_uiState.value.isSessionActive){
                 val permission = Wearables.checkPermissionStatus(Permission.CAMERA)
-                if(permission!= PermissionStatus.Granted&& onRequestWearablesPermission(Permission.CAMERA)!= PermissionStatus.Granted){
+                permission.onFailure { error, _ ->
+                    setRecentError("Permission check error: ${error.description}")
+                    return@launch
+                }
+
+                if(permission.getOrNull()!= PermissionStatus.Granted&& onRequestWearablesPermission(Permission.CAMERA)!= PermissionStatus.Granted){
                     setRecentError("Camera permission denied")
                     return@launch
                 }
+
             }
-        }
-        _uiState.update {
-            if (it.isSessionActive)
-                it.copy(isSessionActive = false)
-            else
-                it.copy(isSessionActive = true)
+            _uiState.update {
+                if (it.isSessionActive)
+                    it.copy(isSessionActive = false)
+                else
+                    it.copy(isSessionActive = true)
+            }
+
         }
     }
 
