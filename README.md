@@ -64,7 +64,7 @@ A quick reference for where things live. Each row is one folder and what belongs
 VISOR/
 ├── frontend/visor/          Android app (Kotlin + Jetpack Compose + Meta Wearables DAT)
 ├── frontend/visor-webapp/   IMU Lab web app for the Ray-Ban Display glasses (hosted on Vercel)
-├── backend/                 FastAPI server: accounts (Supabase), scene descriptions (VLM), depth
+├── backend/                 FastAPI server: accounts (Supabase), scene descriptions (VLM), depth, hazards (YOLO)
 ├── analysis/                Python analysis of head-motion (IMU) recordings
 ├── tools/kws/               Wake-phrase tooling ("VISOR, read this", "VISOR GO")
 ├── documentation/           Developer guides, research, test protocols
@@ -77,14 +77,14 @@ VISOR/
 
 | Package | What it holds |
 | --- | --- |
-| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase to its feature. |
-| `capture/` | The three camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
+| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase (and Home's capture button, by session mode) to its feature. |
+| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
-| `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`. |
+| `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
 | `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`). |
 | `stt/` | Listening: wake phrases (sherpa-onnx) and spoken commands. |
 | `tts/` | Speaking: `Speaker`, the "thinking" beep, and `SpokenPhrases` (everything the camera features say). |
-| `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, spoken session errors, "Hey Meta" launches. |
+| `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |
 | `ui/screens/` | One folder per screen, plus any ViewModel used only by that screen (e.g. `debug/DebugViewModel`): `title/`, `auth/`, `home/`, `hardware/` (Pair Glasses), `profile/` (setup wizard, Settings), `help/`, `motionlab/`, `debug/`, `phase1/`. |
@@ -110,7 +110,7 @@ VISOR/
 | `routes/` → `services/` → `schemas/` | Endpoints, the logic behind them, and their request bodies. |
 | `services/vision_language_models/` | One class per vision language model (Qwen, Gemma, Moondream). |
 | `scripts/`, `samples/` | Try a model without the server, and the test images it uses. |
-| `notebooks/`, `weights/`, `other/` | Exploration notebooks, kept YOLO weights, and the custom detector trainer draft. |
+| `notebooks/`, `weights/`, `other/` | Exploration notebooks, YOLO weights (the hazard detector's, plus one kept for custom recognition), and the custom detector trainer draft. |
 
 Endpoints and setup: [backend/README.md](./backend/README.md).
 
@@ -119,7 +119,7 @@ Endpoints and setup: [backend/README.md](./backend/README.md).
 | Folder | What it holds |
 | --- | --- |
 | `developer/` | How-to guides: frontend jumpstart, VLM, MWDAT 1.0 upgrade. |
-| `research/` | Background research: low vision, accessibility (Section 508), Meta glasses SDK, models, hosting. |
+| `research/` | Background research: low vision, accessibility (Section 508), Meta glasses SDK, models (VLM, depth, YOLO), hosting. |
 | `testing/` | Test protocols and reports (IMU, VLM). |
 | `assets/` | Diagrams and whiteboard images used by the docs. |
 | `third-party-licenses/` | Licenses for MWDAT and the Atkinson Hyperlegible font. |

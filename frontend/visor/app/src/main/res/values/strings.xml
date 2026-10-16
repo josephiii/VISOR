@@ -84,7 +84,7 @@
     <!-- Help Screen: one title and body per topic -->
     <string name="help_title" description="Help screen heading">(WIP) Help &amp; how VISOR works</string>
     <string name="help_session_title" description="Help topic title">Starting a session</string>
-    <string name="help_session_body" description="Help topic">On the Home screen, the large center button starts and ends a VISOR session. While a session is active, VISOR describes what your glasses see.</string>
+    <string name="help_session_body" description="Help topic">On the Home screen, the large center button starts and ends a VISOR session. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. During a session, choose a mode (Hazard Awareness, Scene Description or Reading Assistance), then press the button above the modes, such as \"Check for hazards\". VISOR takes a picture with your glasses, then tells you what\'s ahead and how far away, describes the scene, or reads the text.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
     <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. You\'ll need to pair before VISOR can use their camera. Once paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
@@ -103,6 +103,10 @@
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
     <string name="start_session" description="start session">Start Session</string>
     <string name="end_session" description="end session">End Session</string>
+    <string name="home_mode_title" description="Heading above the session mode choices on Home">Mode</string>
+    <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
+    <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
+    <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
     <string name="environment_capture_title" description="Tip title about environment capture">Environment Capture</string>
     <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
 

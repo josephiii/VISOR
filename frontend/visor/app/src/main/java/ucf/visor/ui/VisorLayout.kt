@@ -57,9 +57,9 @@ import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.screens.phase1.Phase1NavigationBar
 import ucf.visor.data.SpeechRates
+import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceCommand
 import ucf.visor.ui.voice.VoiceNavState
@@ -75,6 +75,7 @@ fun VisorLayout(
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     talk: (String) -> Unit = {},
     lastSpoken: () -> String? = { null },
+    onCapture: () -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
     modifier: Modifier = Modifier,
@@ -299,25 +300,20 @@ fun VisorLayout(
                     if (!uiState.isAuthComplete) {
                         talk("Log in first to start a session.")
                     } else {
-                        if (currentRoute != "home") viewModel.home()
-                        val startingUp = !uiState.isSessionActive
-                        viewModel.toggleSession()
-                        talk(if (startingUp) "Starting session" else "Ending session")
+                        // Read the route now: currentRoute is from the composition that started this collector.
+                        if (navController.currentDestination?.route != "home") viewModel.home()
+                        viewModel.toggleSession(onRequestWearablesPermission, talk)
                     }
                 }
 
+                // Modes pick what Home's capture button does, so they switch
+                // whenever a session is running, not only in Phase 1.
                 is VoiceCommand.SwitchMode -> {
-                    if (uiState.phase1Initiated && uiState.isSessionActive) {
+                    if (uiState.isSessionActive) {
                         viewModel.setMode(command.mode)
-                        talk(
-                            when (command.mode) {
-                                SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
-                                SessionMode.SCENE -> "Scene Description Mode Activated!"
-                                SessionMode.READER -> "Reading Assistance Mode Activated!"
-                            }
-                        )
+                        talk(SpokenPhrases.modeActivated(command.mode))
                     } else {
-                        talk("Mode switching isn't available right now.")
+                        talk("Start a session first to switch modes.")
                     }
                 }
 
@@ -466,6 +462,7 @@ fun VisorLayout(
                                 talk = talk,
                                 voiceNav = voiceNav,
                                 onRequestWearablesPermission = onRequestWearablesPermission,
+                                onCapture = onCapture,
                             )
                         }
 

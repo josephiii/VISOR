@@ -1,14 +1,9 @@
 package ucf.visor.network
 
 import android.graphics.Bitmap
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.json.JSONTokener
-import java.io.ByteArrayOutputStream
 
 /**
  * The backend's vision language model endpoint:
@@ -22,15 +17,10 @@ class VlmClient(
 ) {
     /** On success, [ApiResult.Success.body] is the model's answer as plain text. */
     suspend fun ask(bitmap: Bitmap, prompt: String): ApiResult {
-        val jpeg = withContext(Dispatchers.Default) {
-            ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
-                .toByteArray()
-        }
-
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("prompt", prompt)
-            .addFormDataPart("image", "photo.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap))
             .build()
 
         return when (val result = ApiClient.send("/vlm/image_prompt", accessToken()) { post(body) }) {

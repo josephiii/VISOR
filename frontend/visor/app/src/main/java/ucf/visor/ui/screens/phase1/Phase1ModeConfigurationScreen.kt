@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 
@@ -86,13 +87,8 @@ fun Phase1ModeConfigurationScreen(
                     onClick = {
                         // Switch modes when selecting a non-active mode
                         if (!isSelected && uiState.isSessionActive) {
-                            val activateScript: String = when (mode) {
-                                SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
-                                SessionMode.SCENE -> "Scene Description Mode Activated!"
-                                SessionMode.READER -> "Reading Assistance Mode Activated!"
-                            }
                             viewModel.setMode(mode)
-                            talk(activateScript)
+                            talk(SpokenPhrases.modeActivated(mode))
                         }
                     }
                 )

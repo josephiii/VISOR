@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 
@@ -124,8 +125,9 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
 
-    // Backend calls (network/)
+    // Backend calls (network/), and reading the hazard detection answer (Hazard)
     implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
     // On-device recognition (recognition/): text, ML Kit's default labels,
     // and custom labels for CustomObjectDetector
     implementation(libs.mlkit.text.recognition)

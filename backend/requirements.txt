@@ -10,7 +10,7 @@ python-dotenv==1.2.2
 pydantic[email]==2.13.4
 supabase
 
-# --- Models: vision language model + depth estimation ---
+# --- Models: vision language model, depth estimation, object detection (YOLO) ---
 torch==2.13.0
 torchvision==0.28.0
 transformers @ git+https://github.com/huggingface/transformers@8698b5a52598d13a4f9e7fe46457526dae967a79
@@ -19,6 +19,7 @@ numpy==2.5.0
 pillow==12.3.0
 qwen-vl-utils
 einops
+ultralytics
 
 # --- Pinned dependencies of the above ---
 annotated-doc==0.0.4

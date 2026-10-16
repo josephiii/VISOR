@@ -32,6 +32,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.GlassesLease
+import ucf.visor.wearables.cameraPermissionProblem
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.preferredDevice
 
@@ -92,12 +93,7 @@ class GlassesPhotoSource(
         onPhoto: (Bitmap) -> Unit,
         onError: (String) -> Unit,
     ) {
-        if (Wearables.checkPermissionStatus(Permission.CAMERA) != PermissionStatus.Granted &&
-            requestPermission(Permission.CAMERA) != PermissionStatus.Granted
-        ) {
-            onError(SpokenPhrases.NO_CAMERA_PERMISSION)
-            return
-        }
+        cameraPermissionProblem(requestPermission)?.let { return onError(it) }
 
         val deviceId = preferredDevice()?.first
             ?: return onError(describeSessionError(DeviceSessionError.NO_ELIGIBLE_DEVICE))

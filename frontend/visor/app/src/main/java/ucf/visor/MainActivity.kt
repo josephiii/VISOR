@@ -36,12 +36,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import ucf.visor.capture.GlassesPhotoSource
+import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
 import ucf.visor.data.SessionStore
+import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
 import ucf.visor.recognition.TextReaderOCR
@@ -53,6 +55,7 @@ import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
@@ -154,6 +157,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var objectIdentifier: ReadRequester
     private lateinit var objectDetector: ObjectDetector
     private lateinit var sceneDescriber: ReadRequester
+    private lateinit var hazardDetector: ReadRequester
     private lateinit var thinkingBeeper: ThinkingBeeper
     private lateinit var glassesCamera: GlassesPhotoSource
 
@@ -184,6 +188,7 @@ class MainActivity : ComponentActivity() {
                         lastSpoken = { speaker.lastUtterance },
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
+                        onCapture = ::captureForMode,
                         voiceNav = voiceNav,
                         glassesNav = glassesNav,
                     )
@@ -206,13 +211,20 @@ class MainActivity : ComponentActivity() {
 
         objectIdentifier = ObjectIdentifier(glassesCamera, objectDetector)
 
+        val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
             photoSource = NotifyingPhotoSource(glassesCamera) {
                 speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION)
             },
-            vlm = VlmClient(accessToken = SessionStore(this)::accessToken),
+            vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
             fallback = objectDetector,
+        )
+
+        hazardDetector = HazardDetector(
+            photoSource = glassesCamera,
+            client = HazardClient(accessToken = sessionStore::accessToken),
+            scope = lifecycleScope,
         )
 
         voiceNav = VoiceNavigationController(
@@ -232,33 +244,9 @@ class MainActivity : ComponentActivity() {
         listener = Listener(assets) { phrase ->
             Log.d("VISOR", "WAKE HEARD: $phrase")
             when (normalizeKeyword(phrase)) {
-                in OCR_WAKE_PHRASES -> {
-                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
-                    thinkingBeeper.start()
-                    textReader.requestRead { text ->
-                        thinkingBeeper.stop()
-                        speaker.speak(text)
-                    }
-                }
-
-                in OBJECT_WAKE_PHRASES -> {
-                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
-                    thinkingBeeper.start()
-                    objectIdentifier.requestRead { text ->
-                        thinkingBeeper.stop()
-                        speaker.speak(text)
-                    }
-                }
-
-                in SCENE_WAKE_PHRASES -> {
-                    speaker.speak(SpokenPhrases.TAKING_PICTURE)
-                    thinkingBeeper.start()
-                    sceneDescriber.requestRead { text ->
-                        thinkingBeeper.stop()
-                        speaker.speak(text)
-                    }
-                }
-
+                in OCR_WAKE_PHRASES -> runCameraFeature(textReader)
+                in OBJECT_WAKE_PHRASES -> runCameraFeature(objectIdentifier)
+                in SCENE_WAKE_PHRASES -> runCameraFeature(sceneDescriber)
                 NAV_WAKE_PHRASE -> voiceNav.activate()
             }
         }
@@ -276,6 +264,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /**
+     * Every camera feature sounds the same, whether a wake phrase or Home's
+     * capture button asked for it: "Taking picture", beeps while it thinks,
+     * then the answer.
+     */
+    private fun runCameraFeature(feature: ReadRequester) {
+        speaker.speak(SpokenPhrases.TAKING_PICTURE)
+        thinkingBeeper.start()
+        feature.requestRead { text ->
+            thinkingBeeper.stop()
+            speaker.speak(text)
+        }
+    }
+
+    /** Home's capture button: the camera feature for the session's mode. */
+    private fun captureForMode() = runCameraFeature(
+        when (viewModel.session.value.mode) {
+            SessionMode.HAZARD -> hazardDetector
+            SessionMode.SCENE -> sceneDescriber
+            SessionMode.READER -> textReader
+        }
+    )
 
     override fun onStart() {
         super.onStart()

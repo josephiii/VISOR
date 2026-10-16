@@ -1,7 +1,7 @@
 # VISOR Backend
 
 The FastAPI server behind the VISOR app: accounts (through Supabase), scene descriptions from a vision
-language model, and depth estimation.
+language model, depth estimation, and hazard detection (YOLO object detection plus depth).
 
 ## Run it
 
@@ -16,7 +16,8 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 The first start downloads the models from Hugging Face (Qwen3-VL-2B and Depth-Anything-V2 small), which
-takes a while. Interactive API docs are then at `http://localhost:8000/docs`.
+takes a while; the YOLO weights are already in `weights/`. Interactive API docs are then at
+`http://localhost:8000/docs`.
 
 To point the app at your server, set `visor_api_base_url` in `frontend/visor/local.properties`.
 For example, `http://10.0.2.2:8000` reaches this machine from the Android emulator. Without it,
@@ -31,6 +32,7 @@ the app uses the hosted server.
 | DELETE | `/auth/deleteAccount` | `Authorization: Bearer <access_token>` | `{ message }` |
 | POST | `/vlm/image_prompt` | multipart `prompt`, `image` | the answer, as a string |
 | POST | `/depth` | multipart `image` | `{ width, height, depth }`, depth in meters per pixel |
+| POST | `/yolo/runHazardDetection` | multipart `image` | `[{ object, classID, coords, conf, depth }]`: each object YOLO found, its box `[x1, y1, x2, y2]` in pixels, and its distance in meters |
 
 ## Layout
 
@@ -41,10 +43,10 @@ the app uses the hosted server.
 | `routes/` | HTTP endpoints, one file per feature. `UserRoutes.py` (profile sync) is kept but **not mounted** yet; see the note in it. |
 | `schemas/` | Request bodies (Pydantic). |
 | `services/` | The logic behind each route; `vision_language_models/` holds one class per VLM. |
-| `scripts/` | Try a model without the server: `python -m scripts.try_vlm`, `python -m scripts.try_depth`. |
+| `scripts/` | Try a model without the server: `python -m scripts.try_vlm`, `python -m scripts.try_depth`, `python -m scripts.try_yolo` (hazard detection). |
 | `samples/` | Test images for the scripts. |
 | `notebooks/` | Exploratory notebooks (the earlier Qwen2-VL test). |
-| `weights/` | YOLO weights kept for planned custom object recognition. Nothing loads them yet. |
+| `weights/` | YOLO weights: `yolo11n.pt` is the hazard detector (`services/YoloService.py`); `yolo11_indoor.pt` is kept for planned custom object recognition. |
 | `other/` | `CustomObjectDetectorTrainer.py`, a draft for training the app's custom object detector (commented out). |
 
 More on the models: [documentation/developer/VLM.md](../documentation/developer/VLM.md).

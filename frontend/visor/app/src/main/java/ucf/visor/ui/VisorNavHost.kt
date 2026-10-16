@@ -33,6 +33,7 @@ fun VisorNavHost(
     talk: (String) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
+    onCapture: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -125,7 +126,9 @@ fun VisorNavHost(
         composable("home") {
             HomeScreen(
                 viewModel = viewModel,
-                talk = talk
+                talk = talk,
+                onRequestWearablesPermission = onRequestWearablesPermission,
+                onCapture = onCapture,
             )
         }
 

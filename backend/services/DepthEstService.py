@@ -1,3 +1,5 @@
+from functools import cache
+
 import torch
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 import numpy as np
@@ -57,11 +59,25 @@ class DepthEstService:
             raise HTTPException(status_code=500, detail=str(error)) 
         
     def getObjectdepths(self, objects, grid: np.ndarray):
+        """
+        Adds "depth" (meters) to each of YoloService's objects, from the depth
+        map runModel returned for the same image.
+        """
         for obj in objects:
-            #Get df ox x,y
+            # The object's box, at least one pixel wide and tall: a thinner box
+            # would be an empty slice, which has no percentile.
             x1, y1, x2, y2 = map(int, obj["coords"])
-            rawObjectDepth = grid[y1:y2, x1:x2]
-            #Get 25% depth
+            rawObjectDepth = grid[y1:max(y2, y1 + 1), x1:max(x2, x1 + 1)]
+            # The 25th percentile: the nearer part of the box, not the background behind the object.
             objdepth = np.percentile(rawObjectDepth, 25)
             obj["depth"] = float(objdepth)
         return objects
+
+
+@cache
+def shared_depth_service() -> DepthEstService:
+    """
+    The one DepthEstService the routes share (/depth and hazard detection), so
+    the model is loaded once.
+    """
+    return DepthEstService()

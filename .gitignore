@@ -32,10 +32,11 @@ frontend/visor/local.properties
 # A real release keystore must never be committed (app/sample.keystore is Meta's public sample key).
 **/*.jks
 
-# Wake-word model downloads (see tools/kws/README.md) and generated depth previews
+# Wake-word model downloads (see tools/kws/README.md) and generated depth and YOLO previews
 **/sherpa-onnx-kws-*/
 **/*.tar.bz2
 backend/**/depth_out.png
+backend/**/yolo_out.jpg
 
 # IMU session data — raw recordings and generated analysis artifacts.
 # Synthetic sessions are reproducible from analysis/make_synthetic.py (fixed seed).

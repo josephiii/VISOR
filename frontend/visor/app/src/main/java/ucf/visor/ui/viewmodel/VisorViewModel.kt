@@ -10,6 +10,8 @@ import com.meta.wearable.dat.core.selectors.DeviceSelector
 import com.meta.wearable.dat.core.types.Device
 import com.meta.wearable.dat.core.types.DeviceCompatibility
 import com.meta.wearable.dat.core.types.DeviceIdentifier
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +25,7 @@ import ucf.visor.data.UserProfile
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
 import ucf.visor.wearables.GlassesAppUpdate
+import ucf.visor.wearables.cameraPermissionProblem
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
 
@@ -364,12 +367,33 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isOnboarding = true) }
     }
 
-    fun toggleSession() {
-        _uiState.update {
-            if (it.isSessionActive)
-                it.copy(isSessionActive = false)
-            else
-                it.copy(isSessionActive = true)
+    /**
+     * Starts or ends the session (Home's button, or "start session" by voice
+     * or on the glasses), then [announce]s what happened.
+     *
+     * A session uses the glasses camera, so starting one first makes sure VISOR
+     * may use it, asking through the Meta AI app if needed ([requestPermission]).
+     * Without it the session does not start, and the wearer hears why rather
+     * than "Starting session".
+     */
+    fun toggleSession(
+        requestPermission: suspend (Permission) -> PermissionStatus,
+        announce: (String) -> Unit,
+    ) {
+        if (_uiState.value.isSessionActive) {
+            _uiState.update { it.copy(isSessionActive = false) }
+            announce("Ending session")
+            return
+        }
+        viewModelScope.launch {
+            val problem = cameraPermissionProblem(requestPermission)
+            if (problem != null) {
+                setRecentError(problem)
+                announce(problem)
+                return@launch
+            }
+            _uiState.update { it.copy(isSessionActive = true) }
+            announce("Starting session")
         }
     }
 
