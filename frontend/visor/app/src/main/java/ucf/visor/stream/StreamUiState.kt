@@ -14,6 +14,8 @@ package ucf.visor.stream
 
 import android.graphics.Bitmap
 import com.meta.wearable.dat.camera.types.StreamState
+import ucf.visor.network.Hazard
+
 
 data class StreamUiState(
     val streamState: StreamState = StreamState.STOPPED,
@@ -22,4 +24,6 @@ data class StreamUiState(
     val capturedPhoto: Bitmap? = null,
     val isShareDialogVisible: Boolean = false,
     val isCapturing: Boolean = false,
+    val hazards: List<Hazard> = emptyList(),
+    val sceneDescription : String = ""
 )

@@ -50,6 +50,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ucf.visor.R
+import ucf.visor.capture.SceneDescriber
+import ucf.visor.network.HazardClient
+import ucf.visor.network.VlmClient
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.isWarningOnly
@@ -75,6 +79,9 @@ class StreamViewModel(
 
     private val _uiState = MutableStateFlow(INITIAL_STATE)
     val uiState: StateFlow<StreamUiState> = _uiState.asStateFlow()
+
+    private val hazardClient = HazardClient()
+    private val vlmClient = VlmClient()
 
     private var videoJob: Job? = null
     private var stateJob: Job? = null
@@ -386,7 +393,26 @@ class StreamViewModel(
                     decodeHeic(byteArray, transform)
                 }
             }
-        _uiState.update { it.copy(capturedPhoto = capturedPhoto, isShareDialogVisible = true) }
+        //Route the image to each model
+        when(visorViewModel.session.value.mode){
+            SessionMode.SCENE -> {
+                _uiState.update { it.copy(sceneDescription="") }
+                vlmClient.ask(capturedPhoto,
+                    SceneDescriber.DEFAULT_PROMPT,
+                    {text-> _uiState.update { it.copy(sceneDescription = text) }},
+                    {e-> Log.d("Scene Description", "Scene description error $e")
+                        _uiState.update { (it.copy(sceneDescription = "Sorry I can't describe this scene")) }})
+            }
+            SessionMode.READER ->{}
+            SessionMode.HAZARD -> viewModelScope.launch {
+                val hazards =hazardClient.runHazardDetection(capturedPhoto)
+                if (hazards.isNullOrEmpty()) {
+                    _uiState.update { it.copy(hazards = emptyList()) }
+                    return@launch
+                }
+                _uiState.update { it.copy(hazards=hazards) }
+            }
+        }
     }
 
     // HEIC Decoding with EXIF transformation

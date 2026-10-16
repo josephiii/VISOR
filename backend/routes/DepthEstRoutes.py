@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, File, UploadFile
 from util import dservice
 from PIL import Image
+from util import dservice
 
 
 depth_router= APIRouter(prefix="/depth", tags=["depth"])

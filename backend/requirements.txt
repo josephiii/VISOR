@@ -65,6 +65,7 @@ supabase
 torch
 torchvision
 numpy
+ultralytics
 
 transformers
 accelerate
