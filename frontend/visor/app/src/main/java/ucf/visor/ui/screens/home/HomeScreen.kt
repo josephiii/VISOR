@@ -33,6 +33,7 @@ import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.R
+import ucf.visor.stream.StreamUiState
 import ucf.visor.stream.StreamViewModel
 import ucf.visor.ui.components.SessionToggleButton
 import ucf.visor.ui.viewmodel.SessionMode
@@ -58,6 +59,9 @@ fun HomeScreen(
                 visorViewModel = viewModel,
             ),
     )
+    //Import the stream model as state to track live status (for api)
+    val streamView = streamViewModel.uiState.collectAsStateWithLifecycle()
+
     LaunchedEffect(uiState.isSessionActive) {
         if(uiState.isSessionActive){
             streamViewModel.startStream()
@@ -66,7 +70,17 @@ fun HomeScreen(
         }
     }
 
-    Log.d("Visor","Mode: ${mode.inHazardAwarenessMode}")
+    LaunchedEffect(streamView.value.sceneDescription) {
+        if (streamView.value.sceneDescription.isNotEmpty()) {
+            talk(streamView.value.sceneDescription)
+        }
+    }
+
+    LaunchedEffect(streamView.value.hazards) {
+        if(streamView.value.hazards.isNotEmpty()){
+            talk(streamView.value.hazards.joinToString(". "){it.prepareSpeech()})
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight

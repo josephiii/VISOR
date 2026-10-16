@@ -12,4 +12,10 @@ data class Hazard (
     @SerialName("depth") val depth: Float,
     @SerialName("object") val name: String,
     @SerialName("conf") val conf: Float,
-)
+){
+    fun prepareSpeech(): String{
+        //convert meters to feet
+        val ft = depth*3.2808
+        return "$name ${ft.toInt()} feet ahead"
+    }
+}
