@@ -401,7 +401,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
                 else
                     it.copy(isSessionActive = true)
             }
-
         }
     }
 
