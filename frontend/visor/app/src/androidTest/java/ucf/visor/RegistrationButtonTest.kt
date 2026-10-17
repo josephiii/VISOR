@@ -60,6 +60,8 @@ class RegistrationButtonTest {
 
     // Verify the app is still alive after the registration coroutine executes.
     // If FragmentActivity is missing, the app crashes and this assertion fails.
-    composeTestRule.onNodeWithText(buttonText).assertExists()
+    // The same button reads "Disconnect my glasses" once registration completes.
+    val disconnectText = activity.getString(R.string.unregister_button_title)
+    composeTestRule.onNode(hasText(buttonText) or hasText(disconnectText)).assertExists()
   }
 }

@@ -86,6 +86,39 @@ fun DebugScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         ///////////////////////////////////////////////////////////////////////
+        // DEBUG BUTTON: hide the floating bug button until VISOR restarts
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.debug_button_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(
+                    text = stringResource(R.string.debug_button_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                HorizontalDivider()
+
+                ActionButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(R.string.debug_button_hide),
+                    onClick = {
+                        onDismiss()
+                        visorViewModel.hideDebugButton()
+                    },
+                )
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
         // TEST SUITE: VISOR's testing environments (Phase 1, head-motion lab)
         Card(
             modifier = Modifier.fillMaxWidth(),

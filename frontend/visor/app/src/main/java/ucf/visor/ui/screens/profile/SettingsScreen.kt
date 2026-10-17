@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,16 +36,22 @@ import ucf.visor.data.TextScale
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionType
+import ucf.visor.data.Volumes
 import ucf.visor.data.label
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
+ *
+ * @param talk and [beep] play what a new volume sounds like, as soon as a
+ *   volume slider is let go: loudness can't be judged by looking at a slider.
  */
 @Composable
 fun SettingsScreen(
     viewModel: VisorViewModel,
+    talk: (String) -> Unit = {},
+    beep: () -> Unit = {},
     onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // VisorViewModel.confirmDeleteAccount: DELETE /auth/deleteAccount, then wipes the profile
@@ -63,9 +70,12 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            // Inside the scroll, so the settings scroll right up to the navigation
+            // bar instead of disappearing 24dp above it.
+            .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Text(
@@ -168,6 +178,41 @@ fun SettingsScreen(
                 ) { onProfileChange(profile.copy(verbosity = v)) }
             }
         }
+
+        // Next to speed and detail: together, everything about what VISOR sounds like.
+        SettingSection(stringResource(R.string.settings_section_volume))
+        Text(
+            stringResource(R.string.settings_volume_description),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        val speechVolumeTitle = stringResource(R.string.settings_speech_volume_title)
+        VolumeSlider(
+            title = speechVolumeTitle,
+            volume = profile.speechVolume,
+            min = Volumes.MinSpeech,
+            minLabel = stringResource(R.string.settings_volume_quieter),
+            onVolumeChange = { onProfileChange(profile.copy(speechVolume = it)) },
+            // Read back from the ViewModel: a screen reader's adjustment has
+            // already saved the new volume, but this screen hasn't redrawn yet.
+            onPreview = {
+                val volume = viewModel.userProfile.value.speechVolume
+                talk("$speechVolumeTitle, ${Volumes.spokenLabel(volume)}.")
+            },
+        )
+        val soundEffectsTitle = stringResource(R.string.settings_sound_effects_volume_title)
+        VolumeSlider(
+            title = soundEffectsTitle,
+            description = stringResource(R.string.settings_sound_effects_description),
+            volume = profile.soundEffectsVolume,
+            min = Volumes.MinSoundEffects,
+            minLabel = stringResource(R.string.settings_volume_off),
+            onVolumeChange = { onProfileChange(profile.copy(soundEffectsVolume = it)) },
+            onPreview = {
+                // Off is silent, so say so rather than play nothing.
+                val volume = viewModel.userProfile.value.soundEffectsVolume
+                if (Volumes.percent(volume) == 0) talk("$soundEffectsTitle off.") else beep()
+            },
+        )
 
         SettingSection(stringResource(R.string.settings_section_text_size))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -291,6 +336,53 @@ fun SettingsScreen(
                 TextButton(onClick = { viewModel.cancelDeleteAccountConfirm() }) { Text(stringResource(R.string.cancel)) }
             },
         )
+    }
+}
+
+/**
+ * One volume slider, in ten-percent notches from [min] up to full volume.
+ * [onPreview] runs once the slider is let go, or after each screen reader
+ * adjustment, to play what the new volume sounds like.
+ */
+@Composable
+private fun VolumeSlider(
+    title: String,
+    volume: Float,
+    min: Float,
+    minLabel: String,
+    description: String? = null,
+    onVolumeChange: (Float) -> Unit,
+    onPreview: () -> Unit,
+) {
+    Text(
+        text = "$title: ${Volumes.label(volume)}",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+    )
+    if (description != null) {
+        Text(description, style = MaterialTheme.typography.bodyMedium)
+    }
+    Slider(
+        value = volume,
+        onValueChange = { position ->
+            val snapped = Volumes.snap(position, min)
+            if (snapped != volume) onVolumeChange(snapped)
+        },
+        onValueChangeFinished = onPreview,
+        valueRange = min..Volumes.Max,
+        steps = Volumes.sliderSteps(min),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = title
+                // The real percentage: a screen reader's own would count from
+                // the slider's start, which is not zero for the voice.
+                stateDescription = Volumes.spokenLabel(volume)
+            },
+    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(minLabel, style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.settings_volume_louder), style = MaterialTheme.typography.bodySmall)
     }
 }
 

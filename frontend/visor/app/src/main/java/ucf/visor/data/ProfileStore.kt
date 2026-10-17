@@ -26,6 +26,8 @@ class ProfileStore(context: Context) {
             .putString(KEY_DESCRIPTION, p.visionDescription)
             .putString(KEY_SEVERITY, p.severity.name)
             .putFloat(KEY_SPEECH_RATE_MULTIPLIER, p.speechRate)
+            .putFloat(KEY_SPEECH_VOLUME, p.speechVolume)
+            .putFloat(KEY_SOUND_EFFECTS_VOLUME, p.soundEffectsVolume)
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_TEXT_SCALE, p.textScale.name)
@@ -48,6 +50,10 @@ class ProfileStore(context: Context) {
                 ?: defaults.visionDescription,
             severity = enumOrDefault(KEY_SEVERITY, defaults.severity),
             speechRate = speechRateOrDefault(defaults.speechRate),
+            speechVolume = prefs.getFloat(KEY_SPEECH_VOLUME, defaults.speechVolume)
+                .coerceIn(Volumes.MinSpeech, Volumes.Max),
+            soundEffectsVolume = prefs.getFloat(KEY_SOUND_EFFECTS_VOLUME, defaults.soundEffectsVolume)
+                .coerceIn(Volumes.MinSoundEffects, Volumes.Max),
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
@@ -96,6 +102,8 @@ class ProfileStore(context: Context) {
         // Legacy key: the pre-slider enum name. Read for migration, never written.
         const val KEY_SPEECH_RATE = "speechRate"
         const val KEY_SPEECH_RATE_MULTIPLIER = "speechRateMultiplier"
+        const val KEY_SPEECH_VOLUME = "speechVolume"
+        const val KEY_SOUND_EFFECTS_VOLUME = "soundEffectsVolume"
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_TEXT_SCALE = "textScale"

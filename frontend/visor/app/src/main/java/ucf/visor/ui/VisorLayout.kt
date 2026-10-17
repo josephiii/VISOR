@@ -1,25 +1,16 @@
 package ucf.visor.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,9 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,7 +39,10 @@ import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.ui.components.VisorNavigationBar
@@ -62,6 +55,7 @@ import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceCommand
+import ucf.visor.ui.voice.VoiceListeningGlow
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 
@@ -74,6 +68,7 @@ fun VisorLayout(
     viewModel: VisorViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
     talk: (String) -> Unit = {},
+    beep: () -> Unit = {},
     lastSpoken: () -> String? = { null },
     onCapture: () -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
@@ -109,6 +104,23 @@ fun VisorLayout(
             snackbarHostState.showSnackbar(errorMessage)
             viewModel.clearRecentError()
         }
+    }
+
+    // Voice navigation listening, felt as well as seen (see VoiceListeningGlow
+    // below), for a user who isn't looking at the screen: a firm buzz as the
+    // microphone opens for a command, and a light tick as it closes. Not
+    // ToggleOn for the buzz: before Android 14 that falls back to a faint click.
+    val haptics = LocalHapticFeedback.current
+    LaunchedEffect(voiceNav, haptics) {
+        voiceNav?.state
+            ?.map { it == VoiceNavState.LISTENING }
+            ?.distinctUntilChanged()
+            ?.drop(1) // the state at launch is not a change
+            ?.collect { listening ->
+                haptics.performHapticFeedback(
+                    if (listening) HapticFeedbackType.LongPress else HapticFeedbackType.ToggleOff
+                )
+            }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -313,7 +325,7 @@ fun VisorLayout(
                         viewModel.setMode(command.mode)
                         talk(SpokenPhrases.modeActivated(command.mode))
                     } else {
-                        talk("Start a session first to switch modes.")
+                        talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES)
                     }
                 }
 
@@ -385,148 +397,114 @@ fun VisorLayout(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Scaffold(
-            modifier = modifier,
-            snackbarHost = {
-                // Error logging snackbar.
-                SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier =
-                        Modifier
-                            .navigationBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 32.dp),
-                    snackbar = { data ->
-                        Snackbar(
-                            shape = RoundedCornerShape(24.dp),
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Error,
-                                    contentDescription = "Error",
-                                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(data.visuals.message)
-                            }
-                        }
-                    },
-                )
-            },
-            floatingActionButton = {
-                // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
-                if (BuildConfig.DEBUG && !uiState.phase1Initiated) {
-                    FloatingActionButton(
-                        onClick = { viewModel.showDebugMenu() },
-                    ) {
-                        Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")
+        // A Box so the voice listening glow can draw over everything, the
+        // navigation bar included, without taking up any room of its own.
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = modifier,
+                // The navigation bar goes in the Scaffold's bottom bar slot, so the
+                // Scaffold pads the screen above it by exactly the bar's height.
+                //
+                // It used to sit in a Column under the screen, with the Scaffold's
+                // padding (which ends with the system navigation bar's height) on
+                // the screen. NavigationBar also pads itself for the system bar, so
+                // that height was added twice: the second time as a blank band
+                // between each screen and the navigation bar.
+                bottomBar = {
+                    // Exactly one bottom bar, never both: initiating Phase 1 (see
+                    // DebugScreen's "P1 Initiate" button) also calls home(), which
+                    // sets navigationBarEnabled.
+                    if (uiState.phase1Initiated) {
+                        // FOR PHASE 1
+                        Phase1NavigationBar(currentRoute, viewModel)
+                    } else if (uiState.navigationBarEnabled) {
+                        // Once the user is fully logged in...
+                        VisorNavigationBar(currentRoute, viewModel)
                     }
-
-                    if (uiState.isDebugMenuVisible) {
-                        ModalBottomSheet(
-                            onDismissRequest = { viewModel.hideDebugMenu() },
-                            sheetState = bottomSheetState,
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            DebugScreen(
-                                visorViewModel = viewModel,
-                                navController = navController,
-                                onDismiss = { viewModel.hideDebugMenu() },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
-                }
-            },
-            content = { innerPadding ->
-                // Box, not just the Column below, so the voice status pop-up can
-                // float on top of the screen instead of taking up its own row —
-                // a row here would shift every screen's content down each time
-                // voice nav starts/stops listening.
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        // Sets the routes for the screens and is where the observers direct their uiState traffic
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(innerPadding)
-                        ) {
-                            VisorNavHost(
-                                navController = navController,
-                                viewModel = viewModel,
-                                talk = talk,
-                                voiceNav = voiceNav,
-                                onRequestWearablesPermission = onRequestWearablesPermission,
-                                onCapture = onCapture,
-                            )
-                        }
-
-                        // Exactly one bottom bar, never both: initiating Phase 1
-                        // (see DebugScreen's "P1 Initiate" button) also calls
-                        // home(), which sets navigationBarEnabled — so without
-                        // this being an if/else, both NavigationBars would
-                        // render stacked, showing up as extra empty space
-                        // (each one pads itself for the bottom system bar
-                        // inset) above the real bottom edge of the screen.
-                        if (uiState.phase1Initiated) {
-                            // FOR PHASE 1
-                            Phase1NavigationBar(currentRoute, viewModel)
-                        } else if (uiState.navigationBarEnabled) {
-                            // Once the user is fully logged in...
-                            VisorNavigationBar(currentRoute, viewModel)
-                        }
-                    }
-
-                    // Voice navigation status pop-up. Floats over the content
-                    // (doesn't reflow it) and sits below statusBarsPadding() so
-                    // it never covers the status bar / notification-shade pull
-                    // handle, even though the app otherwise draws edge-to-edge.
-                    // A `liveRegion` so a screen reader announces it as it
-                    // appears/changes, since a user relying on voice nav may
-                    // not be looking at the screen to see it.
-                    AnimatedVisibility(
-                        visible = voiceState != VoiceNavState.IDLE,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .statusBarsPadding()
-                            .padding(top = 12.dp),
-                        enter = fadeIn() + slideInVertically { -it },
-                        exit = fadeOut() + slideOutVertically { -it },
-                    ) {
-                        Surface(
-                            shape = CutCornerShape(35),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shadowElevation = 6.dp,
-                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                },
+                snackbarHost = {
+                    // Error logging snackbar. No navigationBarsPadding(): the
+                    // Scaffold already places it above the navigation bar, or above
+                    // the system bar when there is no navigation bar.
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp),
+                        snackbar = { data ->
+                            Snackbar(
+                                shape = RoundedCornerShape(24.dp),
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Mic,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (voiceState == VoiceNavState.LISTENING)
-                                        "Listening for a command…"
-                                    else
-                                        "Working on it…",
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Error,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(data.visuals.message)
+                                }
+                            }
+                        },
+                    )
+                },
+                floatingActionButton = {
+                    // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
+                    // The debug menu can hide this button until VISOR restarts.
+                    if (BuildConfig.DEBUG && !uiState.phase1Initiated && !uiState.isDebugButtonHidden) {
+                        FloatingActionButton(
+                            onClick = { viewModel.showDebugMenu() },
+                        ) {
+                            Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")
+                        }
+
+                        if (uiState.isDebugMenuVisible) {
+                            ModalBottomSheet(
+                                onDismissRequest = { viewModel.hideDebugMenu() },
+                                sheetState = bottomSheetState,
+                                modifier = Modifier.fillMaxSize(),
+                            ) {
+                                DebugScreen(
+                                    visorViewModel = viewModel,
+                                    navController = navController,
+                                    onDismiss = { viewModel.hideDebugMenu() },
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
                         }
                     }
+                },
+                content = { innerPadding ->
+                    // Sets the routes for the screens and is where the observers direct their uiState traffic
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            // The system bars are taken care of here, so a
+                            // navigationBarsPadding() inside a screen can't add
+                            // the gap above the navigation bar back.
+                            .consumeWindowInsets(innerPadding)
+                    ) {
+                        VisorNavHost(
+                            navController = navController,
+                            viewModel = viewModel,
+                            talk = talk,
+                            beep = beep,
+                            voiceNav = voiceNav,
+                            onRequestWearablesPermission = onRequestWearablesPermission,
+                            onCapture = onCapture,
+                        )
+                    }
                 }
-            }
-        )
+            )
+
+            // Voice navigation is listening: the screen's edges glow, instead of a
+            // pop-up over the top of the screen, where it covered headings. Not a
+            // screen reader live region, as the pop-up was: VISOR already says
+            // "Listening." itself, and a screen reader saying more as the
+            // microphone opened could be heard as part of the command.
+            VoiceListeningGlow(state = voiceState, modifier = Modifier.matchParentSize())
+        }
     }
 }
 

@@ -185,6 +185,7 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     VisorLayout(
                         talk = { speaker.speak(it) },
+                        beep = { thinkingBeeper.beepOnce() },
                         lastSpoken = { speaker.lastUtterance },
                         viewModel = viewModel,
                         onRequestWearablesPermission = ::requestWearablesPermission,
@@ -202,8 +203,14 @@ class MainActivity : ComponentActivity() {
         )
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
-        speaker = Speaker(this)
-        thinkingBeeper = ThinkingBeeper(isSpeaking = { speaker.isSpeaking() })
+        // Volumes are read from the profile as each sound plays, not pushed in a
+        // LaunchedEffect like the speech rate: Settings plays a preview the
+        // moment a volume changes, before an effect would have run.
+        speaker = Speaker(this, volume = { viewModel.userProfile.value.speechVolume })
+        thinkingBeeper = ThinkingBeeper(
+            isSpeaking = { speaker.isSpeaking() },
+            volume = { viewModel.userProfile.value.soundEffectsVolume },
+        )
 
         // Without real glasses, pair mock glasses in the debug menu and pick
         // the photo they should "take" (Select image).

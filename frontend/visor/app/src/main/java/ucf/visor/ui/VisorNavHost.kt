@@ -31,6 +31,7 @@ fun VisorNavHost(
     navController: NavHostController,
     viewModel: VisorViewModel,
     talk: (String) -> Unit = {},
+    beep: () -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: () -> Unit = {},
@@ -142,6 +143,8 @@ fun VisorNavHost(
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
+                talk = talk,
+                beep = beep,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },

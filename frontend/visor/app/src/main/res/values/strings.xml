@@ -7,6 +7,10 @@
     <!-- Common -->
     <string name="back" description="Back button">Back</string>
     <string name="cancel" description="Cancel button">Cancel</string>
+    <!-- What a screen reader says for a control that is shown but can't be used yet -->
+    <string name="state_locked" description="Screen reader state of a locked button">Locked</string>
+    <string name="state_selected_locked" description="Screen reader state of a selected option that is locked">Selected, locked</string>
+    <string name="state_not_selected_locked" description="Screen reader state of an unselected option that is locked">Not selected, locked</string>
 
     <!-- Login Screen -->
     <string name="login_title" description="The login title">LOGIN</string>
@@ -55,6 +59,14 @@
     <string name="settings_verbosity_brief" description="Detail option">Brief</string>
     <string name="settings_verbosity_standard" description="Detail option">Standard</string>
     <string name="settings_verbosity_detailed" description="Detail option">Detailed</string>
+    <string name="settings_section_volume" description="Settings section: how loud VISOR's voice and sound effects are">How loud VISOR is</string>
+    <string name="settings_volume_description" description="What the volume sliders are relative to">A share of your phone\'s media volume. Your phone\'s volume buttons still turn everything up or down.</string>
+    <string name="settings_speech_volume_title" description="Volume slider for VISOR's spoken voice; also spoken when previewing it">VISOR\'s voice</string>
+    <string name="settings_sound_effects_volume_title" description="Volume slider for VISOR's sound effects; also spoken when they are turned off">Sound effects</string>
+    <string name="settings_sound_effects_description" description="What VISOR's sound effects are">The beeps VISOR plays while it thinks.</string>
+    <string name="settings_volume_quieter" description="Voice volume slider, quiet end">Quieter</string>
+    <string name="settings_volume_off" description="Sound effects volume slider, silent end">Off</string>
+    <string name="settings_volume_louder" description="Volume slider, loud end">Louder</string>
     <string name="settings_section_text_size" description="Settings section: text size">Text size</string>
     <string name="settings_text_size_standard" description="Text size option">Standard</string>
     <string name="settings_text_size_large" description="Text size option">Large</string>
@@ -63,7 +75,7 @@
     <string name="settings_high_contrast_on" description="High contrast toggle, on">High contrast: ON</string>
     <string name="settings_high_contrast_off" description="High contrast toggle, off">High contrast: OFF</string>
     <string name="settings_section_voice_navigation" description="Settings section: voice navigation">Voice navigation</string>
-    <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then say where you\'d like to go — for example \"open settings\" or \"go home\".</string>
+    <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then say where you\'d like to go — for example \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
     <string name="settings_voice_navigation_on" description="Voice navigation toggle, on">Voice navigation: ON</string>
     <string name="settings_voice_navigation_off" description="Voice navigation toggle, off">Voice navigation: OFF</string>
     <string name="settings_section_tap_navigation" description="Settings section: glasses tap navigation">Glasses tap navigation</string>
@@ -94,7 +106,7 @@
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
-    <string name="help_personalize_body" description="Help topic">In Settings, you can change how fast VISOR talks, how much detail it gives, your text size, and turn on High Contrast mode. Changes apply immediately.</string>
+    <string name="help_personalize_body" description="Help topic">In Settings, you can change how fast VISOR talks, how much detail it gives, how loud its voice and sound effects are, your text size, and turn on High Contrast mode. Changes apply immediately.</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
@@ -107,6 +119,7 @@
     <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
     <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
     <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
+    <string name="home_locked_hint" description="Under Home's capture button and modes, which are locked until a session starts">Start a session to use these controls.</string>
     <string name="environment_capture_title" description="Tip title about environment capture">Environment Capture</string>
     <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
 
@@ -117,6 +130,9 @@
     <string name="home_redirect_message" description="Redirect message">You\'ll be redirected to the Meta AI app to confirm your connection.</string>
 
     <!-- DEBUG -->
+    <string name="debug_button_title" description="Debug menu section about the floating debug button">Debug Button</string>
+    <string name="debug_button_description" description="What hiding the debug button does">Hide the floating bug button, for demos or screenshots. It comes back the next time VISOR starts.</string>
+    <string name="debug_button_hide" description="Hides the floating debug button until VISOR restarts">HIDE DEBUG BUTTON</string>
     <string name="debug_screen_view_title" description="Title for the debug screen viewer">Quick Screen Viewer</string>
     <string name="debug_screen_description" description="The description of the debug screen viewer">Select a screen\'s button to view it</string>
     <string name="debug_home_screen" description="home screen debug option">HOME SCREEN</string>

@@ -1,7 +1,7 @@
 package ucf.visor.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +21,9 @@ fun SwitchButton(
 ) {
     Button(
         modifier = modifier
-            .height(56.dp)
+            // A minimum, not a fixed height: at large text sizes the label
+            // needs more than 56dp, and a fixed height clipped it.
+            .heightIn(min = 56.dp)
             .fillMaxWidth(),
         onClick = onClick,
         enabled = enabled,

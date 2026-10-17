@@ -15,12 +15,16 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ucf.visor.R
 import ucf.visor.ui.theme.VisorShapes
 
 /**
@@ -31,6 +35,9 @@ import ucf.visor.ui.theme.VisorShapes
  * @param showCheckmark set false for chips packed 3-wide in a Row, where a
  *   checkmark would fight the label for space at large text sizes — the
  *   container color and bold weight still carry the selected state.
+ * @param locked shows the chip as there but not choosable yet: a dashed
+ *   outline instead of the fill, text still at full contrast (see
+ *   [dashedBorder]). It still takes taps, so [onClick] can say what unlocks it.
  */
 @Composable
 fun SelectableChip(
@@ -41,10 +48,13 @@ fun SelectableChip(
     minHeight: Dp = 64.dp,
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
     showCheckmark: Boolean = true,
+    locked: Boolean = false,
     onClick: () -> Unit,
 ) {
     val containerColor =
-        if (selected) {
+        if (locked) {
+            Color.Transparent
+        } else if (selected) {
             MaterialTheme.colorScheme.primaryContainer
         } else if (vital) {
             MaterialTheme.colorScheme.errorContainer
@@ -52,7 +62,9 @@ fun SelectableChip(
             MaterialTheme.colorScheme.surface
         }
     val contentColor =
-        if (selected) {
+        if (locked) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else if (selected) {
             MaterialTheme.colorScheme.onPrimaryContainer
         } else if (vital) {
             MaterialTheme.colorScheme.onErrorContainer
@@ -67,14 +79,26 @@ fun SelectableChip(
         } else {
             MaterialTheme.colorScheme.outline
         }
+    // Compose only says "selected" when no other state description is set, so
+    // a locked chip says both itself.
+    val lockedDescription = stringResource(
+        if (selected) R.string.state_selected_locked else R.string.state_not_selected_locked
+    )
 
     OutlinedButton(
         onClick = onClick,
         modifier = modifier
             .heightIn(min = minHeight)
-            .semantics { this.selected = selected },
+            .semantics {
+                this.selected = selected
+                if (locked) stateDescription = lockedDescription
+            }
+            .then(
+                if (locked) Modifier.dashedBorder(2.dp, borderColor, VisorShapes.Control)
+                else Modifier
+            ),
         shape = VisorShapes.Control,
-        border = BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
+        border = if (locked) null else BorderStroke(if (selected) 2.dp else 1.dp, borderColor),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = containerColor,

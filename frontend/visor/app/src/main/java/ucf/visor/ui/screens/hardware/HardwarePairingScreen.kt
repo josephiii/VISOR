@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -74,10 +72,14 @@ fun HardwarePairingScreen(
         modifier =
             modifier
                 .fillMaxSize()
+                // Padding before the scroll indicator, as on Settings: the bar is
+                // drawn just past the column's right edge, inside this padding.
+                // With the padding inside the scroll instead, the bar landed past
+                // the edge of the screen, so this screen showed none.
+                .padding(horizontal = 24.dp)
                 .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
                 .verticalScroll(scrollState)
-                .padding(all = 24.dp)
-                .navigationBarsPadding(),
+                .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -125,23 +127,31 @@ fun HardwarePairingScreen(
             // App Registration Button
             Text(
                 text = stringResource(R.string.home_redirect_message),
-                color = Color.Gray,
+                // Not Color.Gray: that is under 4.5:1 against the light themes.
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
+            // One button that follows the registration: "Connect my glasses"
+            // until VISOR is registered, then "Disconnect my glasses". Either is
+            // disabled while the Meta AI app is still busy with the last request.
+            val registered = uiState.isRegistered
             SwitchButton(
-                label = stringResource(R.string.register_button_title),
-                enabled = uiState.canStartRegistration,
-                onClick = { withActivity(viewModel::startRegistration) },
+                label = stringResource(
+                    if (registered) R.string.unregister_button_title
+                    else R.string.register_button_title
+                ),
+                isDestructive = registered,
+                enabled =
+                    if (registered) uiState.registrationState == RegistrationState.REGISTERED
+                    else uiState.canStartRegistration,
+                onClick = {
+                    withActivity(
+                        if (registered) viewModel::startUnregistration
+                        else viewModel::startRegistration
+                    )
+                },
             )
-            if (uiState.isRegistered) {
-                SwitchButton(
-                    label = stringResource(R.string.unregister_button_title),
-                    isDestructive = true,
-                    enabled = uiState.registrationState == RegistrationState.REGISTERED,
-                    onClick = { withActivity(viewModel::startUnregistration) },
-                )
-            }
         }
     }
 }

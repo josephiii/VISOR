@@ -161,6 +161,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Hides the debug menu's floating button, e.g. for a demo. Not saved
+     * anywhere, so it is back the next time VISOR starts (a rotation keeps it
+     * hidden: this ViewModel outlives that).
+     */
+    fun hideDebugButton() {
+        _uiState.update { it.copy(isDebugButtonHidden = true) }
+    }
+
+    /**
      * Clears every pending navigation request.
      *
      * The screen flags in [VisorUiState] are one-shot *events*, not state:

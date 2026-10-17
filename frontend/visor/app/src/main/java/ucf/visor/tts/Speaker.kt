@@ -1,11 +1,16 @@
 package ucf.visor.tts
 
 import android.content.Context
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.util.Log
 import java.util.Locale
 
-class Speaker(context: Context) {
+/**
+ * @param volume VISOR's voice as a fraction of the media volume (0..1). Read
+ *   each time something is spoken, so a change is heard on the very next word.
+ */
+class Speaker(context: Context, private val volume: () -> Float) {
 
     private var tts: TextToSpeech? = null
     private var isReady = false
@@ -50,7 +55,8 @@ class Speaker(context: Context) {
 
     // this is what is responsible for speaking wtv is passed to speak()
     private fun queueSpeaking(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "VISOR_SPEAKING")
+        val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume()) }
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "VISOR_SPEAKING")
     }
 
     fun isSpeaking(): Boolean = tts?.isSpeaking == true

@@ -61,4 +61,15 @@ object SpokenPhrases {
         SessionMode.SCENE -> "Scene Description Mode Activated!"
         SessionMode.READER -> "Reading Assistance Mode Activated!"
     }
+
+    // Home's capture button and modes are locked until a session starts; a tap
+    // on one (or asking for a mode by voice) says what to do first.
+    const val START_SESSION_TO_SWITCH_MODES = "Start a session first to switch modes."
+
+    /** Said when Home's capture button, for [mode], is pressed before a session has started. */
+    fun startSessionToCapture(mode: SessionMode): String = when (mode) {
+        SessionMode.HAZARD -> "Start a session first to check for hazards."
+        SessionMode.SCENE -> "Start a session first to describe the scene."
+        SessionMode.READER -> "Start a session first to read text."
+    }
 }
