@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.data.VoiceCategory
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorHeader
@@ -48,7 +49,7 @@ import ucf.visor.ui.voice.VoiceNavigationController
 @Composable
 fun TitleScreen(
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {},
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
     voiceNav: VoiceNavigationController? = null,
     onLoginClick: () -> Unit,
     onSignUpClick: () -> Unit,
@@ -63,7 +64,7 @@ fun TitleScreen(
             val tip = "Voice navigation is on. Say VISOR GO, then say what you'd like. " +
                     "Try log in, sign up, go home, or help. " +
                     "You can turn this off any time in Settings."
-            voiceNav?.speakGuarded(tip) ?: talk(tip)
+            voiceNav?.speakGuarded(tip) ?: talk(tip, VoiceCategory.VOICE_COMMANDS)
         }
     }
 

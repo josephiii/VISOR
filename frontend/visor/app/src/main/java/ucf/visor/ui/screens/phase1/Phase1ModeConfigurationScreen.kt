@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.data.VoiceCategory
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -39,7 +40,7 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 @Composable
 fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {}
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val session by viewModel.session.collectAsStateWithLifecycle()
@@ -88,7 +89,7 @@ fun Phase1ModeConfigurationScreen(
                         // Switch modes when selecting a non-active mode
                         if (!isSelected && uiState.isSessionActive) {
                             viewModel.setMode(mode)
-                            talk(SpokenPhrases.modeActivated(mode))
+                            talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
                         }
                     }
                 )
@@ -105,8 +106,9 @@ fun Phase1ModeConfigurationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = CutCornerShape(14.dp),
                     onClick = {
+                        // A demo script stands in for an answer.
                         if (uiState.isSessionActive) {
-                            talk(scriptText)
+                            talk(scriptText, VoiceCategory.ANSWERS)
                         }
                     }
                 ) {

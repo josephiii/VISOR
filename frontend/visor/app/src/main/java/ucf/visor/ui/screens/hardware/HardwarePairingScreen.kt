@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.types.RegistrationState
 import ucf.visor.R
+import ucf.visor.data.VoiceCategory
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
@@ -55,7 +56,7 @@ import ucf.visor.wearables.GlassesStatus
 fun HardwarePairingScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
-    talk: (String) -> Unit = {},
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
@@ -108,7 +109,10 @@ fun HardwarePairingScreen(
         }
 
         uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
-            GlassesStatusCard(status = status, onSpeak = { talk(status.spokenSummary()) })
+            GlassesStatusCard(
+                status = status,
+                onSpeak = { talk(status.spokenSummary(), VoiceCategory.ANSWERS) },
+            )
         }
 
         if (uiState.isFirmwareUpdateRequired || uiState.isDatAppUpdateRequired) {

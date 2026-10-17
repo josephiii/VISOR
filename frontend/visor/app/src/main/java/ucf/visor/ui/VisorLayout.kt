@@ -49,7 +49,10 @@ import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.screens.phase1.Phase1NavigationBar
+import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
+import ucf.visor.data.VoiceCategory
+import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
@@ -62,14 +65,20 @@ import ucf.visor.ui.voice.VoiceNavigationController
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions
 // based on the current viewModel state (uiState) and is where we keep our debugging tools.
+//
+// talk says something at its kind's volume (see AudioMix); speakAt, at a given
+// volume, for Settings previews; onToggleSession starts or ends the session and
+// says so (MainActivity).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
     viewModel: VisorViewModel,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
-    talk: (String) -> Unit = {},
-    beep: () -> Unit = {},
-    lastSpoken: () -> String? = { null },
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
+    speakAt: (String, Float) -> Unit = { _, _ -> },
+    playSample: (SoundCategory) -> Unit = {},
+    lastSpoken: () -> Speaker.Utterance? = { null },
+    onToggleSession: () -> Unit = {},
     onCapture: () -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
@@ -279,6 +288,10 @@ fun VisorLayout(
     ///////////////////////////////////////////////////////////////////////////
     // Voice + Glasses-Tap Navigation Observer
     LaunchedEffect(voiceNav, glassesNav) {
+        // What VISOR says back about a command itself. What a command changes,
+        // such as a mode, is announced the way it would be from a button.
+        val reply: (String) -> Unit = { talk(it, VoiceCategory.VOICE_COMMANDS) }
+
         merge(
             voiceNav?.commands ?: emptyFlow(),
             glassesNav?.commands ?: emptyFlow()
@@ -290,31 +303,31 @@ fun VisorLayout(
                 // unlock them from TitleScreen/Login/SignUp.
                 VoiceCommand.GoHome ->
                     if (uiState.isAuthComplete) viewModel.home()
-                    else talk("Log in first to go home.")
+                    else reply("Log in first to go home.")
 
                 VoiceCommand.OpenSettings ->
                     if (uiState.isAuthComplete) viewModel.settings()
-                    else talk("Log in first to open settings.")
+                    else reply("Log in first to open settings.")
 
                 VoiceCommand.OpenHelp ->
                     if (uiState.isAuthComplete) viewModel.help()
-                    else talk("Log in first for help.")
+                    else reply("Log in first for help.")
 
                 VoiceCommand.PairDevice ->
                     if (uiState.isAuthComplete) viewModel.hardwarePairing()
-                    else talk("Log in first to pair your glasses.")
+                    else reply("Log in first to pair your glasses.")
 
                 VoiceCommand.GoBack -> {
-                    if (!navController.popBackStack()) talk("There's nowhere to go back to.")
+                    if (!navController.popBackStack()) reply("There's nowhere to go back to.")
                 }
 
                 VoiceCommand.ToggleSession -> {
                     if (!uiState.isAuthComplete) {
-                        talk("Log in first to start a session.")
+                        reply("Log in first to start a session.")
                     } else {
                         // Read the route now: currentRoute is from the composition that started this collector.
                         if (navController.currentDestination?.route != "home") viewModel.home()
-                        viewModel.toggleSession(onRequestWearablesPermission, talk)
+                        onToggleSession()
                     }
                 }
 
@@ -323,24 +336,24 @@ fun VisorLayout(
                 is VoiceCommand.SwitchMode -> {
                     if (uiState.isSessionActive) {
                         viewModel.setMode(command.mode)
-                        talk(SpokenPhrases.modeActivated(command.mode))
+                        talk(SpokenPhrases.modeActivated(command.mode), VoiceCategory.SESSION_UPDATES)
                     } else {
-                        talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES)
+                        talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES, VoiceCategory.SESSION_UPDATES)
                     }
                 }
 
                 VoiceCommand.GoToLogin -> viewModel.login()
                 VoiceCommand.GoToSignUp -> viewModel.signUp()
                 VoiceCommand.GoToForgotPassword -> viewModel.forgotPassword()
-                VoiceCommand.ResendCode -> talk("Resend code isn't available yet.")
+                VoiceCommand.ResendCode -> reply("Resend code isn't available yet.")
 
                 VoiceCommand.LogOut ->
                     if (uiState.isAuthComplete) viewModel.requestLogoutConfirm()
-                    else talk("You're not logged in.")
+                    else reply("You're not logged in.")
 
                 VoiceCommand.DeleteAccount ->
                     if (uiState.isAuthComplete) viewModel.requestDeleteAccountConfirm()
-                    else talk("You're not logged in.")
+                    else reply("You're not logged in.")
 
                 VoiceCommand.ToggleHighContrast ->
                     viewModel.updateProfile(profile.copy(appHighContrast = !profile.appHighContrast))
@@ -351,13 +364,13 @@ fun VisorLayout(
                 VoiceCommand.SpeakFaster -> {
                     val rate = SpeechRates.faster(profile.speechRate)
                     viewModel.updateProfile(profile.copy(speechRate = rate))
-                    talk("Faster. ${SpeechRates.spokenLabel(rate)}.")
+                    reply("Faster. ${SpeechRates.spokenLabel(rate)}.")
                 }
 
                 VoiceCommand.SpeakSlower -> {
                     val rate = SpeechRates.slower(profile.speechRate)
                     viewModel.updateProfile(profile.copy(speechRate = rate))
-                    talk("Slower. ${SpeechRates.spokenLabel(rate)}.")
+                    reply("Slower. ${SpeechRates.spokenLabel(rate)}.")
                 }
 
                 is VoiceCommand.SetVerbosity ->
@@ -384,8 +397,10 @@ fun VisorLayout(
                 // "Next"/"repeat" only mean something inside the onboarding wizard's
                 // own voice-first flow, which listens directly (no "VISOR GO" needed)
                 // and doesn't go through this dispatcher — see ProfileCreationScreen.
-                VoiceCommand.Next -> talk("There's nothing to move to next here.")
-                VoiceCommand.RepeatLast -> talk(lastSpoken() ?: "I haven't said anything yet.")
+                VoiceCommand.Next -> reply("There's nothing to move to next here.")
+                // Said again as the kind of speech it was, at that kind's volume.
+                VoiceCommand.RepeatLast -> lastSpoken()?.let { talk(it.text, it.category) }
+                    ?: reply("I haven't said anything yet.")
 
                 VoiceCommand.Unrecognized -> Unit // already told the user via VoiceNavigationController
             }
@@ -489,9 +504,11 @@ fun VisorLayout(
                             navController = navController,
                             viewModel = viewModel,
                             talk = talk,
-                            beep = beep,
+                            speakAt = speakAt,
+                            playSample = playSample,
                             voiceNav = voiceNav,
                             onRequestWearablesPermission = onRequestWearablesPermission,
+                            onToggleSession = onToggleSession,
                             onCapture = onCapture,
                         )
                     }

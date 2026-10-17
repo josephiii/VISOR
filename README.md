@@ -81,9 +81,9 @@ VISOR/
 | `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
-| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`). |
-| `stt/` | Listening: wake phrases (sherpa-onnx) and spoken commands. |
-| `tts/` | Speaking: `Speaker`, the "thinking" beep, and `SpokenPhrases` (everything the camera features say). |
+| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`). |
+| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
+| `tts/` | Speaking: `Speaker`, the "thinking" beep, the session chimes (`Chimes`), and `SpokenPhrases` (everything the camera features say). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |

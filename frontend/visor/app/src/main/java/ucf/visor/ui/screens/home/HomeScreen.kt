@@ -30,9 +30,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.meta.wearable.dat.core.types.Permission
-import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.R
+import ucf.visor.data.VoiceCategory
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SessionToggleButton
@@ -44,8 +43,9 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 @Composable
 fun HomeScreen(
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {},
-    onRequestWearablesPermission: suspend (Permission) -> PermissionStatus,
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
+    // Starts or ends the session, and says so (MainActivity).
+    onToggleSession: () -> Unit = {},
     // Takes a picture with the glasses and answers it for the session's mode (MainActivity).
     onCapture: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -77,7 +77,7 @@ fun HomeScreen(
         ) {
             SessionToggleButton(
                 isSessionActive = uiState.isSessionActive,
-                onToggle = { viewModel.toggleSession(onRequestWearablesPermission, talk) }
+                onToggle = onToggleSession,
             )
 
             // Both labels are laid out and only one is shown: at large text sizes
@@ -104,8 +104,11 @@ fun HomeScreen(
                 width = 1f,
                 locked = locked,
                 onClick = {
-                    if (locked) talk(SpokenPhrases.startSessionToCapture(session.mode))
-                    else onCapture()
+                    if (locked) {
+                        talk(SpokenPhrases.startSessionToCapture(session.mode), VoiceCategory.SESSION_UPDATES)
+                    } else {
+                        onCapture()
+                    }
                 },
             )
 
@@ -114,9 +117,11 @@ fun HomeScreen(
                 locked = locked,
                 onSelect = { mode ->
                     viewModel.setMode(mode)
-                    talk(SpokenPhrases.modeActivated(mode))
+                    talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
                 },
-                onLockedClick = { talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES) },
+                onLockedClick = {
+                    talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES, VoiceCategory.SESSION_UPDATES)
+                },
             )
 
             // What the locked controls are waiting for. Its space is kept during

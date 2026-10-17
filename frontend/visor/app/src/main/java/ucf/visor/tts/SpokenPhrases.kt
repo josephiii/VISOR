@@ -55,6 +55,10 @@ object SpokenPhrases {
             "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead."
         }
 
+    // A session starting or ending, from Home's button, by voice, or on the glasses.
+    const val STARTING_SESSION = "Starting session"
+    const val ENDING_SESSION = "Ending session"
+
     /** Said when the session switches to [mode], from Home, by voice, or in Phase 1. */
     fun modeActivated(mode: SessionMode): String = when (mode) {
         SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"

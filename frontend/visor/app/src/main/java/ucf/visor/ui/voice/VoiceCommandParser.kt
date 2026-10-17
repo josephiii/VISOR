@@ -123,3 +123,21 @@ object VoiceCommandParser {
     private fun containsWord(text: String, vararg words: String): Boolean =
         words.any { word -> Regex("\\b${Regex.escape(word)}\\b").containsMatchIn(text) }
 }
+
+/**
+ * What can be said after "VISOR GO", by kind, as Settings lists it. Only
+ * phrases [VoiceCommandParser] understands: a unit test parses every one, so
+ * Settings never suggests something VISOR won't act on.
+ */
+enum class VoiceCommandKind(val examples: List<String>) {
+    GO_PLACES(listOf("go home", "open settings", "help", "pair glasses", "go back")),
+    SESSIONS(listOf("start session", "end session", "hazard mode", "scene mode", "reading mode")),
+    SETTINGS(
+        listOf(
+            "faster", "slower", "normal speed", "brief", "detailed",
+            "large text", "extra large text", "high contrast",
+        )
+    ),
+    ACCOUNT(listOf("log out", "delete my account")),
+    ANSWERING(listOf("yes", "no", "repeat that")),
+}

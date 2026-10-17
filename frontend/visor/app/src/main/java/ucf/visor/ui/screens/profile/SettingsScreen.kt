@@ -1,5 +1,6 @@
 package ucf.visor.ui.screens.profile
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +11,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -18,40 +22,52 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
-import ucf.visor.ui.components.SelectableChip
-import ucf.visor.ui.components.scrollIndicator
+import ucf.visor.data.AudioMix
 import ucf.visor.data.Severity
+import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionType
+import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.data.label
+import ucf.visor.stt.CameraCommand
+import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.VoiceCommandKind
 
 /**
  * Settings — reads and writes the same UserProfile the creation wizard fills.
  *
- * @param talk and [beep] play what a new volume sounds like, as soon as a
- *   volume slider is let go: loudness can't be judged by looking at a slider.
+ * @param speakAt and [playSample] play what a new volume sounds like, as soon
+ *   as a volume slider is let go: loudness can't be judged by looking at a
+ *   slider. [speakAt] speaks at the volume given, whatever the sliders are.
  */
 @Composable
 fun SettingsScreen(
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {},
-    beep: () -> Unit = {},
+    speakAt: (String, Float) -> Unit = { _, _ -> },
+    playSample: (SoundCategory) -> Unit = {},
     onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // VisorViewModel.confirmDeleteAccount: DELETE /auth/deleteAccount, then wipes the profile
@@ -180,38 +196,15 @@ fun SettingsScreen(
         }
 
         // Next to speed and detail: together, everything about what VISOR sounds like.
-        SettingSection(stringResource(R.string.settings_section_volume))
-        Text(
-            stringResource(R.string.settings_volume_description),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        val speechVolumeTitle = stringResource(R.string.settings_speech_volume_title)
-        VolumeSlider(
-            title = speechVolumeTitle,
-            volume = profile.speechVolume,
-            min = Volumes.MinSpeech,
-            minLabel = stringResource(R.string.settings_volume_quieter),
-            onVolumeChange = { onProfileChange(profile.copy(speechVolume = it)) },
-            // Read back from the ViewModel: a screen reader's adjustment has
-            // already saved the new volume, but this screen hasn't redrawn yet.
-            onPreview = {
-                val volume = viewModel.userProfile.value.speechVolume
-                talk("$speechVolumeTitle, ${Volumes.spokenLabel(volume)}.")
-            },
-        )
-        val soundEffectsTitle = stringResource(R.string.settings_sound_effects_volume_title)
-        VolumeSlider(
-            title = soundEffectsTitle,
-            description = stringResource(R.string.settings_sound_effects_description),
-            volume = profile.soundEffectsVolume,
-            min = Volumes.MinSoundEffects,
-            minLabel = stringResource(R.string.settings_volume_off),
-            onVolumeChange = { onProfileChange(profile.copy(soundEffectsVolume = it)) },
-            onPreview = {
-                // Off is silent, so say so rather than play nothing.
-                val volume = viewModel.userProfile.value.soundEffectsVolume
-                if (Volumes.percent(volume) == 0) talk("$soundEffectsTitle off.") else beep()
-            },
+        VolumeSettings(
+            profile = profile,
+            onProfileChange = onProfileChange,
+            // Read back from the ViewModel, not `profile`: a screen reader's
+            // adjustment has already saved the new volume, but this screen
+            // hasn't redrawn yet.
+            currentAudio = { viewModel.userProfile.value.audio },
+            speakAt = speakAt,
+            playSample = playSample,
         )
 
         SettingSection(stringResource(R.string.settings_section_text_size))
@@ -242,35 +235,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) }
 
-        SettingSection(stringResource(R.string.settings_section_voice_navigation))
-        Text(
-            stringResource(R.string.settings_voice_navigation_description),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        SelectableChip(
-            label = stringResource(
-                if (profile.voiceNavigationEnabled) R.string.settings_voice_navigation_on
-                else R.string.settings_voice_navigation_off
-            ),
-            selected = profile.voiceNavigationEnabled,
-            modifier = Modifier.fillMaxWidth(),
-        ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
-
-        SettingSection(stringResource(R.string.settings_section_tap_navigation))
-        Text(
-            stringResource(R.string.settings_tap_navigation_description),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        SelectableChip(
-            label = stringResource(
-                if (profile.glassesTapNavigationEnabled) R.string.settings_tap_navigation_on
-                else R.string.settings_tap_navigation_off
-            ),
-            selected = profile.glassesTapNavigationEnabled,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            onProfileChange(profile.copy(glassesTapNavigationEnabled = !profile.glassesTapNavigationEnabled))
-        }
+        CommandSettings(profile = profile, onProfileChange = onProfileChange)
 
         Spacer(Modifier.height(24.dp))
         SettingSection(stringResource(R.string.settings_section_support))
@@ -340,49 +305,290 @@ fun SettingsScreen(
 }
 
 /**
- * One volume slider, in ten-percent notches from [min] up to full volume.
+ * "How loud VISOR is": All sounds, then a slider for each kind of thing VISOR
+ * says and plays (see AudioMix). Every slider's far left is silent.
+ *
+ * With All sounds off, the rest give way to a note saying VISOR is silent:
+ * nothing they were set to could be heard, not even their previews.
+ */
+@Composable
+private fun VolumeSettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    currentAudio: () -> AudioMix,
+    speakAt: (String, Float) -> Unit,
+    playSample: (SoundCategory) -> Unit,
+) {
+    val audio = profile.audio
+
+    SettingSection(stringResource(R.string.settings_section_volume))
+    Text(
+        stringResource(R.string.settings_volume_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+
+    val allSoundsTitle = stringResource(R.string.settings_volume_all_title)
+    VolumeSlider(
+        title = allSoundsTitle,
+        description = stringResource(R.string.settings_volume_all_description),
+        volume = audio.master,
+        onVolumeChange = { onProfileChange(profile.copy(audio = audio.withMaster(it))) },
+        onPreview = { before ->
+            val master = currentAudio().master
+            // Silence can't confirm itself, so "off" is said at the volume it
+            // was just turned down from.
+            if (Volumes.isOff(master)) speakAt("$allSoundsTitle off.", before)
+            else speakAt("$allSoundsTitle, ${Volumes.spokenLabel(master)}.", master)
+        },
+    )
+    if (Volumes.isOff(audio.master)) {
+        VolumeWarning(stringResource(R.string.settings_volume_all_off_warning))
+        return
+    }
+
+    SettingSubsection(stringResource(R.string.settings_volume_voice_title))
+    val answersOff = stringResource(R.string.settings_volume_answers_off_warning)
+    VoiceCategory.entries.forEach { category ->
+        val title = stringResource(category.titleRes())
+        VolumeSlider(
+            title = title,
+            description = stringResource(category.descriptionRes()),
+            volume = audio.level(category),
+            onVolumeChange = { onProfileChange(profile.copy(audio = audio.with(category, it))) },
+            onPreview = {
+                val now = currentAudio()
+                val level = now.level(category)
+                if (Volumes.isOff(level)) speakAt("$title off.", now.master)
+                else speakAt("$title, ${Volumes.spokenLabel(level)}.", now.loudness(category))
+            },
+            // The answers are what VISOR is for, so turning them off says so.
+            warning = answersOff.takeIf {
+                category == VoiceCategory.ANSWERS && Volumes.isOff(audio.level(category))
+            },
+        )
+    }
+
+    SettingSubsection(stringResource(R.string.settings_volume_effects_title))
+    SoundCategory.entries.forEach { category ->
+        val title = stringResource(category.titleRes())
+        VolumeSlider(
+            title = title,
+            description = stringResource(category.descriptionRes()),
+            volume = audio.level(category),
+            onVolumeChange = { onProfileChange(profile.copy(audio = audio.with(category, it))) },
+            onPreview = {
+                val now = currentAudio()
+                // Off is silent, so say so rather than play nothing.
+                if (Volumes.isOff(now.level(category))) speakAt("$title off.", now.master)
+                else playSample(category)
+            },
+        )
+    }
+}
+
+/**
+ * One volume slider, in ten-percent notches from off to full volume.
  * [onPreview] runs once the slider is let go, or after each screen reader
- * adjustment, to play what the new volume sounds like.
+ * adjustment, to play what the new volume sounds like. It is given the volume
+ * from before that change, so a slider turned all the way off can still be
+ * heard confirming it.
  */
 @Composable
 private fun VolumeSlider(
     title: String,
+    description: String,
     volume: Float,
-    min: Float,
-    minLabel: String,
-    description: String? = null,
     onVolumeChange: (Float) -> Unit,
-    onPreview: () -> Unit,
+    onPreview: (before: Float) -> Unit,
+    warning: String? = null,
 ) {
+    // The volume as this drag, or screen reader adjustment, began.
+    var before by remember { mutableStateOf<Float?>(null) }
+
     Text(
         text = "$title: ${Volumes.label(volume)}",
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
     )
-    if (description != null) {
-        Text(description, style = MaterialTheme.typography.bodyMedium)
-    }
+    Text(description, style = MaterialTheme.typography.bodyMedium)
     Slider(
         value = volume,
         onValueChange = { position ->
-            val snapped = Volumes.snap(position, min)
+            if (before == null) before = volume
+            val snapped = Volumes.snap(position)
             if (snapped != volume) onVolumeChange(snapped)
         },
-        onValueChangeFinished = onPreview,
-        valueRange = min..Volumes.Max,
-        steps = Volumes.sliderSteps(min),
+        onValueChangeFinished = {
+            onPreview(before ?: volume)
+            before = null
+        },
+        valueRange = Volumes.Off..Volumes.Max,
+        steps = Volumes.SliderSteps,
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
                 contentDescription = title
-                // The real percentage: a screen reader's own would count from
-                // the slider's start, which is not zero for the voice.
                 stateDescription = Volumes.spokenLabel(volume)
             },
     )
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(minLabel, style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.settings_volume_off), style = MaterialTheme.typography.bodySmall)
         Text(stringResource(R.string.settings_volume_louder), style = MaterialTheme.typography.bodySmall)
+    }
+    if (warning != null) VolumeWarning(warning)
+}
+
+/**
+ * Something a volume setting has silenced, with an icon so it reads as a
+ * warning without relying on color. A polite live region, so a screen reader
+ * says it as it appears.
+ */
+@Composable
+private fun VolumeWarning(text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Icon(imageVector = Icons.AutoMirrored.Filled.VolumeOff, contentDescription = null)
+        Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/**
+ * "Commands": every way of asking VISOR for something without touching the
+ * phone, each with its own switch, and the words each one listens for. All of
+ * them are on until the user turns one off.
+ */
+@Composable
+private fun CommandSettings(profile: UserProfile, onProfileChange: (UserProfile) -> Unit) {
+    SettingSection(stringResource(R.string.settings_section_commands))
+    Text(
+        stringResource(R.string.settings_commands_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+
+    SettingSubsection(stringResource(R.string.settings_camera_commands_title))
+    Text(
+        stringResource(R.string.settings_camera_commands_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    CameraCommand.entries.forEach { command ->
+        val on = command in profile.cameraCommands
+        // Each switch held close to its own phrases, and apart from the next
+        // switch's, so it is clear which phrases a switch turns off.
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(bottom = 10.dp),
+        ) {
+            CommandSwitch(stringResource(command.titleRes()), on) {
+                onProfileChange(
+                    profile.copy(
+                        cameraCommands = if (on) profile.cameraCommands - command
+                        else profile.cameraCommands + command
+                    )
+                )
+            }
+            PhraseList(command.phrases)
+        }
+    }
+
+    SettingSubsection(stringResource(R.string.settings_section_voice_navigation))
+    Text(
+        stringResource(R.string.settings_voice_navigation_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    SelectableChip(
+        label = stringResource(
+            if (profile.voiceNavigationEnabled) R.string.settings_voice_navigation_on
+            else R.string.settings_voice_navigation_off
+        ),
+        selected = profile.voiceNavigationEnabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) { onProfileChange(profile.copy(voiceNavigationEnabled = !profile.voiceNavigationEnabled)) }
+    Text(
+        stringResource(R.string.settings_voice_navigation_examples_title),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .padding(top = 4.dp)
+            .semantics { heading() },
+    )
+    // Indented under that heading: each kind, then what to say for it.
+    Column(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.padding(start = 12.dp),
+    ) {
+        VoiceCommandKind.entries.forEach { kind ->
+            // One stop for a screen reader.
+            Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                Text(
+                    stringResource(kind.titleRes()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    kind.examples.joinToString(", ") { "\"$it\"" },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+
+    SettingSubsection(stringResource(R.string.settings_voice_launch_title))
+    Text(
+        stringResource(R.string.settings_voice_launch_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    CommandSwitch(stringResource(R.string.settings_voice_launch_switch), profile.voiceLaunchEnabled) {
+        onProfileChange(profile.copy(voiceLaunchEnabled = !profile.voiceLaunchEnabled))
+    }
+
+    SettingSubsection(stringResource(R.string.settings_section_tap_navigation))
+    Text(
+        stringResource(R.string.settings_tap_navigation_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    SelectableChip(
+        label = stringResource(
+            if (profile.glassesTapNavigationEnabled) R.string.settings_tap_navigation_on
+            else R.string.settings_tap_navigation_off
+        ),
+        selected = profile.glassesTapNavigationEnabled,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        onProfileChange(profile.copy(glassesTapNavigationEnabled = !profile.glassesTapNavigationEnabled))
+    }
+}
+
+/** An on/off switch for one command, drawn like the other toggles here: "Read text: ON". */
+@Composable
+private fun CommandSwitch(title: String, on: Boolean, onToggle: () -> Unit) {
+    SelectableChip(
+        label = stringResource(if (on) R.string.settings_command_on else R.string.settings_command_off, title),
+        selected = on,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onToggle,
+    )
+}
+
+/** What to say for a command, one phrase to a line. A screen reader reads it as one stop. */
+@Composable
+private fun PhraseList(phrases: List<String>) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .padding(start = 8.dp)
+            .semantics(mergeDescendants = true) {},
+    ) {
+        Text(stringResource(R.string.settings_command_say), style = MaterialTheme.typography.bodyMedium)
+        phrases.forEach { phrase ->
+            Text(
+                "\"$phrase\"",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
     }
 }
 
@@ -396,4 +602,60 @@ private fun SettingSection(title: String) {
             .padding(top = 10.dp)
             .semantics { heading() },
     )
+}
+
+/** A heading inside a section, such as "VISOR's voice" under "How loud VISOR is". */
+@Composable
+private fun SettingSubsection(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .semantics { heading() },
+    )
+}
+
+@StringRes
+private fun VoiceCategory.titleRes(): Int = when (this) {
+    VoiceCategory.ANSWERS -> R.string.settings_volume_answers_title
+    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_session_updates_title
+    VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_title
+}
+
+@StringRes
+private fun VoiceCategory.descriptionRes(): Int = when (this) {
+    VoiceCategory.ANSWERS -> R.string.settings_volume_answers_description
+    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_session_updates_description
+    VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_description
+}
+
+@StringRes
+private fun SoundCategory.titleRes(): Int = when (this) {
+    SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_title
+    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_session_chimes_title
+}
+
+@StringRes
+private fun SoundCategory.descriptionRes(): Int = when (this) {
+    SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_description
+    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_session_chimes_description
+}
+
+@StringRes
+private fun CameraCommand.titleRes(): Int = when (this) {
+    CameraCommand.READ_TEXT -> R.string.settings_command_read_text
+    CameraCommand.IDENTIFY_OBJECTS -> R.string.settings_command_identify_objects
+    CameraCommand.DESCRIBE_SCENE -> R.string.settings_command_describe_scene
+}
+
+@StringRes
+private fun VoiceCommandKind.titleRes(): Int = when (this) {
+    VoiceCommandKind.GO_PLACES -> R.string.settings_voice_commands_go_places
+    VoiceCommandKind.SESSIONS -> R.string.settings_voice_commands_sessions
+    VoiceCommandKind.SETTINGS -> R.string.settings_voice_commands_settings
+    VoiceCommandKind.ACCOUNT -> R.string.settings_voice_commands_account
+    VoiceCommandKind.ANSWERING -> R.string.settings_voice_commands_answering
 }

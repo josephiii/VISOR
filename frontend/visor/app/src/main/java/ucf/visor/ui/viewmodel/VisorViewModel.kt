@@ -378,7 +378,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Starts or ends the session (Home's button, or "start session" by voice
-     * or on the glasses), then [announce]s what happened.
+     * or on the glasses), then tells [onChange] what happened, for it to
+     * announce.
      *
      * A session uses the glasses camera, so starting one first makes sure VISOR
      * may use it, asking through the Meta AI app if needed ([requestPermission]).
@@ -387,27 +388,34 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun toggleSession(
         requestPermission: suspend (Permission) -> PermissionStatus,
-        announce: (String) -> Unit,
+        onChange: (SessionChange) -> Unit,
     ) {
         if (_uiState.value.isSessionActive) {
             _uiState.update { it.copy(isSessionActive = false) }
-            announce("Ending session")
+            onChange(SessionChange.Ended)
             return
         }
         viewModelScope.launch {
             val problem = cameraPermissionProblem(requestPermission)
             if (problem != null) {
                 setRecentError(problem)
-                announce(problem)
+                onChange(SessionChange.NotStarted(problem))
                 return@launch
             }
             _uiState.update { it.copy(isSessionActive = true) }
-            announce("Starting session")
+            onChange(SessionChange.Started)
         }
     }
 
-    /** What VISOR did for one "Hey Meta, start VISOR", and what to tell the wearer. */
-    data class VoiceLaunchResult(val success: Boolean, val spoken: String)
+    /**
+     * What VISOR did for one "Hey Meta, start VISOR", and what to tell the
+     * wearer. [startedSession] is false when one was already running.
+     */
+    data class VoiceLaunchResult(
+        val success: Boolean,
+        val spoken: String,
+        val startedSession: Boolean = false,
+    )
 
     /**
      * The action behind a voice launch: go Home and make sure a session is
@@ -416,6 +424,14 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      * and a second "start" must not end the session the first one began.
      */
     fun startSessionFromVoice(): VoiceLaunchResult {
+        // Turned off in Settings. Meta AI has already opened VISOR, so say why
+        // that is all that happened.
+        if (!_userProfile.value.voiceLaunchEnabled) {
+            return VoiceLaunchResult(
+                success = false,
+                spoken = "VISOR is open. Starting a session by voice is turned off in Settings.",
+            )
+        }
         if (!_uiState.value.isAuthComplete) {
             return VoiceLaunchResult(
                 success = false,
@@ -429,6 +445,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             success = true,
             spoken = if (alreadyRunning) "VISOR is ready. Your session is already running."
             else "VISOR is ready. Session started.",
+            startedSession = !alreadyRunning,
         )
     }
 

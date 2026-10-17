@@ -38,6 +38,7 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionType
+import ucf.visor.data.VoiceCategory
 import ucf.visor.data.label
 import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
@@ -78,7 +79,7 @@ private enum class Step(@StringRes val title: Int, @StringRes val spokenPrompt: 
 @Composable
 fun ProfileCreationScreen(
     viewModel: VisorViewModel,
-    speak: (String) -> Unit = {},
+    speak: (String, VoiceCategory) -> Unit = { _, _ -> },
     voiceNav: VoiceNavigationController? = null,
     onFinished: (UserProfile) -> Unit = {},
 ) {
@@ -96,7 +97,8 @@ fun ProfileCreationScreen(
     // VOICE NAVIGATION
     LaunchedEffect(step) {
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
-        speak(context.getString(step.spokenPrompt))
+        // VISOR's half of a voice conversation, like its replies to commands.
+        speak(context.getString(step.spokenPrompt), VoiceCategory.VOICE_COMMANDS)
         val askedStep = step
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()

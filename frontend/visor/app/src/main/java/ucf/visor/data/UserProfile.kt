@@ -4,6 +4,7 @@ import ucf.visor.data.SpeechRates.BaselineSyllablesPerSecond
 import ucf.visor.data.SpeechRates.Fast
 import ucf.visor.data.SpeechRates.Normal
 import ucf.visor.data.SpeechRates.Step
+import ucf.visor.stt.CameraCommand
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -112,46 +113,6 @@ object SpeechRates {
         String.format(Locale.US, "%.2f", rate).trimEnd('0').trimEnd('.')
 }
 
-/**
- * How loud VISOR's voice and sound effects are, as a fraction of the phone's
- * media volume. Both play on the media stream, so the phone's volume buttons
- * still turn everything up or down; these set VISOR's own sounds within that.
- */
-object Volumes {
-
-    const val Max = 1f
-
-    /** The sliders' granularity: ten percent. */
-    const val Step = 0.1f
-
-    /** VISOR's voice stops short of silent: speaking is how VISOR answers. */
-    const val MinSpeech = 0.1f
-
-    /** Sound effects can be turned off: "Taking picture" already says VISOR is working. */
-    const val MinSoundEffects = 0f
-
-    /** The thinking beep's loudness from before it was adjustable. */
-    const val DefaultSoundEffects = 0.6f
-
-    /** Notches strictly between the endpoints of a slider that starts at [min]. */
-    fun sliderSteps(min: Float): Int = ((Max - min) / Step).roundToInt() - 1
-
-    /** Rounds [volume] onto the slider's grid and clamps it to [min]..[Max]. */
-    fun snap(volume: Float, min: Float): Float {
-        val stepsFromMin = ((volume - min) / Step).roundToInt()
-        return (min + stepsFromMin * Step).coerceIn(min, Max)
-    }
-
-    fun percent(volume: Float): Int = (volume * 100).roundToInt()
-
-    /** Short on-screen value, e.g. "80%", or "Off". */
-    fun label(volume: Float): String = if (percent(volume) == 0) "Off" else "${percent(volume)}%"
-
-    /** What a screen reader announces, and the volume preview says, e.g. "80 percent". */
-    fun spokenLabel(volume: Float): String =
-        if (percent(volume) == 0) "off" else "${percent(volume)} percent"
-}
-
 /** How much detail VISOR gives when describing scenes. */
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
 
@@ -177,21 +138,27 @@ data class UserProfile(
     val visionDescription: String = "",
     val severity: Severity = Severity.MODERATE,
     val speechRate: Float = SpeechRates.Normal,
-    /** VISOR's voice, as a fraction of the phone's media volume — see [Volumes]. */
-    val speechVolume: Float = Volumes.Max,
-    /** The beeps VISOR plays while it thinks, as a fraction of the media volume; 0 is off. */
-    val soundEffectsVolume: Float = Volumes.DefaultSoundEffects,
+    /** How loud each kind of thing VISOR says and plays is — see [AudioMix]. */
+    val audio: AudioMix = AudioMix(),
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
+
+    // Commands. Every one is on until the user turns it off.
+
     /**
-     * Say "VISOR GO" to navigate by voice.
+     * Say "VISOR GO" to navigate by voice. On by default like the rest: the
+     * microphone already listens for the camera wake phrases, so this adds a
+     * phrase to listen for, not a microphone.
      */
-    val voiceNavigationEnabled: Boolean = false,
+    val voiceNavigationEnabled: Boolean = true,
     /** Tap-fallback navigation buttons rendered on the glasses' own display —
-     *  see GlassesNavigationController. Defaults on: unlike voice, it has no
-     *  privacy/noise trade-off, so it should just work once glasses are paired. */
+     *  see GlassesNavigationController. */
     val glassesTapNavigationEnabled: Boolean = true,
+    /** The camera features a wake phrase alone starts, such as "VISOR, read this". */
+    val cameraCommands: Set<CameraCommand> = CameraCommand.entries.toSet(),
+    /** "Hey Meta, start VISOR" starts a session. VISOR opens either way: Meta AI opens it. */
+    val voiceLaunchEnabled: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About
