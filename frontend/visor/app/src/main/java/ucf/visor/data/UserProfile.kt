@@ -117,6 +117,13 @@ object SpeechRates {
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
 
 /**
+ * Light or dark: as the phone is set ([SYSTEM]), or always one of them.
+ * Light-sensitive users may want VISOR dark even when the rest of their phone
+ * isn't, and some users read dark text on light far better.
+ */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/**
  * User-controlled text size, layered on top of the app's already-enlarged
  * base type scale. Section 508 calls for text resizable up to 200% without
  * losing content or functionality; EXTRA_LARGE combines with a user's OS
@@ -142,6 +149,7 @@ data class UserProfile(
     val audio: AudioMix = AudioMix(),
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
 
     // Commands. Every one is on until the user turns it off.
@@ -159,6 +167,13 @@ data class UserProfile(
     val cameraCommands: Set<CameraCommand> = CameraCommand.entries.toSet(),
     /** "Hey Meta, start VISOR" starts a session. VISOR opens either way: Meta AI opens it. */
     val voiceLaunchEnabled: Boolean = true,
+
+    /**
+     * VISOR's buzzes: as a session starts and ends, as it starts and stops
+     * listening, and as a button is pressed (see ui.feedback.Haptics). On until
+     * the user turns it off, like the sounds it goes with.
+     */
+    val vibrationEnabled: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About

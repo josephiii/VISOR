@@ -121,9 +121,10 @@ fun MotionLabScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState),
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState)
+            .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -246,13 +247,7 @@ private fun GlassesCard(
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        SelectableChip(
-            label = stringResource(R.string.motion_lab_read_status),
-            selected = false,
-            showCheckmark = false,
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { onSpeak(status) },
-        )
+        SwitchButton(label = stringResource(R.string.motion_lab_read_status), onClick = { onSpeak(status) })
     }
 }
 

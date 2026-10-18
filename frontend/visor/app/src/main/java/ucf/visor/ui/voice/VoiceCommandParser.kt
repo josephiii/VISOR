@@ -4,6 +4,7 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
  * Turns the free-form text recognized after "VISOR GO" into a [VoiceCommand].
@@ -23,7 +24,8 @@ object VoiceCommandParser {
 
         return when {
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
-            containsAny(text, "settings", "setting") -> VoiceCommand.OpenSettings
+            containsAny(text, "settings", "setting") ->
+                settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
             containsAny(text, "help") -> VoiceCommand.OpenHelp
             containsAny(text, "pair", "hardware", "connect my glasses", "connect glasses") ->
                 VoiceCommand.PairDevice
@@ -116,6 +118,17 @@ object VoiceCommandParser {
         }
     }
 
+    /** Which part of Settings "open … settings" names, if any. */
+    private fun settingsSectionIn(text: String): SettingsSection? = when {
+        containsAny(text, "sound", "volume", "loud", "vibration") -> SettingsSection.SOUND
+        containsAny(text, "speech", "speed", "talk") -> SettingsSection.SPEECH
+        containsAny(text, "display", "text", "contrast", "dark", "light") -> SettingsSection.DISPLAY
+        containsAny(text, "command") -> SettingsSection.COMMANDS
+        containsAny(text, "account") -> SettingsSection.ACCOUNT
+        containsAny(text, "about", "profile", "vision", "name") -> SettingsSection.ABOUT_YOU
+        else -> null
+    }
+
     private fun containsAny(text: String, vararg phrases: String): Boolean =
         phrases.any { text.contains(it) }
 
@@ -130,7 +143,7 @@ object VoiceCommandParser {
  * Settings never suggests something VISOR won't act on.
  */
 enum class VoiceCommandKind(val examples: List<String>) {
-    GO_PLACES(listOf("go home", "open settings", "help", "pair glasses", "go back")),
+    GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
     SESSIONS(listOf("start session", "end session", "hazard mode", "scene mode", "reading mode")),
     SETTINGS(
         listOf(

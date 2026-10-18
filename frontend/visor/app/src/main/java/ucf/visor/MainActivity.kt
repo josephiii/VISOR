@@ -17,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -59,6 +60,8 @@ import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.feedback.Haptics
+import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
@@ -150,6 +153,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var hazardDetector: ReadRequester
     private lateinit var thinkingBeeper: ThinkingBeeper
     private lateinit var chimes: Chimes
+    private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
 
 
@@ -178,18 +182,20 @@ class MainActivity : ComponentActivity() {
 
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    VisorLayout(
-                        talk = { text, category -> speaker.speak(text, category) },
-                        speakAt = { text, volume -> speaker.speakAt(text, volume) },
-                        playSample = ::playSample,
-                        lastSpoken = { speaker.lastUtterance },
-                        viewModel = viewModel,
-                        onRequestWearablesPermission = ::requestWearablesPermission,
-                        onToggleSession = ::toggleSession,
-                        onCapture = ::captureForMode,
-                        voiceNav = voiceNav,
-                        glassesNav = glassesNav,
-                    )
+                    CompositionLocalProvider(LocalHaptics provides haptics) {
+                        VisorLayout(
+                            talk = { text, category -> speaker.speak(text, category) },
+                            speakAt = { text, volume -> speaker.speakAt(text, volume) },
+                            playSample = ::playSample,
+                            lastSpoken = { speaker.lastUtterance },
+                            viewModel = viewModel,
+                            onRequestWearablesPermission = ::requestWearablesPermission,
+                            onToggleSession = ::toggleSession,
+                            onCapture = ::captureForMode,
+                            voiceNav = voiceNav,
+                            glassesNav = glassesNav,
+                        )
+                    }
                 }
 
             }
@@ -204,6 +210,7 @@ class MainActivity : ComponentActivity() {
         // LaunchedEffect like the speech rate: Settings plays a preview the
         // moment a volume changes, before an effect would have run.
         chimes = Chimes(loudness = { audio().loudness(it) })
+        haptics = Haptics(this) { viewModel.userProfile.value.vibrationEnabled }
         speaker = Speaker(
             this,
             loudness = { audio().loudness(it) },
@@ -216,13 +223,19 @@ class MainActivity : ComponentActivity() {
 
         // Without real glasses, pair mock glasses in the debug menu and pick
         // the photo they should "take" (Select image).
-        textReader = TextReader(glassesCamera.forReading, textReaderOCR)
+        // Each camera feature says when its picture is taken, so Home can show
+        // "Thinking…" in place of "Taking picture…".
+        val camera = NotifyingPhotoSource(glassesCamera) { viewModel.onPictureTaken() }
+        textReader = TextReader(
+            NotifyingPhotoSource(glassesCamera.forReading) { viewModel.onPictureTaken() },
+            textReaderOCR,
+        )
 
-        objectIdentifier = ObjectIdentifier(glassesCamera, objectDetector)
+        objectIdentifier = ObjectIdentifier(camera, objectDetector)
 
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
-            photoSource = NotifyingPhotoSource(glassesCamera) {
+            photoSource = NotifyingPhotoSource(camera) {
                 speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.SESSION_UPDATES)
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
@@ -231,7 +244,7 @@ class MainActivity : ComponentActivity() {
         )
 
         hazardDetector = HazardDetector(
-            photoSource = glassesCamera,
+            photoSource = camera,
             client = HazardClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
         )
@@ -279,13 +292,16 @@ class MainActivity : ComponentActivity() {
     /**
      * Every camera feature sounds the same, whether a wake phrase or Home's
      * capture button asked for it: "Taking picture", beeps while it thinks,
-     * then the answer.
+     * then the answer. Home shows each step too (see VisorViewModel.capture),
+     * and keeps the answer on screen, for anyone who can't hear them.
      */
     private fun runCameraFeature(feature: ReadRequester) {
+        viewModel.onCaptureStarted()
         speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.SESSION_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
             thinkingBeeper.stop()
+            viewModel.onAnswered(text)
             speaker.speak(text, VoiceCategory.ANSWERS)
         }
     }
@@ -325,17 +341,22 @@ class MainActivity : ComponentActivity() {
         when (change) {
             SessionChange.Started -> {
                 chimes.play(Chime.SESSION_START)
+                haptics.sessionStarted()
                 speaker.speak(SpokenPhrases.STARTING_SESSION, VoiceCategory.SESSION_UPDATES)
             }
 
             SessionChange.Ended -> {
                 chimes.play(Chime.SESSION_END)
+                haptics.sessionEnded()
                 speaker.speak(SpokenPhrases.ENDING_SESSION, VoiceCategory.SESSION_UPDATES)
             }
 
             // Why the button did nothing is the answer to pressing it: too
             // important to go quiet along with "Starting session".
-            is SessionChange.NotStarted -> speaker.speak(change.problem, VoiceCategory.ANSWERS)
+            is SessionChange.NotStarted -> {
+                haptics.rejected()
+                speaker.speak(change.problem, VoiceCategory.ANSWERS)
+            }
         }
     }
 
@@ -405,7 +426,10 @@ class MainActivity : ComponentActivity() {
     private fun performVoiceLaunch(): VisorViewModel.VoiceLaunchResult {
         lastVoiceLaunchAt = SystemClock.elapsedRealtime()
         val result = viewModel.startSessionFromVoice()
-        if (result.startedSession) chimes.play(Chime.SESSION_START)
+        if (result.startedSession) {
+            chimes.play(Chime.SESSION_START)
+            haptics.sessionStarted()
+        }
         // As with Home's button, why a session did not start is an answer.
         speaker.speak(
             result.spoken,

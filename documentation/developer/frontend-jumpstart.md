@@ -11,15 +11,15 @@ Within `VisorLayout.kt`, we use an Observer pattern via `LaunchedEffects` based 
 VISOR draws edge-to-edge, and `VisorLayout`'s `Scaffold` already keeps every screen clear of the status bar, the system navigation bar and VISOR's own navigation bar (its `bottomBar`). So a screen should:
 
 - **Not** add `navigationBarsPadding()` or `statusBarsPadding()` itself. That is how the band of empty space above the navigation bar kept coming back: the same inset applied twice. (`VisorLayout` now consumes those insets, so a stray one does nothing, but it does not belong there.)
-- Put its **horizontal** padding **before** `scrollIndicator(...)`: the scroll bar is drawn just past the column's right edge, inside that padding. Padding added after it puts the bar off the screen.
+- Put `scrollIndicator(...)` **before** its **horizontal** padding: the scroll bar is drawn inside the bounds it is applied to, at their trailing edge, so it lands in that padding. Use the theme's `outline` color on every screen.
 - Put its **vertical** padding **inside** `verticalScroll(...)`, so content scrolls all the way to the navigation bar instead of vanishing short of it.
 
 ```kotlin
 Column(
     modifier = Modifier
         .fillMaxSize()
-        .padding(horizontal = 24.dp)
         .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+        .padding(horizontal = 24.dp)
         .verticalScroll(scrollState)
         .padding(vertical = 24.dp),
 ) { /* ... */ }

@@ -3,6 +3,7 @@ package ucf.visor.ui.voice
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
  * Every navigation intent VISOR understands. Most commonly recognized from
@@ -18,6 +19,9 @@ import ucf.visor.ui.viewmodel.SessionMode
 sealed class VoiceCommand {
     object GoHome : VoiceCommand()
     object OpenSettings : VoiceCommand()
+
+    /** "Open sound settings": straight to one part of Settings. */
+    data class OpenSettingsSection(val section: SettingsSection) : VoiceCommand()
     object OpenHelp : VoiceCommand()
     object PairDevice : VoiceCommand()
     object GoBack : VoiceCommand()

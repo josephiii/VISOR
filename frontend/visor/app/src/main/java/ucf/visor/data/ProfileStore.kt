@@ -30,6 +30,7 @@ class ProfileStore(context: Context) {
             .putFloat(KEY_MASTER_VOLUME, p.audio.master)
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
+            .putString(KEY_THEME_MODE, p.themeMode.name)
             .putString(KEY_TEXT_SCALE, p.textScale.name)
             .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
             .putBoolean(KEY_GLASSES_TAP_NAV, p.glassesTapNavigationEnabled)
@@ -40,6 +41,7 @@ class ProfileStore(context: Context) {
                 (CameraCommand.entries - p.cameraCommands).map { it.name }.toSet(),
             )
             .putBoolean(KEY_VOICE_LAUNCH, p.voiceLaunchEnabled)
+            .putBoolean(KEY_VIBRATION, p.vibrationEnabled)
         for (category in AudioCategory.all) editor.putFloat(category.key, p.audio.level(category))
         editor.apply()
     }
@@ -61,6 +63,7 @@ class ProfileStore(context: Context) {
             audio = audioMixOrDefault(defaults.audio),
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
+            themeMode = enumOrDefault(KEY_THEME_MODE, defaults.themeMode),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
             voiceNavigationEnabled = prefs.getBoolean(
                 KEY_VOICE_NAV,
@@ -75,6 +78,7 @@ class ProfileStore(context: Context) {
                 .mapNotNull { runCatching { CameraCommand.valueOf(it) }.getOrNull() }
                 .toSet(),
             voiceLaunchEnabled = prefs.getBoolean(KEY_VOICE_LAUNCH, defaults.voiceLaunchEnabled),
+            vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, defaults.vibrationEnabled),
         )
     }
 
@@ -149,10 +153,12 @@ class ProfileStore(context: Context) {
 
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
+        const val KEY_THEME_MODE = "themeMode"
         const val KEY_TEXT_SCALE = "textScale"
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
         const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
         const val KEY_CAMERA_COMMANDS_OFF = "cameraCommandsOff"
         const val KEY_VOICE_LAUNCH = "voiceLaunchEnabled"
+        const val KEY_VIBRATION = "vibrationEnabled"
     }
 }

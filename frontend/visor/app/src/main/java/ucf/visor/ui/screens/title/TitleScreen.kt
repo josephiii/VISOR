@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,8 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
-import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.SwitchChip
 import ucf.visor.ui.components.VisorButton
+import ucf.visor.ui.components.VisorDialog
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -58,23 +57,22 @@ fun TitleScreen(
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     var showVoiceTip by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val spokenTip = stringResource(R.string.title_voice_tip_spoken)
 
     LaunchedEffect(showVoiceTip) {
-        if (showVoiceTip) {
-            val tip = "Voice navigation is on. Say VISOR GO, then say what you'd like. " +
-                    "Try log in, sign up, go home, or help. " +
-                    "You can turn this off any time in Settings."
-            voiceNav?.speakGuarded(tip) ?: talk(tip, VoiceCategory.VOICE_COMMANDS)
-        }
+        // Said with the wake-phrase listener paused (speakGuarded): the tip
+        // says "VISOR GO", which VISOR would otherwise hear itself say.
+        if (showVoiceTip) voiceNav?.speakGuarded(spokenTip) ?: talk(spokenTip, VoiceCategory.VOICE_COMMANDS)
     }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState),
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState)
+            .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         Spacer(modifier = Modifier.weight(1f))
@@ -82,7 +80,7 @@ fun TitleScreen(
         VisorHeader()
 
         Text(
-            text = "Welcome. Log in or sign up to get started.",
+            text = stringResource(R.string.title_welcome),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier
@@ -100,41 +98,34 @@ fun TitleScreen(
             onClick = onSignUpClick,
         )
 
-        SelectableChip(
-            label = if (profile.voiceNavigationEnabled) "Voice Navigation: On" else "Voice Navigation: Off",
-            selected = profile.voiceNavigationEnabled,
+        SwitchChip(
+            title = stringResource(R.string.settings_section_voice_navigation),
+            on = profile.voiceNavigationEnabled,
+            onToggle = {
+                val enabling = !profile.voiceNavigationEnabled
+                viewModel.updateProfile(profile.copy(voiceNavigationEnabled = enabling))
+                if (enabling) showVoiceTip = true
+            },
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            val enabling = !profile.voiceNavigationEnabled
-            viewModel.updateProfile(profile.copy(voiceNavigationEnabled = enabling))
-            if (enabling) showVoiceTip = true
-        }
+        )
         Text(
-            text = "Say \"VISOR GO\" any time, then say a command — like \"log in\" or \"sign up\".",
-            style = MaterialTheme.typography.bodySmall,
+            text = stringResource(R.string.title_voice_hint),
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
 
         Spacer(modifier = Modifier.weight(1f))
     }
 
+    // Not given talk: the tip is already said, above, with the listener paused.
     if (showVoiceTip) {
-        AlertDialog(
-            onDismissRequest = { showVoiceTip = false },
-            title = { Text("Voice navigation is on") },
-            text = {
-                Text(
-                    "Say \"VISOR GO\", then say what you'd like. A few things to try:\n\n" +
-                            "• \"log in\" or \"sign up\"\n" +
-                            "• \"go home\"\n" +
-                            "• \"help\"\n" +
-                            "• \"open settings\"\n\n" +
-                            "You can turn this off any time in Settings."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showVoiceTip = false }) { Text("Got it") }
-            },
+        VisorDialog(
+            title = stringResource(R.string.title_voice_tip_title),
+            message = stringResource(R.string.title_voice_tip_message),
+            confirmLabel = stringResource(R.string.got_it),
+            dismissLabel = null,
+            onConfirm = { showVoiceTip = false },
+            onDismiss = { showVoiceTip = false },
         )
     }
 }

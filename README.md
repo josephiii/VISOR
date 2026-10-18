@@ -89,7 +89,8 @@ VISOR/
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |
 | `ui/screens/` | One folder per screen, plus any ViewModel used only by that screen (e.g. `debug/DebugViewModel`): `title/`, `auth/`, `home/`, `hardware/` (Pair Glasses), `profile/` (setup wizard, Settings), `help/`, `motionlab/`, `debug/`, `phase1/`. |
 | `ui/viewmodel/` | `VisorViewModel` and `VisorUiState`: app-wide state and navigation requests. |
-| `ui/components/` | Shared widgets: buttons, text fields, header, navigation bar. |
+| `ui/components/` | Shared widgets: buttons, choice chips and switches, sliders, dialogs, error messages, text fields, header, navigation and session status bars. |
+| `ui/feedback/` | How VISOR feels and moves: one vibration pattern per meaning (`Haptics`), the pressed and focused look every control shares (`ControlFeedback`), and the motion rules (`Motion`). |
 | `ui/glasses/` | Navigation rendered on the glasses' display and driven by taps. |
 | `ui/voice/` | "VISOR GO" voice navigation commands. |
 | `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. |

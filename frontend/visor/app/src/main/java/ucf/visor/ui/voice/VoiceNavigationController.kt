@@ -16,8 +16,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ucf.visor.stt.CommandRecognizer
 
-/** What voice navigation is doing right now — surfaced to the UI as a small status indicator. */
-enum class VoiceNavState { IDLE, LISTENING, PROCESSING }
+/**
+ * What voice navigation is doing right now: shown by the screen's edge glow
+ * (VoiceListeningGlow) and felt as a buzz (VisorLayout).
+ */
+enum class VoiceNavState {
+    IDLE,
+
+    /**
+     * VISOR is saying "Listening." (or asking a setup question) and the
+     * microphone is about to open. Not yet the time to speak.
+     */
+    PROMPTING,
+
+    /** The microphone is open: say the command now. */
+    LISTENING,
+
+    /** The microphone has closed, and VISOR is working out what was said. */
+    PROCESSING,
+}
 
 /**
  * Owns the "VISOR GO" -> free-speech -> [VoiceCommand] pipeline.
@@ -97,7 +114,7 @@ class VoiceNavigationController(
             onResult(null)
             return
         }
-        _state.value = VoiceNavState.LISTENING
+        _state.value = VoiceNavState.PROMPTING
         pauseWakeListening()
         captureJob = scope.launch {
             // Give a just-spoken prompt time to finish before the mic starts
@@ -110,8 +127,12 @@ class VoiceNavigationController(
                 delay(SPEECH_POLL_MS)
                 waited += SPEECH_POLL_MS
             }
-            commandRecognizer.listen { text ->
-                _state.value = VoiceNavState.PROCESSING
+            commandRecognizer.listen(
+                // Listening means the microphone is open, not that VISOR has
+                // asked: the glow breathes, and the phone buzzes, only now.
+                onReady = { _state.value = VoiceNavState.LISTENING },
+                onSpeechEnded = { _state.value = VoiceNavState.PROCESSING },
+            ) { text ->
                 resumeWakeListening()
                 _state.value = VoiceNavState.IDLE
                 onResult(text)

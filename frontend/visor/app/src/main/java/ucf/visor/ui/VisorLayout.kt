@@ -1,38 +1,31 @@
 package ucf.visor.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -45,7 +38,10 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
+import ucf.visor.ui.components.ErrorBanner
+import ucf.visor.ui.components.SessionStatusBar
 import ucf.visor.ui.components.VisorNavigationBar
+import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.screens.phase1.Phase1NavigationBar
@@ -87,12 +83,9 @@ fun VisorLayout(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val session by viewModel.session.collectAsStateWithLifecycle()
     val voiceState by (voiceNav?.state ?: remember { MutableStateFlow(VoiceNavState.IDLE) })
         .collectAsStateWithLifecycle()
-
-    // Used to display errors. Pass errors strings through uiState.recentError to be displayed through the snackbar.
-    val snackbarHostState =
-        remember { SnackbarHostState() }
 
     // DEBUG TOOL: Mock Device Kit Debug button
     val bottomSheetState =
@@ -107,28 +100,19 @@ fun VisorLayout(
     // OBSERVERS
     ///////////////////////////////////////////////////////////////////////////
     // General State Observers:
-    // Observe recent errors and show snackbar.
-    LaunchedEffect(uiState.recentError) {
-        uiState.recentError?.let { errorMessage ->
-            snackbarHostState.showSnackbar(errorMessage)
-            viewModel.clearRecentError()
-        }
-    }
-
     // Voice navigation listening, felt as well as seen (see VoiceListeningGlow
     // below), for a user who isn't looking at the screen: a firm buzz as the
-    // microphone opens for a command, and a light tick as it closes. Not
-    // ToggleOn for the buzz: before Android 14 that falls back to a faint click.
-    val haptics = LocalHapticFeedback.current
+    // microphone opens for a command, and a light tick as it closes. The
+    // microphone opens a moment after VISOR says "Listening." (see
+    // VoiceNavState.PROMPTING), and the buzz waits for it, so it means "speak now".
+    val haptics = LocalHaptics.current
     LaunchedEffect(voiceNav, haptics) {
         voiceNav?.state
             ?.map { it == VoiceNavState.LISTENING }
             ?.distinctUntilChanged()
             ?.drop(1) // the state at launch is not a change
             ?.collect { listening ->
-                haptics.performHapticFeedback(
-                    if (listening) HapticFeedbackType.LongPress else HapticFeedbackType.ToggleOff
-                )
+                if (listening) haptics?.listeningStarted() else haptics?.listeningStopped()
             }
     }
 
@@ -309,6 +293,10 @@ fun VisorLayout(
                     if (uiState.isAuthComplete) viewModel.settings()
                     else reply("Log in first to open settings.")
 
+                is VoiceCommand.OpenSettingsSection ->
+                    if (uiState.isAuthComplete) viewModel.settings(command.section)
+                    else reply("Log in first to open settings.")
+
                 VoiceCommand.OpenHelp ->
                     if (uiState.isAuthComplete) viewModel.help()
                     else reply("Log in first for help.")
@@ -417,6 +405,34 @@ fun VisorLayout(
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 modifier = modifier,
+                // At the top of every screen: once logged in, whether a session
+                // is running; and anything that went wrong (uiState.recentError),
+                // until it is dismissed.
+                topBar = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.background)
+                            .windowInsetsPadding(WindowInsets.statusBars),
+                    ) {
+                        if (uiState.navigationBarEnabled && !uiState.phase1Initiated) {
+                            SessionStatusBar(
+                                active = uiState.isSessionActive,
+                                mode = session.mode,
+                                onClick = { viewModel.home() },
+                            )
+                        }
+                        ErrorBanner(
+                            message = uiState.recentError,
+                            onDismiss = { viewModel.clearRecentError() },
+                            // Not said again if VISOR has just said it, as it
+                            // does when a session can't start.
+                            talk = { text, category ->
+                                if (lastSpoken()?.text != uiState.recentError) talk(text, category)
+                            },
+                        )
+                    }
+                },
                 // The navigation bar goes in the Scaffold's bottom bar slot, so the
                 // Scaffold pads the screen above it by exactly the bar's height.
                 //
@@ -437,37 +453,13 @@ fun VisorLayout(
                         VisorNavigationBar(currentRoute, viewModel)
                     }
                 },
-                snackbarHost = {
-                    // Error logging snackbar. No navigationBarsPadding(): the
-                    // Scaffold already places it above the navigation bar, or above
-                    // the system bar when there is no navigation bar.
-                    SnackbarHost(
-                        hostState = snackbarHostState,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 32.dp),
-                        snackbar = { data ->
-                            Snackbar(
-                                shape = RoundedCornerShape(24.dp),
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Error,
-                                        contentDescription = "Error",
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(data.visuals.message)
-                                }
-                            }
-                        },
-                    )
-                },
                 floatingActionButton = {
                     // DEBUG TOOLS: includes MockDeviceKit and debug screen viewer.
                     // The debug menu can hide this button until VISOR restarts.
+                    // Small, so it covers less of the screen in demos and tester
+                    // sessions.
                     if (BuildConfig.DEBUG && !uiState.phase1Initiated && !uiState.isDebugButtonHidden) {
-                        FloatingActionButton(
+                        SmallFloatingActionButton(
                             onClick = { viewModel.showDebugMenu() },
                         ) {
                             Icon(Icons.Default.BugReport, contentDescription = "Debug Menu")

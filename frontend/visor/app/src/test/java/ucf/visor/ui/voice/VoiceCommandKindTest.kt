@@ -25,6 +25,7 @@ class VoiceCommandKindTest {
     private fun VoiceCommand.isOfKind(kind: VoiceCommandKind): Boolean = when (kind) {
         VoiceCommandKind.GO_PLACES -> this == VoiceCommand.GoHome ||
             this == VoiceCommand.OpenSettings ||
+            this is VoiceCommand.OpenSettingsSection ||
             this == VoiceCommand.OpenHelp ||
             this == VoiceCommand.PairDevice ||
             this == VoiceCommand.GoBack

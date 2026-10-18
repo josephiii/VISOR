@@ -64,6 +64,7 @@ fun VisorNavHost(
         composable("login") {
             LoginScreen(
                 viewModel = viewModel,
+                talk = talk,
                 // On a successful login the ViewModel persists tokens + goes home.
                 onLoginSuccess = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
@@ -74,6 +75,7 @@ fun VisorNavHost(
         composable("sign_up") {
             SignUpScreen(
                 viewModel = viewModel,
+                talk = talk,
                 // Register only creates the account (no token yet, no email
                 // verification for now) — send the new user to the login screen.
                 onSignUpClick = { viewModel.login() },
@@ -148,6 +150,7 @@ fun VisorNavHost(
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
+                talk = talk,
                 speakAt = speakAt,
                 playSample = playSample,
                 onProfileChange = { viewModel.updateProfile(it) },
@@ -170,10 +173,15 @@ fun VisorNavHost(
         }
 
         composable("help") {
-            HelpScreen(onBack = {
-                viewModel.closeHelp()
-                navController.popBackStack()
-            })
+            HelpScreen(
+                talk = talk,
+                // Back to Settings, which Help belongs to (its tab stays
+                // selected here), not to the screen before Settings.
+                onBack = {
+                    viewModel.closeHelp()
+                    viewModel.settings()
+                },
+            )
         }
 
         composable("onboarding") {

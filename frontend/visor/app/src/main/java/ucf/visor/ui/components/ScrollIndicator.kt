@@ -3,49 +3,64 @@ package ucf.visor.ui.components
 import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 /**
- * Draws a small, persistent scrollbar along the trailing edge whenever [state]
- * has more content than fits on screen — a quiet hint that a screen scrolls,
- * without competing with the actual VISOR content for attention.
+ * A scrollbar along the trailing edge, whenever [state] has more content than
+ * fits: a sign that the screen scrolls, and how far down it is. It is drawn
+ * inside the bounds of what it is applied to, in dp, so apply it before the
+ * screen's horizontal padding and it sits in that margin:
  *
- * NOTE: The position default to will be +30 pixels off the right most edge.
- * So, if it is not appearing, set xPosPadding to a value < 30.0f.
+ * ```
+ * Modifier
+ *     .fillMaxSize()
+ *     .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+ *     .padding(horizontal = 24.dp)
+ *     .verticalScroll(scrollState)
+ *     .padding(vertical = 24.dp)
+ * ```
+ *
+ * The bar is 6dp wide, over a 2dp line the length of the screen that shows how
+ * far it could go, both in [color]: the theme's outline, on every screen, which
+ * is at least 3:1 against the page (WCAG 1.4.11). It was 4dp, over a 15% tint
+ * of itself (about 1.25:1), and drawn 30 px past the edge of what it was
+ * applied to, which on some screens and phones was off the screen.
  */
-fun Modifier.scrollIndicator(
-    state: ScrollState,
-    barColor: Color,
-    trackColor: Color = barColor.copy(alpha = 0.15f),
-    xPosPadding: Float = 30.0f
-): Modifier = drawWithContent {
+fun Modifier.scrollIndicator(state: ScrollState, color: Color): Modifier = drawWithContent {
     drawContent()
     if (state.maxValue <= 0) return@drawWithContent
 
-    val barWidth = 4.dp.toPx()
-    val margin = 3.dp.toPx()
-//    val xPosition = size.width - barWidth - margin
-    val xPosition = size.width + xPosPadding // Reason: added to Columns with padding of 24
-    val minThumbHeight = 40.dp.toPx()
+    val barWidth = BarWidth.toPx()
+    val lineWidth = LineWidth.toPx()
+    val inset = EdgeInset.toPx()
+    val x = if (layoutDirection == LayoutDirection.Rtl) inset else size.width - inset - barWidth
 
     val contentHeight = size.height + state.maxValue
-    val thumbHeight = (size.height * size.height / contentHeight)
-        .coerceAtLeast(minThumbHeight)
+    val barHeight = (size.height * size.height / contentHeight)
+        .coerceAtLeast(MinBarHeight.toPx())
         .coerceAtMost(size.height)
-    val scrollFraction = state.value.toFloat() / state.maxValue.toFloat()
-    val thumbTop = (size.height - thumbHeight) * scrollFraction
+    val scrolled = state.value.toFloat() / state.maxValue.toFloat()
+    val barTop = (size.height - barHeight) * scrolled
 
     drawRect(
-        color = trackColor,
-        topLeft = Offset(xPosition, 0f),
-        size = Size(barWidth, size.height),
+        color = color,
+        topLeft = Offset(x + (barWidth - lineWidth) / 2, 0f),
+        size = Size(lineWidth, size.height),
     )
-    drawRect(
-        color = barColor,
-        topLeft = Offset(xPosition, thumbTop),
-        size = Size(barWidth, thumbHeight),
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(x, barTop),
+        size = Size(barWidth, barHeight),
+        cornerRadius = CornerRadius(barWidth / 2),
     )
 }
+
+private val BarWidth = 6.dp
+private val LineWidth = 2.dp
+private val EdgeInset = 6.dp
+private val MinBarHeight = 48.dp

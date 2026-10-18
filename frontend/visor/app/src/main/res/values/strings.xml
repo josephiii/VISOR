@@ -7,52 +7,101 @@
     <!-- Common -->
     <string name="back" description="Back button">Back</string>
     <string name="cancel" description="Cancel button">Cancel</string>
+    <string name="dismiss" description="Closes an error message">Dismiss</string>
+    <string name="got_it" description="Closes a message that needs no answer">Got it</string>
     <!-- What a screen reader says for a control that is shown but can't be used yet -->
     <string name="state_locked" description="Screen reader state of a locked button">Locked</string>
     <string name="state_selected_locked" description="Screen reader state of a selected option that is locked">Selected, locked</string>
     <string name="state_not_selected_locked" description="Screen reader state of an unselected option that is locked">Not selected, locked</string>
+    <!-- Starts every error VISOR shows or says, so an error never rests on its red color alone -->
+    <string name="error_prefix" description="Word before an error message, as in 'Error: Enter your email.'">Error:</string>
+    <!-- Shown at the end of an on/off setting, such as High contrast. A screen reader says on or off itself. -->
+    <string name="switch_state_on" description="Visible state of an on/off setting that is on">ON</string>
+    <string name="switch_state_off" description="Visible state of an on/off setting that is off">OFF</string>
+
+    <!-- Title Screen -->
+    <string name="title_welcome" description="Under the VISOR banner on the first screen">Welcome. Log in or sign up to get started.</string>
+    <string name="title_voice_hint" description="Under the voice navigation switch on the first screen">Say \"VISOR GO\" any time, then say a command, such as \"log in\" or \"sign up\".</string>
+    <string name="title_voice_tip_title" description="Dialog title when voice navigation is turned on">Voice navigation is on</string>
+    <string name="title_voice_tip_message" description="Dialog message when voice navigation is turned on">Say \"VISOR GO\", then say what you\'d like. A few things to try:\n\n• \"log in\" or \"sign up\"\n• \"go home\"\n• \"help\"\n• \"open settings\"\n\nYou can turn this off any time in Settings.</string>
+    <string name="title_voice_tip_spoken" description="What VISOR says when voice navigation is turned on">Voice navigation is on. Say VISOR GO, then say what you\'d like. Try log in, sign up, go home, or help. You can turn this off any time in Settings.</string>
 
     <!-- Login Screen -->
-    <string name="login_title" description="The login title">LOGIN</string>
-    <string name="email_username_label" description="The username / email label">Username / Email</string>
+    <string name="login_title" description="The login title">Log in</string>
     <string name="password_label" description="The password label">Password</string>
-    <string name="example_email_input" description="Placeholder email for the user to overwrite">email@email.com</string> <!--also, ForgotPasswordScreen() -->
-    <string name="sign_up_title" descripion="The sign up title">SIGN UP</string>
+    <string name="sign_up_title" descripion="The sign up title">Sign up</string>
+    <string name="login_busy" description="The log in button while VISOR is logging in">Logging in…</string>
+    <string name="login_trouble" description="Above the Forgot Password button">Trouble logging in?</string>
+    <string name="login_new_users" description="Above the Sign Up button">New users register here</string>
+    <string name="login_error_no_match" description="Logging in failed: wrong email or password">That email and password don\'t match an account. Check them and try again.</string>
+
+    <!-- Account errors, in place of the raw technical message. Shown after "Error:" and said aloud. -->
+    <string name="auth_error_unreachable" description="The VISOR server could not be reached">VISOR couldn\'t reach its server. Check your internet connection and try again.</string>
+    <string name="auth_error_server" description="The VISOR server failed">VISOR\'s server ran into a problem. Try again in a few minutes.</string>
+    <string name="auth_error_check_details" description="The server could not read the email or password">VISOR couldn\'t read that email or password. Check them, then try again.</string>
+    <string name="auth_error_unknown" description="Something else went wrong with an account request">Something went wrong. Try again.</string>
+    <string name="auth_error_email_missing" description="The email field is empty">Enter your email.</string>
+    <string name="auth_error_email_invalid" description="The email field does not hold an email address">Enter your whole email address, such as name@example.com.</string>
+    <string name="auth_error_password_missing" description="The password field is empty">Enter your password.</string>
 
     <!-- Sign Up Screen -->
     <string name="username_label" description="The username label">Username</string>
     <string name="email_label" description="The email label">Email</string>
-    <string name="confirm_password_label" description="Placeholder email for the user to enter the password they are using for sign in">Confirm Password</string>
+    <string name="confirm_password_label" description="Placeholder email for the user to enter the password they are using for sign in">Confirm password</string>
     <string name="already_have_account" description="Text for users to see and to prompt them to login">Already have an account?</string>
+    <string name="sign_up_busy" description="The sign up button while VISOR creates the account">Creating your account…</string>
+    <string name="sign_up_error_rejected" description="The server would not create the account">VISOR couldn\'t create that account. If that email already has one, log in instead. If not, try a longer password.</string>
+    <string name="sign_up_error_username_missing" description="The username field is empty">Enter a username.</string>
+    <string name="sign_up_error_password_short" description="The new password is too short. The placeholder is the shortest length allowed">Use at least <xliff:g id="length">%1$d</xliff:g> characters.</string>
+    <string name="sign_up_error_confirm_missing" description="The confirm password field is empty">Enter your password again.</string>
+    <string name="sign_up_error_confirm_mismatch" description="The two passwords differ">This doesn\'t match the password above.</string>
 
     <!-- Forgot Password Screen -->
-    <string name="forgot_password_title" description="The title for Forgot Password screen">Forgot Password?</string>
+    <string name="forgot_password_title" description="The title for Forgot Password screen">Forgot password?</string>
     <string name="forgot_password_description" description="The description for Forgot Password screen">Send a verification code to your email</string>
-    <string name="send_code_button_text" description="Button text for the send code button for Forgot Password screen">Send Code</string>
+    <string name="send_code_button_text" description="Button text for the send code button for Forgot Password screen">Send code</string>
     <string name="reset_or" description="The word 'or'">or</string>
 
     <!-- Reset Password Screen -->
-    <string name="reset_password_title" description="The title for Reset Password screen">Reset Password?</string>
-    <string name="old_password_text" description="Text title for user to input their old password">Old Password</string>
-    <string name="new_password_text" description="Text title for user to input their new password">New Password</string>
-    <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save Password</string>
+    <string name="reset_password_title" description="The title for Reset Password screen">Reset password</string>
+    <string name="old_password_text" description="Text title for user to input their old password">Old password</string>
+    <string name="new_password_text" description="Text title for user to input their new password">New password</string>
+    <string name="save_password_button_text" description="The button text for when a user wants to save a new password">Save password</string>
 
     <!-- Verify Account Screen -->
-    <string name="verify_account_title" description="The title for the Verify Account screen">Verify Your Account</string>
+    <string name="verify_account_title" description="The title for the Verify Account screen">Verify your account</string>
     <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
 
     <!-- Enter Code Screen -->
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
     <string name="resend_code_button_text" description="Text for the resend code button">Resend the code</string>
+    <string name="code_label" description="Label over the code boxes. The placeholder is how many digits">The <xliff:g id="length">%1$d</xliff:g>-digit code from your email</string>
+    <string name="code_progress" description="Under the code boxes: digits typed so far, out of how many">Digits entered: <xliff:g id="entered">%1$d</xliff:g> of <xliff:g id="length">%2$d</xliff:g></string>
 
     <!-- Settings Screen -->
     <string name="settings_navbar_title" description="The title for navigating to the settings screen">Settings</string>
     <string name="settings_title" description="Settings screen heading">Settings</string>
     <string name="settings_section_about_you" description="Settings section: the user's name and vision">About you</string>
+    <!-- The Settings hub: one tile for each part of Settings -->
+    <string name="settings_hub_about_you_description" description="Settings hub tile: what About you holds">Your name, and what your vision is like</string>
+    <string name="settings_hub_speech" description="Settings hub tile and screen title: how VISOR talks">Speech</string>
+    <string name="settings_hub_speech_description" description="Settings hub tile: what Speech holds">How fast VISOR talks, and how much detail it gives</string>
+    <string name="settings_hub_sound" description="Settings hub tile and screen title: volumes and vibration">Sound</string>
+    <string name="settings_hub_sound_description" description="Settings hub tile: what Sound holds">How loud each kind of sound is, and vibration</string>
+    <string name="settings_hub_display" description="Settings hub tile and screen title: text size and display">Text &amp; display</string>
+    <string name="settings_hub_display_description" description="Settings hub tile: what Text and display holds">Text size, light or dark, and High contrast</string>
+    <string name="settings_hub_commands_description" description="Settings hub tile: what Commands holds">Camera commands, voice navigation and tap navigation</string>
+    <string name="settings_hub_account_description" description="Settings hub tile: what Account holds">Log out, or delete your account</string>
+    <string name="settings_hub_help_description" description="Settings hub tile: what Help holds">What each part of VISOR does, and how</string>
+    <string name="settings_hub_open" description="What tapping a Settings hub tile does, as a screen reader says it">open</string>
+    <string name="settings_back_to_hub" description="Button at the top of each part of Settings">Back to Settings</string>
+    <string name="settings_section_vision_description" description="Heading over the free-text vision description field">In your own words</string>
     <string name="settings_name_label" description="Label for the user's name field">Your name</string>
     <string name="settings_vision_description_label" description="Label for the free-text vision description field">Describe your vision, in your own words (optional)</string>
     <string name="settings_section_speech_rate" description="Settings section: speech rate">How fast VISOR talks</string>
-    <string name="settings_speech_rate_description" description="Screen reader description of the speech rate slider">Speech rate: <xliff:g id="rate">%1$s</xliff:g></string>
+    <string name="settings_speech_rate_label" description="Screen reader name of the speech rate slider">Speech rate</string>
+    <string name="settings_speech_rate_slower_button" description="Screen reader name of the minus button beside the speech rate slider">Talk slower</string>
+    <string name="settings_speech_rate_faster_button" description="Screen reader name of the plus button beside the speech rate slider">Talk faster</string>
     <string name="settings_speech_rate_slower" description="Speech rate slider, slow end">Slower</string>
     <string name="settings_speech_rate_faster" description="Speech rate slider, fast end">Faster</string>
     <string name="settings_section_detail" description="Settings section: how much detail VISOR gives">How much detail</string>
@@ -80,13 +129,22 @@
     <string name="settings_volume_session_chimes_description" description="When the session chimes play">As a session starts, and as it ends.</string>
     <string name="settings_volume_off" description="Volume slider, silent end">Off</string>
     <string name="settings_volume_louder" description="Volume slider, loud end">Louder</string>
+    <string name="settings_volume_down_button" description="Screen reader name of the minus button beside a volume slider. The placeholder is the slider's title">Turn <xliff:g id="title">%1$s</xliff:g> down</string>
+    <string name="settings_volume_up_button" description="Screen reader name of the plus button beside a volume slider. The placeholder is the slider's title">Turn <xliff:g id="title">%1$s</xliff:g> up</string>
     <string name="settings_section_text_size" description="Settings section: text size">Text size</string>
     <string name="settings_text_size_standard" description="Text size option">Standard</string>
     <string name="settings_text_size_large" description="Text size option">Large</string>
     <string name="settings_text_size_extra_large" description="Text size option">Extra large</string>
-    <string name="settings_section_display" description="Settings section: display">Display</string>
-    <string name="settings_high_contrast_on" description="High contrast toggle, on">High contrast: ON</string>
-    <string name="settings_high_contrast_off" description="High contrast toggle, off">High contrast: OFF</string>
+    <string name="settings_section_theme" description="Settings heading: light or dark">Light or dark</string>
+    <string name="settings_theme_system" description="Light or dark option: as the phone is set">Match phone</string>
+    <string name="settings_theme_light" description="Light or dark option">Light</string>
+    <string name="settings_theme_dark" description="Light or dark option">Dark</string>
+    <string name="settings_section_contrast" description="Settings heading: contrast">Contrast</string>
+    <string name="settings_high_contrast_description" description="What High contrast does">Black and white throughout, with yellow when it\'s dark, for the strongest contrast.</string>
+    <string name="settings_section_vibration" description="Settings section: vibration">Vibration</string>
+    <string name="settings_vibration_description" description="What VISOR's vibrations mean">VISOR buzzes so you can feel what it is doing: two short pulses as a session starts, one long pulse as it ends, a firm buzz when it starts listening for a command, a light tick when you press a button, and three short pulses when a button is locked.</string>
+    <string name="settings_vibration" description="Name of the Vibration on/off setting">Vibration</string>
+    <string name="settings_high_contrast" description="Name of the High contrast on/off setting">High contrast</string>
     <string name="settings_section_commands" description="Settings section: every command and how to turn each off">Commands</string>
     <string name="settings_commands_description" description="What the commands section is">Ways to ask VISOR for something without touching your phone. Each one is on until you turn it off.</string>
     <string name="settings_camera_commands_title" description="Commands heading: wake phrases that start a camera feature">Camera commands</string>
@@ -94,13 +152,9 @@
     <string name="settings_command_read_text" description="Camera command: read the text in front of you">Read text</string>
     <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
     <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
-    <string name="settings_command_on" description="A command's switch, on. The placeholder is the command's name"><xliff:g id="command">%1$s</xliff:g>: ON</string>
-    <string name="settings_command_off" description="A command's switch, off. The placeholder is the command's name"><xliff:g id="command">%1$s</xliff:g>: OFF</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
-    <string name="settings_voice_navigation_on" description="Voice navigation toggle, on">Voice navigation: ON</string>
-    <string name="settings_voice_navigation_off" description="Voice navigation toggle, off">Voice navigation: OFF</string>
     <string name="settings_voice_navigation_examples_title" description="Heading over the list of voice navigation commands">What you can say after \"VISOR GO\"</string>
     <string name="settings_voice_commands_go_places" description="Kind of voice command: moving between screens">Go places</string>
     <string name="settings_voice_commands_sessions" description="Kind of voice command: sessions and modes">Sessions and modes</string>
@@ -109,12 +163,9 @@
     <string name="settings_voice_commands_answering" description="Kind of voice command: answering VISOR's questions">Answering VISOR</string>
     <string name="settings_voice_launch_title" description="Commands heading: Hey Meta voice launch. Keep the quoted phrase as is">\"Hey Meta, start VISOR\"</string>
     <string name="settings_voice_launch_description" description="How the Hey Meta voice launch works">With your glasses on, say it to open VISOR and start a session. When this is off, VISOR still opens, but it doesn\'t start a session.</string>
-    <string name="settings_voice_launch_switch" description="Name on the Hey Meta voice launch switch, shown as 'Hey Meta: ON'">Hey Meta</string>
+    <string name="settings_voice_launch_switch" description="Name on the Hey Meta voice launch switch, shown with ON or OFF">Hey Meta</string>
     <string name="settings_section_tap_navigation" description="Commands heading: glasses tap navigation">Glasses tap navigation</string>
     <string name="settings_tap_navigation_description" description="How glasses tap navigation works">When your glasses are connected, the same navigation shows up as buttons on their display — tap or swipe on the temple arm or Neural Band to select one, no phone or voice needed.</string>
-    <string name="settings_tap_navigation_on" description="Glasses tap navigation toggle, on">Glasses tap navigation: ON</string>
-    <string name="settings_tap_navigation_off" description="Glasses tap navigation toggle, off">Glasses tap navigation: OFF</string>
-    <string name="settings_section_support" description="Settings section: support">Support</string>
     <string name="settings_help" description="Opens the Help screen">Help &amp; how VISOR works</string>
     <string name="settings_section_account" description="Settings section: account">Account</string>
     <string name="settings_log_out" description="Log out button and confirm button">Log out</string>
@@ -126,36 +177,51 @@
     <string name="settings_delete_account_confirm_button" description="Delete account confirm button">Delete</string>
 
     <!-- Help Screen: one title and body per topic -->
-    <string name="help_title" description="Help screen heading">(WIP) Help &amp; how VISOR works</string>
+    <string name="help_title" description="Help screen heading">Help &amp; how VISOR works</string>
+    <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
+    <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_session_title" description="Help topic title">Starting a session</string>
-    <string name="help_session_body" description="Help topic">On the Home screen, the large center button starts and ends a VISOR session. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. During a session, choose a mode (Hazard Awareness, Scene Description or Reading Assistance), then press the button above the modes, such as \"Check for hazards\". VISOR takes a picture with your glasses, then tells you what\'s ahead and how far away, describes the scene, or reads the text.</string>
+    <string name="help_session_body" description="Help topic">On the Home screen, the large round button starts and ends a VISOR session. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app.\n\nDuring a session, choose a mode: Hazard Awareness, Scene Description or Reading Assistance. Then press the button above the modes, such as \"Check for hazards\".\n\nVISOR takes a picture with your glasses, then tells you what\'s ahead and how far away, describes the scene, or reads the text. Its answer stays on Home, under Last answer.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
-    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. You\'ll need to pair before VISOR can use their camera. Once paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
+    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home and starts a session — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. VISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described.\n\nVISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
-    <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\", and once VISOR says \"Listening\", say where to go or what to do, such as \"go home\", \"open settings\", \"start session\" or \"faster\". Settings lists everything you can say, and can turn voice navigation off.</string>
+    <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"start session\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
-    <string name="help_personalize_body" description="Help topic">In Settings, you can change how fast VISOR talks, how much detail it gives, how loud each kind of thing it says and plays is, your text size, and turn on High Contrast mode. Changes apply immediately.</string>
+    <string name="help_personalize_body" description="Help topic">Settings is in parts: About you, Speech, Sound, Text and display, Commands, and Account.\n\nIn them you can change how fast VISOR talks and how much detail it gives, how loud each kind of sound is and whether VISOR vibrates, your text size, light or dark, and High contrast. Changes apply at once.</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
+    <string name="hardware_pairing_title" description="Heading of the Pair Glasses screen">Pair glasses</string>
 
     <!-- Home Screen -->
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
-    <string name="start_session" description="start session">Start Session</string>
-    <string name="end_session" description="end session">End Session</string>
+    <string name="start_session" description="start session">Start session</string>
+    <string name="end_session" description="end session">End session</string>
     <string name="home_mode_title" description="Heading above the session mode choices on Home">Mode</string>
     <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
     <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
     <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
     <string name="home_locked_hint" description="Under Home's capture button and modes, which are locked until a session starts">Start a session to use these controls.</string>
-    <string name="environment_capture_title" description="Tip title about environment capture">Environment Capture</string>
-    <string name="environment_capture" description="Tip about environment capture">Record your surroundings directly from your glasses, from your point of view.</string>
+    <!-- Home's capture button turns into these while VISOR works, so it can be seen working -->
+    <string name="home_capture_taking_picture" description="In place of Home's capture button while the glasses take a picture">Taking picture…</string>
+    <string name="home_capture_thinking" description="In place of Home's capture button while VISOR works out what is in the picture">Thinking…</string>
+    <string name="home_last_answer_title" description="Heading of the card on Home that shows VISOR's last answer">Last answer</string>
+    <string name="home_last_answer_empty" description="The Last answer card before VISOR has answered anything">When VISOR answers, its answer stays here too, to read or hear again.</string>
+    <string name="home_read_again" description="Says the last answer again">Read again</string>
+
+    <!-- The session status bar at the top of every screen once logged in -->
+    <string name="session_status_on" description="Session status bar while a session runs. The placeholder is the mode, such as Hazard Awareness">Session on · <xliff:g id="mode">%1$s</xliff:g></string>
+    <string name="session_status_on_spoken" description="What a screen reader says for the session status bar while a session runs">Session on, <xliff:g id="mode">%1$s</xliff:g></string>
+    <string name="session_status_off" description="Session status bar while no session runs">Session off</string>
+    <string name="session_status_go_home" description="What tapping the session status bar does, as a screen reader says it">go to Home</string>
+    <string name="glasses_camera_tip_title" description="Tip title on the Pair Glasses screen: how VISOR uses the glasses' camera">How VISOR uses your glasses</string>
+    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses your glasses\' camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect my glasses</string>
@@ -183,6 +249,10 @@
     <string name="debug_enable_navbar" description="enable navigation bar option">TOGGLE NAVIGATION BAR</string>
 
     <!-- VISOR Onboarding Steps -->
+    <string name="step_counter" description="Where the user is in setup, as in 'Step 2 of 8'">Step <xliff:g id="step">%1$d</xliff:g> of <xliff:g id="total">%2$d</xliff:g></string>
+    <string name="onboarding_continue" description="Setup button: on to the next question">Continue</string>
+    <string name="onboarding_start" description="Setup button on the last step">Start using VISOR</string>
+    <string name="onboarding_skip" description="Setup button: leave this question for now">Skip for now</string>
     <!-- NAME Step -->
     <string name="step_name_title">What should VISOR call you?</string>
     <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
@@ -216,7 +286,6 @@
     <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
 
     <!-- Hardware Pairing Screen: updates the glasses need -->
-    <string name="camera_access_icon_description" description="Camera Access icon description">Glasses camera</string>
     <string name="update_required_title" description="Update required warning title">Update required</string>
     <string name="update_required_firmware_message" description="Firmware update required warning">Your glasses firmware needs an update before VISOR can use them.</string>
     <string name="update_required_dat_app_message" description="DAT app update required warning">The app on your glasses needs an update before VISOR can use them.</string>
@@ -332,7 +401,8 @@
     <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
     <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
     <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
-    <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode Configuration</string>
+    <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode configuration</string>
+    <string name="p1_script" description="A Phase 1 demo script button: its number, then its whole text"><xliff:g id="number">%1$d</xliff:g>. <xliff:g id="script">%2$s</xliff:g></string>
 
     <!-- VISOR Session Modes -->
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>

@@ -45,9 +45,44 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
+    private val _capture = MutableStateFlow(CaptureStatus.IDLE)
+    /** What the camera feature asked for last is doing (see [onCaptureStarted]). */
+    val capture: StateFlow<CaptureStatus> = _capture.asStateFlow()
+
+    private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
+    /** What a camera feature last answered, for Home's Last answer card. */
+    val lastAnswer: StateFlow<LastAnswer?> = _lastAnswer.asStateFlow()
+
+    // Wake phrases and Home's button can ask for a second picture before the
+    // first is answered; VISOR is working until every one of them is.
+    private var capturesInFlight = 0
+
     fun updateProfile(profile: UserProfile) {
         _userProfile.value = profile
         profileStore.save(profile)
+    }
+
+    /** A camera feature has been asked for: VISOR is taking a picture. Call on the main thread. */
+    fun onCaptureStarted() {
+        capturesInFlight++
+        _capture.value = CaptureStatus.TAKING_PICTURE
+    }
+
+    /** The glasses have taken the picture: VISOR is working out what is in it. */
+    fun onPictureTaken() {
+        if (_capture.value == CaptureStatus.TAKING_PICTURE) _capture.value = CaptureStatus.THINKING
+    }
+
+    /** A camera feature has answered with [text], which VISOR is now saying. */
+    fun onAnswered(text: String) {
+        capturesInFlight = (capturesInFlight - 1).coerceAtLeast(0)
+        if (capturesInFlight == 0) _capture.value = CaptureStatus.IDLE
+        showAnswer(text)
+    }
+
+    /** Shows [text] on Home's Last answer card, as an answer just given. */
+    fun showAnswer(text: String) {
+        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis())
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,6 +291,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         sessionStore.clear() // drops tokens + loggedIn flag
+        // It may be text read off someone's mail: not for the next person to log in.
+        _lastAnswer.value = null
     }
 
     /**
@@ -335,10 +372,16 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
-    fun settings() {
+    /** Opens Settings at [section], or at its hub of sections when null (the navigation bar's tab). */
+    fun settings(section: SettingsSection? = null) {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(isPairingHardware = false) }
-        _uiState.update { it.copy(atSettings = true) }
+        _uiState.update { it.copy(atSettings = true, settingsSection = section) }
+    }
+
+    /** Within Settings: opens [section], or goes back to the hub when null. */
+    fun openSettingsSection(section: SettingsSection?) {
+        _uiState.update { it.copy(settingsSection = section) }
     }
 
     fun help() {

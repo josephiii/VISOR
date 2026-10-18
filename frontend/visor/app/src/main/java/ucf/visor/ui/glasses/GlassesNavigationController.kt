@@ -11,7 +11,9 @@ import com.meta.wearable.dat.display.Display
 import com.meta.wearable.dat.display.addDisplay
 import com.meta.wearable.dat.display.removeDisplay
 import com.meta.wearable.dat.display.types.DisplayState
+import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.Direction
+import com.meta.wearable.dat.display.views.IconName
 import com.meta.wearable.dat.display.views.TextColor
 import com.meta.wearable.dat.display.views.TextStyle
 import kotlinx.coroutines.CoroutineScope
@@ -76,7 +78,9 @@ class GlassesNavigationController(
     private var displayStarted = false
 
     private var pendingScreen: GlassesNavScreen? = null
-    private var lastSentScreen: GlassesNavScreen? = null
+    // Which page of the screen's buttons is shown: see GlassesNavScreen.page.
+    private var pageIndex = 0
+    private var lastSent: Pair<GlassesNavScreen, Int>? = null
 
     private val _commands = MutableSharedFlow<VoiceCommand>(extraBufferCapacity = 1)
     val commands: SharedFlow<VoiceCommand> = _commands.asSharedFlow()
@@ -119,6 +123,8 @@ class GlassesNavigationController(
      * sent as soon as the display becomes available.
      */
     fun showScreen(screen: GlassesNavScreen) {
+        // A new screen starts on its first page.
+        if (screen != pendingScreen) pageIndex = 0
         pendingScreen = screen
         sendPendingScreenIfReady()
     }
@@ -235,8 +241,9 @@ class GlassesNavigationController(
         if (!enabled || !displayStarted) return
         val screen = pendingScreen ?: return
         val activeDisplay = display ?: return
-        if (screen == lastSentScreen) return
-        lastSentScreen = screen
+        val page = screen.page(pageIndex)
+        if (lastSent == screen to page.index) return
+        lastSent = screen to page.index
         scope.launch {
             activeDisplay
                 .sendContent {
@@ -245,17 +252,28 @@ class GlassesNavigationController(
                         screen.subtitle?.let { subtitle ->
                             text(subtitle, style = TextStyle.BODY, color = TextColor.SECONDARY)
                         }
+                        if (page.hasMore) {
+                            text("${page.index + 1} of ${page.count}", style = TextStyle.BODY, color = TextColor.SECONDARY)
+                        }
                         // A buttonGroup with no buttons would put an empty
                         // container on a 600x600 screen; the status line above
                         // carries the screen on its own instead.
-                        if (screen.items.isNotEmpty()) {
+                        if (page.items.isNotEmpty()) {
                             buttonGroup {
-                                screen.items.forEach { item ->
+                                page.items.forEach { item ->
                                     button(
                                         item.label,
                                         style = item.style,
                                         iconName = item.icon,
                                         onClick = { _commands.tryEmit(item.command) },
+                                    )
+                                }
+                                if (page.hasMore) {
+                                    button(
+                                        "More",
+                                        style = ButtonStyle.SECONDARY,
+                                        iconName = IconName.THREE_DOTS_HORIZONTAL,
+                                        onClick = { scope.launch { showNextPage() } },
                                     )
                                 }
                             }
@@ -265,15 +283,22 @@ class GlassesNavigationController(
                 .onSuccess {
                     Log.i(
                         TAG,
-                        "Rendered glasses screen '${screen.title}' (${screen.items.size} buttons)"
+                        "Rendered glasses screen '${screen.title}', page ${page.index + 1} of ${page.count} " +
+                            "(${page.items.size} buttons)"
                     )
                 }
                 .onFailure { error, _ ->
                     Log.w(TAG, "Failed to render glasses nav screen: ${error.description}")
                     // Let the next state-driven showScreen() call retry the send.
-                    lastSentScreen = null
+                    lastSent = null
                 }
         }
+    }
+
+    /** More: the next page of buttons, and from the last page, the first again. */
+    private fun showNextPage() {
+        pageIndex++
+        sendPendingScreenIfReady()
     }
 
     private fun tearDownSession() {
@@ -288,7 +313,7 @@ class GlassesNavigationController(
         display = null
         session?.stop()
         session = null
-        lastSentScreen = null
+        lastSent = null
     }
 
     private fun teardown() {

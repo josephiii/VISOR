@@ -38,6 +38,11 @@ import androidx.compose.ui.unit.dp
  * is one of three cues: VISOR also says "Listening." out loud, and VisorLayout
  * buzzes the phone as listening starts and stops.
  *
+ * It glows steadily while VISOR says "Listening." ([VoiceNavState.PROMPTING])
+ * and while it works out what was said, and breathes only while the
+ * microphone is actually open ([VoiceNavState.LISTENING]): the breathing,
+ * like the buzz, means "speak now".
+ *
  * The breathing is slow, about one breath every two seconds, nowhere near the
  * three flashes a second Section 508 warns about. With the system's animations
  * turned off, Compose holds the glow steady at full strength instead.

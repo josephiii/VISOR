@@ -48,6 +48,8 @@ data class VisorUiState(
     val isSessionActive: Boolean = false,
     val isLogoutConfirmVisible: Boolean = false,
     val isDeleteAccountConfirmVisible: Boolean = false,
+    /** Which part of Settings is open, or null for the Settings hub. */
+    val settingsSection: SettingsSection? = null,
 
     // PHASE 1 States.
     val phase1Initiated: Boolean = false,

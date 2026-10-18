@@ -36,6 +36,30 @@ data class GlassesNavScreen(
 )
 
 /**
+ * The most buttons shown on the glasses at once. The display is about 20°
+ * across, and six buttons crowded it past what a low-vision wearer could pick
+ * out; the rest go on further pages, behind a More button.
+ */
+const val MaxGlassesButtons = 4
+
+/**
+ * The buttons for page [index] of a screen, [count] pages in all. With more
+ * than one page, the last of each page's [MaxGlassesButtons] places is More,
+ * which goes on to the next page and from the last back to the first.
+ */
+data class GlassesNavPage(val items: List<GlassesNavItem>, val index: Int, val count: Int) {
+    val hasMore: Boolean get() = count > 1
+}
+
+/** Page [index] of this screen's buttons; any index wraps round onto a real page. */
+fun GlassesNavScreen.page(index: Int): GlassesNavPage {
+    if (items.size <= MaxGlassesButtons) return GlassesNavPage(items, index = 0, count = 1)
+    val pages = items.chunked(MaxGlassesButtons - 1)
+    val shown = index.mod(pages.size)
+    return GlassesNavPage(pages[shown], index = shown, count = pages.size)
+}
+
+/**
  * Chooses which buttons appear on the glasses for the phone's current screen —
  * the on-glasses mirror of [ucf.visor.ui.components.VisorNavigationBar] (touch)
  * and [ucf.visor.ui.voice.VoiceCommandParser] (voice), so all three input
@@ -92,9 +116,9 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
     // VisorLayout's VoiceCommand.ToggleSession handler navigates home on its
     // own before starting/ending the session.
     items += if (uiState.isSessionActive) {
-        GlassesNavItem("End Session", IconName.X, VoiceCommand.ToggleSession)
+        GlassesNavItem("End session", IconName.X, VoiceCommand.ToggleSession)
     } else {
-        GlassesNavItem("Start Session", IconName.TRIANGLE_RIGHT, VoiceCommand.ToggleSession)
+        GlassesNavItem("Start session", IconName.TRIANGLE_RIGHT, VoiceCommand.ToggleSession)
     }
 
     if (route != "home") {
@@ -106,7 +130,7 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
     }
 
     if (route != "hardware_pairing") {
-        items += GlassesNavItem("Pair Glasses", IconName.SMART_GLASSES, VoiceCommand.PairDevice)
+        items += GlassesNavItem("Pair glasses", IconName.SMART_GLASSES, VoiceCommand.PairDevice)
     }
 
     if (route != "help") {
@@ -125,9 +149,9 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
     val title = when (route) {
         "home" -> "Home"
         "settings" -> "Settings"
-        "hardware_pairing" -> "Pair Glasses"
+        "hardware_pairing" -> "Pair glasses"
         "help" -> "Help"
-        "motion_lab" -> "Head-Motion Lab"
+        "motion_lab" -> "Head-motion lab"
         else -> "VISOR"
     }
     return GlassesNavScreen(title = title, items = items)

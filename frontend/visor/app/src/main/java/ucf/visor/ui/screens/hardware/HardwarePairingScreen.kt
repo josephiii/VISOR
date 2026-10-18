@@ -7,7 +7,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -40,9 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.types.RegistrationState
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
-import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
+import ucf.visor.ui.components.iconSizeFor
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -73,58 +72,27 @@ fun HardwarePairingScreen(
         modifier =
             modifier
                 .fillMaxSize()
-                // Padding before the scroll indicator, as on Settings: the bar is
-                // drawn just past the column's right edge, inside this padding.
-                // With the padding inside the scroll instead, the bar landed past
-                // the edge of the screen, so this screen showed none.
-                .padding(horizontal = 24.dp)
+                // Before the padding, so the bar is drawn in the screen's margin.
                 .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(scrollState)
                 .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Spacer(modifier = Modifier.weight(1f))
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.camera_access_icon),
-                contentDescription = stringResource(R.string.camera_access_icon_description),
-                modifier = Modifier.size(80.dp * LocalDensity.current.density),
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
-            ) {
-                TipItem(
-                    iconResId = R.drawable.smart_glasses_icon,
-                    title = stringResource(R.string.environment_capture_title),
-                    text = stringResource(R.string.environment_capture),
-                )
-            }
-        }
+        ScreenTitle(stringResource(R.string.hardware_pairing_title), modifier = Modifier.fillMaxWidth())
 
-        uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
-            GlassesStatusCard(
-                status = status,
-                onSpeak = { talk(status.spokenSummary(), VoiceCategory.ANSWERS) },
-            )
-        }
+        // A picture of the glasses' camera, for the eye only. It was drawn at
+        // 80dp times the screen's density (210dp on most phones), which pushed
+        // the button below off the screen.
+        Icon(
+            painter = painterResource(id = R.drawable.camera_access_icon),
+            contentDescription = null,
+            modifier = Modifier.size(96.dp),
+        )
 
-        if (uiState.isFirmwareUpdateRequired || uiState.isDatAppUpdateRequired) {
-            UpdateRequiredCard(
-                firmware = uiState.isFirmwareUpdateRequired,
-                glassesApp = uiState.isDatAppUpdateRequired,
-                onUpdateFirmware = { withActivity(viewModel::openFirmwareUpdate) },
-                onUpdateGlassesApp = { withActivity(viewModel::openDATGlassesAppUpdate) },
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
-
+        // Connecting comes first: until the glasses are connected, nothing
+        // else on this screen does anything.
         Column(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
@@ -134,7 +102,7 @@ fun HardwarePairingScreen(
                 // Not Color.Gray: that is under 4.5:1 against the light themes.
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 24.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
             // One button that follows the registration: "Connect my glasses"
             // until VISOR is registered, then "Disconnect my glasses". Either is
@@ -157,6 +125,28 @@ fun HardwarePairingScreen(
                 },
             )
         }
+
+        uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
+            GlassesStatusCard(
+                status = status,
+                onSpeak = { talk(status.spokenSummary(), VoiceCategory.ANSWERS) },
+            )
+        }
+
+        if (uiState.isFirmwareUpdateRequired || uiState.isDatAppUpdateRequired) {
+            UpdateRequiredCard(
+                firmware = uiState.isFirmwareUpdateRequired,
+                glassesApp = uiState.isDatAppUpdateRequired,
+                onUpdateFirmware = { withActivity(viewModel::openFirmwareUpdate) },
+                onUpdateGlassesApp = { withActivity(viewModel::openDATGlassesAppUpdate) },
+            )
+        }
+
+        TipItem(
+            iconResId = R.drawable.smart_glasses_icon,
+            title = stringResource(R.string.glasses_camera_tip_title),
+            text = stringResource(R.string.glasses_camera_tip),
+        )
     }
 }
 
@@ -194,7 +184,11 @@ private fun UpdateRequiredCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(imageVector = Icons.Default.Warning, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSizeFor(MaterialTheme.typography.titleLarge)),
+                )
                 Text(
                     stringResource(R.string.update_required_title),
                     style = MaterialTheme.typography.titleLarge,
@@ -241,28 +235,34 @@ private fun GlassesStatusCard(status: GlassesStatus, onSpeak: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "${status.model}: ${if (status.connected) "connected" else "not connected"}",
+                stringResource(
+                    if (status.connected) R.string.motion_lab_glasses_connected
+                    else R.string.motion_lab_glasses_not_connected,
+                    status.model,
+                ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics { heading() },
             )
             val details = buildList {
                 status.batteryPercent?.let {
-                    add("Battery $it%" + if (status.charging == true) ", charging" else "")
+                    add(
+                        stringResource(
+                            if (status.charging == true) R.string.motion_lab_battery_charging
+                            else R.string.motion_lab_battery,
+                            it,
+                        )
+                    )
                 }
-                status.worn?.let { add(if (it) "Being worn" else "Not being worn") }
-                status.temperatureWord?.let { add("Temperature $it") }
+                status.worn?.let {
+                    add(stringResource(if (it) R.string.motion_lab_worn else R.string.motion_lab_not_worn))
+                }
+                status.temperatureWord?.let { add(stringResource(R.string.motion_lab_temperature, it)) }
             }
             if (details.isNotEmpty()) {
                 Text(details.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
             }
-            SelectableChip(
-                label = "Read glasses status aloud",
-                selected = false,
-                showCheckmark = false,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onSpeak,
-            )
+            SwitchButton(label = stringResource(R.string.motion_lab_read_status), onClick = onSpeak)
         }
     }
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The empty activity Compose UI tests (createComposeRule) render a screen
+         in, such as LargeTextTest's. androidx.compose.ui:ui-test-manifest adds
+         the same entry; debug builds only, so it never ships. -->
+    <application>
+        <activity
+            android:name="androidx.activity.ComponentActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>
