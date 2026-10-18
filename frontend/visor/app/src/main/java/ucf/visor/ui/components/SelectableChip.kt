@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -76,6 +77,8 @@ import ucf.visor.ui.theme.VisorTheme
  *   outline instead of the fill, text still at full contrast (see
  *   [dashedBorder]). It still takes taps, so [onClick] can say what unlocks it,
  *   and the phone buzzes three times rather than ticking.
+ * @param icon drawn before the label, at the label's size, such as a session
+ *   mode's icon. It only adds to the label, so a screen reader doesn't read it.
  */
 @Composable
 fun SelectableChip(
@@ -86,6 +89,7 @@ fun SelectableChip(
     minHeight: Dp = 64.dp,
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
     locked: Boolean = false,
+    icon: ImageVector? = null,
     onClick: () -> Unit,
 ) {
     // Compose only says "selected" when no other state description is set, so
@@ -125,6 +129,13 @@ fun SelectableChip(
         },
         modifier = modifier,
     ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(iconSizeFor(textStyle)),
+            )
+        }
         BoldWhenText(
             text = label,
             style = textStyle,

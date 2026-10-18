@@ -54,8 +54,6 @@ fun VisorNavHost(
         composable("title") {
             TitleScreen(
                 viewModel = viewModel,
-                talk = talk,
-                voiceNav = voiceNav,
                 onLoginClick = { viewModel.login() },
                 onSignUpClick = { viewModel.signUp() },
             )

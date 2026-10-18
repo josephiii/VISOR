@@ -26,7 +26,13 @@ sealed class VoiceCommand {
     object PairDevice : VoiceCommand()
     object GoBack : VoiceCommand()
 
-    object ToggleSession : VoiceCommand()
+    /**
+     * "Start session" only ever starts one, and "end session" only ever ends
+     * one: said when a session is already on (or off), VISOR says so rather
+     * than doing the opposite of what was asked.
+     */
+    object StartSession : VoiceCommand()
+    object EndSession : VoiceCommand()
     data class SwitchMode(val mode: SessionMode) : VoiceCommand()
 
     object GoToLogin : VoiceCommand()

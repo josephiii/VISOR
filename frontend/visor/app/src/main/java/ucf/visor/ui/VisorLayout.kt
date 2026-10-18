@@ -309,11 +309,22 @@ fun VisorLayout(
                     if (!navController.popBackStack()) reply("There's nowhere to go back to.")
                 }
 
-                VoiceCommand.ToggleSession -> {
-                    if (!uiState.isAuthComplete) {
-                        reply("Log in first to start a session.")
-                    } else {
-                        // Read the route now: currentRoute is from the composition that started this collector.
+                // Each goes Home, where the session button shows what happened.
+                // Read the route now: currentRoute is from the composition that
+                // started this collector.
+                VoiceCommand.StartSession -> when {
+                    !uiState.isAuthComplete -> reply("Log in first to start a session.")
+                    uiState.isSessionActive -> reply("Your session is already running.")
+                    else -> {
+                        if (navController.currentDestination?.route != "home") viewModel.home()
+                        onToggleSession()
+                    }
+                }
+
+                VoiceCommand.EndSession -> when {
+                    !uiState.isAuthComplete || !uiState.isSessionActive ->
+                        reply("There's no session running.")
+                    else -> {
                         if (navController.currentDestination?.route != "home") viewModel.home()
                         onToggleSession()
                     }

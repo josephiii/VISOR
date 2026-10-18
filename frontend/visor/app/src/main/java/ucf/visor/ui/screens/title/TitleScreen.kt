@@ -11,11 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -25,22 +21,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
-import ucf.visor.data.VoiceCategory
-import ucf.visor.ui.components.SwitchChip
 import ucf.visor.ui.components.VisorButton
-import ucf.visor.ui.components.VisorDialog
 import ucf.visor.ui.components.VisorHeader
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.ui.voice.VoiceNavigationController
 
 /**
  * The very first screen a signed-out user sees — VISOR's front door.
  *
- * Purpose is narrow by design: get to Log In or Sign Up, and (for anyone who
- * wants their hands free before they've even made an account) turn on voice
- * navigation. Nothing here asks for credentials, so unlike the screens behind
- * it, everything on this screen is safe to also drive by voice.
+ * Purpose is narrow by design: get to Log In or Sign Up. Voice navigation is
+ * on from the start (it is turned off in Settings, not here), so while it is
+ * on, a line under the buttons says how to use it. Nothing here asks for
+ * credentials, so unlike the screens behind it, everything on this screen is
+ * safe to also drive by voice.
  *
  * A returning, already-logged-in user never sees this screen at all — see
  * VisorViewModel.startDestination.
@@ -48,22 +41,12 @@ import ucf.visor.ui.voice.VoiceNavigationController
 @Composable
 fun TitleScreen(
     viewModel: VisorViewModel,
-    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
-    voiceNav: VoiceNavigationController? = null,
     onLoginClick: () -> Unit,
     onSignUpClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
-    var showVoiceTip by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
-    val spokenTip = stringResource(R.string.title_voice_tip_spoken)
-
-    LaunchedEffect(showVoiceTip) {
-        // Said with the wake-phrase listener paused (speakGuarded): the tip
-        // says "VISOR GO", which VISOR would otherwise hear itself say.
-        if (showVoiceTip) voiceNav?.speakGuarded(spokenTip) ?: talk(spokenTip, VoiceCategory.VOICE_COMMANDS)
-    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -98,34 +81,16 @@ fun TitleScreen(
             onClick = onSignUpClick,
         )
 
-        SwitchChip(
-            title = stringResource(R.string.settings_section_voice_navigation),
-            on = profile.voiceNavigationEnabled,
-            onToggle = {
-                val enabling = !profile.voiceNavigationEnabled
-                viewModel.updateProfile(profile.copy(voiceNavigationEnabled = enabling))
-                if (enabling) showVoiceTip = true
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Text(
-            text = stringResource(R.string.title_voice_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-        )
+        // Only true while it is: someone who turned voice navigation off in
+        // Settings, then logged out, isn't told to say "VISOR GO".
+        if (profile.voiceNavigationEnabled) {
+            Text(
+                text = stringResource(R.string.title_voice_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
-    }
-
-    // Not given talk: the tip is already said, above, with the listener paused.
-    if (showVoiceTip) {
-        VisorDialog(
-            title = stringResource(R.string.title_voice_tip_title),
-            message = stringResource(R.string.title_voice_tip_message),
-            confirmLabel = stringResource(R.string.got_it),
-            dismissLabel = null,
-            onConfirm = { showVoiceTip = false },
-            onDismiss = { showVoiceTip = false },
-        )
     }
 }

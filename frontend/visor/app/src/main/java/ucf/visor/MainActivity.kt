@@ -315,12 +315,32 @@ class MainActivity : ComponentActivity() {
         }
     )
 
-    /** A camera wake phrase: its feature, unless Settings has turned it off. */
+    /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
     private fun onCameraCommand(command: CameraCommand) {
         if (command !in viewModel.userProfile.value.cameraCommands) {
             // Silent on purpose. A command is often turned off because it kept
             // starting by mistake, and announcing that would be the same nuisance.
             Log.d("VISOR", "Wake phrase for $command ignored: turned off in Settings")
+            return
+        }
+        // A camera command needs a session running, as Home's capture button
+        // does. Said as voice navigation's own replies are, with the wake
+        // phrase listener paused (it says "VISOR GO"), and kept at the top of
+        // the screen as well, with the rejected buzz, for anyone who can't
+        // hear it.
+        val state = viewModel.uiState.value
+        if (!state.isSessionActive) {
+            val problem = getString(
+                when {
+                    !state.isAuthComplete -> R.string.camera_command_needs_login
+                    command == CameraCommand.READ_TEXT -> R.string.camera_command_needs_session_read_text
+                    command == CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_needs_session_identify_objects
+                    else -> R.string.camera_command_needs_session_describe_scene
+                }
+            )
+            haptics.rejected()
+            voiceNav.speakGuarded(problem)
+            viewModel.setRecentError(problem)
             return
         }
         runCameraFeature(

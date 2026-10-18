@@ -32,8 +32,11 @@ object VoiceCommandParser {
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
-            containsAny(text, "start session", "end session", "stop session", "start", "stop") ->
-                VoiceCommand.ToggleSession
+            containsAny(text, "end session", "stop session", "end the session", "stop") ->
+                VoiceCommand.EndSession
+
+            containsAny(text, "start session", "begin session", "start a session", "start") ->
+                VoiceCommand.StartSession
 
             containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
             containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)

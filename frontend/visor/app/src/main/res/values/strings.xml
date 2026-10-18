@@ -8,7 +8,6 @@
     <string name="back" description="Back button">Back</string>
     <string name="cancel" description="Cancel button">Cancel</string>
     <string name="dismiss" description="Closes an error message">Dismiss</string>
-    <string name="got_it" description="Closes a message that needs no answer">Got it</string>
     <!-- What a screen reader says for a control that is shown but can't be used yet -->
     <string name="state_locked" description="Screen reader state of a locked button">Locked</string>
     <string name="state_selected_locked" description="Screen reader state of a selected option that is locked">Selected, locked</string>
@@ -21,10 +20,7 @@
 
     <!-- Title Screen -->
     <string name="title_welcome" description="Under the VISOR banner on the first screen">Welcome. Log in or sign up to get started.</string>
-    <string name="title_voice_hint" description="Under the voice navigation switch on the first screen">Say \"VISOR GO\" any time, then say a command, such as \"log in\" or \"sign up\".</string>
-    <string name="title_voice_tip_title" description="Dialog title when voice navigation is turned on">Voice navigation is on</string>
-    <string name="title_voice_tip_message" description="Dialog message when voice navigation is turned on">Say \"VISOR GO\", then say what you\'d like. A few things to try:\n\n• \"log in\" or \"sign up\"\n• \"go home\"\n• \"help\"\n• \"open settings\"\n\nYou can turn this off any time in Settings.</string>
-    <string name="title_voice_tip_spoken" description="What VISOR says when voice navigation is turned on">Voice navigation is on. Say VISOR GO, then say what you\'d like. Try log in, sign up, go home, or help. You can turn this off any time in Settings.</string>
+    <string name="title_voice_hint" description="Under the Log in and Sign up buttons on the first screen, while voice navigation is on">Say \"VISOR GO\" any time, then say a command, such as \"log in\" or \"sign up\".</string>
 
     <!-- Login Screen -->
     <string name="login_title" description="The login title">Log in</string>
@@ -148,11 +144,16 @@
     <string name="settings_section_commands" description="Settings section: every command and how to turn each off">Commands</string>
     <string name="settings_commands_description" description="What the commands section is">Ways to ask VISOR for something without touching your phone. Each one is on until you turn it off.</string>
     <string name="settings_camera_commands_title" description="Commands heading: wake phrases that start a camera feature">Camera commands</string>
-    <string name="settings_camera_commands_description" description="How camera commands work">Say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses and tells you what it finds.</string>
+    <string name="settings_camera_commands_description" description="How camera commands work">During a session, say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses and tells you what it finds.</string>
     <string name="settings_command_read_text" description="Camera command: read the text in front of you">Read text</string>
     <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
     <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
+    <!-- Said and shown at the top of the screen when a camera command is said with no session running -->
+    <string name="camera_command_needs_session_read_text" description="A camera command was said with no session running">Start a session first to read text. Say \"VISOR GO, start session\", or press Start session on Home.</string>
+    <string name="camera_command_needs_session_identify_objects" description="A camera command was said with no session running">Start a session first to identify objects. Say \"VISOR GO, start session\", or press Start session on Home.</string>
+    <string name="camera_command_needs_session_describe_scene" description="A camera command was said with no session running">Start a session first to describe the scene. Say \"VISOR GO, start session\", or press Start session on Home.</string>
+    <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first, then start a session to use camera commands.</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
     <string name="settings_voice_navigation_examples_title" description="Heading over the list of voice navigation commands">What you can say after \"VISOR GO\"</string>
@@ -187,7 +188,7 @@
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home and starts a session — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described.\n\nVISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">During a session, say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. With no session running, VISOR tells you to start one first.\n\nVISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"start session\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
@@ -216,12 +217,16 @@
     <string name="home_read_again" description="Says the last answer again">Read again</string>
 
     <!-- The session status bar at the top of every screen once logged in -->
-    <string name="session_status_on" description="Session status bar while a session runs. The placeholder is the mode, such as Hazard Awareness">Session on · <xliff:g id="mode">%1$s</xliff:g></string>
+    <!-- The bar is always one line: when "Session on · Hazard Awareness" doesn't fit, it shortens to "On", then shows only the mode's icon -->
+    <string name="session_status_on" description="Session status bar while a session runs, before the mode's icon and name">Session on</string>
+    <string name="session_status_on_short" description="Session status bar while a session runs, when Session on doesn't fit on one line">On</string>
+    <string name="session_status_separator" translatable="false">·</string>
     <string name="session_status_on_spoken" description="What a screen reader says for the session status bar while a session runs">Session on, <xliff:g id="mode">%1$s</xliff:g></string>
     <string name="session_status_off" description="Session status bar while no session runs">Session off</string>
+    <string name="session_status_off_short" description="Session status bar while no session runs, when Session off doesn't fit on one line">Off</string>
     <string name="session_status_go_home" description="What tapping the session status bar does, as a screen reader says it">go to Home</string>
     <string name="glasses_camera_tip_title" description="Tip title on the Pair Glasses screen: how VISOR uses the glasses' camera">How VISOR uses your glasses</string>
-    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses your glasses\' camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home.</string>
+    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses your glasses\' camera only when you ask it to. It takes one picture each time you say a camera command during a session, such as \"VISOR, read this\", or press the button on Home.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect my glasses</string>

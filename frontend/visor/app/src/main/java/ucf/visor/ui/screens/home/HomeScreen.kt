@@ -78,6 +78,7 @@ import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
 import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.icon
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.viewmodel.labelRes
 import java.util.Date
@@ -456,6 +457,7 @@ private fun ModePicker(
                 label = stringResource(mode.labelRes),
                 selected = mode == selected,
                 locked = locked,
+                icon = mode.icon,
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     if (locked) onLockedClick()
