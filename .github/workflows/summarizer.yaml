@@ -46,11 +46,17 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.GROK_API }}" \
             -d  "$payload" > response.txt
 
+      # When the API call fails there is no summary (jq would print "null"):
+      # leave the changelog alone rather than append an empty entry.
       - name: Modify changelog file
-        run: jq -r '.choices[0].message.content' response.txt >> CHANGELOG.md
-
-      - name: Add the author
-        run: echo -e '\nChanges by:${{ github.actor }}\n' >> CHANGELOG.md
+        run: |
+          summary=$(jq -r '.choices[0].message.content // empty' response.txt)
+          if [ -z "$summary" ]; then
+            echo "::warning::No summary from the AI API ($(jq -r '.error.message // "no error message"' response.txt)); CHANGELOG.md unchanged."
+            exit 0
+          fi
+          printf '%s\n' "$summary" >> CHANGELOG.md
+          echo -e '\nChanges by:${{ github.actor }}\n' >> CHANGELOG.md
 
       - name: Push the changelog file
         uses: stefanzweifel/git-auto-commit-action@v5

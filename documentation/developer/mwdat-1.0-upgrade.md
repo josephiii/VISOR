@@ -97,9 +97,9 @@ caused by the SDK change):
 | **Voice invocations** ("Hey Meta, start VISOR") *(experimental)* | None; VISOR had to be opened on the phone | **Adopted**: opens VISOR, goes Home, starts a session, answers the glasses |
 | **Registration requests from Meta AI** (`handleIntent`) | Not handled | **Adopted** |
 | Display (`mwdat-display`) | Glasses tap-navigation | **Kept**. It now hands the glasses' single session to the lab during a trial (`GlassesLease`) and reconnects after |
-| Camera stream + in-stream photo | `StreamViewModel` (from the CameraAccess sample, not routed) | Kept compiling; the lab uses the stream |
+| Camera stream + in-stream photo | `StreamViewModel` (from the CameraAccess sample, not routed) | **Kept**: the lab uses the stream, and reading text, identifying objects, describing scenes and checking for hazards each take one in-stream photo (`GlassesPhotoSource`). The unrouted `StreamViewModel` has since been removed |
 | **Inputs** (capture/action button, touchpad, Neural Band) *(experimental)* | — | **Deferred.** Real glasses do not deliver `Back` yet; subscribing to touchpad or Neural Band would take those gestures away from the Display navigation that already uses them; the action button is "not validated on all hardware". Recommended next: capture button → "read this" |
-| **Camera Capture** (standalone high-res photo) *(experimental)* | OCR reads a bundled test photo (`FakePhotoSource`) | **Deferred**, and paired with Inputs above: capture button + standalone photo would give VISOR's core reading feature real glasses images |
+| **Camera Capture** (standalone high-res photo) *(experimental)* | OCR reads a bundled test photo (`FakePhotoSource`) | **Deferred**, and paired with Inputs above: capture button + standalone photo would give VISOR's core reading feature full-resolution images. Until then, reading uses an in-stream photo at the sharpest stream setting (720 x 1280). Apps using standalone photos cannot be published yet |
 | **Speech** (on-glasses ASR) *(experimental)* | Phone mic: sherpa-onnx wake words + Android SpeechRecognizer | **Deferred.** Valuable for a phone in a pocket, but it replaces the core voice UX and deserves its own change |
 | Audio streaming (PCM with the camera stream) *(experimental)* | — | Deferred; no current consumer |
 | Mock Ray-Ban Display preview (`MockDisplayKit`) | — | Partly: the debug menu pairs a mock Ray-Ban Display; the preview view is not embedded |
@@ -446,8 +446,8 @@ Run these on the team's Meta Ray-Ban Display before relying on any number:
 
 1. **Hardware verification**: the checklist above, starting with V4 then V1.
 2. **Capture button → "read this"**: Inputs (capture button) plus Camera Capture
-   (standalone high-res photo) replacing `FakePhotoSource`, giving VISOR's core
-   reading feature real glasses images with a physical trigger.
+   (standalone high-res photo) replacing the in-stream photo text reading uses
+   now, giving VISOR's core reading feature sharper images with a physical trigger.
 3. **Head-stability gated capture**: use the Motion stream live to take the OCR
    photo once the head has settled (web use case #1, now native).
 4. **On-glasses speech** for voice navigation when the phone is pocketed.

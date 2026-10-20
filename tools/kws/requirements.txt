@@ -1,0 +1,4 @@
+# Wake-phrase tooling only: not needed by the app or the backend server.
+sherpa-onnx
+sentencepiece
+pypinyin

@@ -1,11 +1,19 @@
+from functools import cache
+
 import torch
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
-from PIL import Image
 import numpy as np
 from fastapi import HTTPException
 
 
-class Depth:
+class DepthEstService:
+    """
+    Metric depth (meters per pixel) with Depth-Anything-V2 (indoor, small).
+
+    TODO: downscale large images (shorter side 518 px, the model's input size)
+    before inference to save time on the server.
+    """
+
     def chooseDevice(self):
         """
         Determine the device type to run the model in either dev/production
@@ -30,16 +38,6 @@ class Depth:
         self.image_processor = AutoImageProcessor.from_pretrained("depth-anything/Depth-Anything-V2-Metric-Indoor-Small-hf")
     
     
-    def compressImage(self, Image):
-        """
-        This function downsizes the image by making the shorter side 518 pixels and resizing the image proportionally.
-        """
-        try:
-            shortSide = 518
-        except Exception as error:
-            print(error)
-            raise HTTPException(status_code=500, detail=str(error)) 
-    
     def runModel(self ,image):
         """
         This functions runs the pre trained model. For the EC2 instance items from model should be on Cuda to use the GPU 
@@ -61,24 +59,25 @@ class Depth:
             raise HTTPException(status_code=500, detail=str(error)) 
         
     def getObjectdepths(self, objects, grid: np.ndarray):
+        """
+        Adds "depth" (meters) to each of YoloService's objects, from the depth
+        map runModel returned for the same image.
+        """
         for obj in objects:
-            #Get df ox x,y
+            # The object's box, at least one pixel wide and tall: a thinner box
+            # would be an empty slice, which has no percentile.
             x1, y1, x2, y2 = map(int, obj["coords"])
-            rawObjectDepth = grid[y1:y2, x1:x2]
-            #Get 25% depth
+            rawObjectDepth = grid[y1:max(y2, y1 + 1), x1:max(x2, x1 + 1)]
+            # The 25th percentile: the nearer part of the box, not the background behind the object.
             objdepth = np.percentile(rawObjectDepth, 25)
             obj["depth"] = float(objdepth)
         return objects
-    
-if __name__ == "__main__":
-    print("Starting download/cache of the model...")
-    depth = Depth()                       # This downloads and caches the model files
-    print("Model successfully loaded and cached on your computer!")
-    img = Image.open("./capturedImages/room.jpg").convert("RGB")  # <- any image path
-    depth_map = depth.runModel(img)
-    print((depth_map))
 
-    print(depth_map.shape, depth_map.min(), depth_map.max())
-    norm = ((depth_map - depth_map.min()) / (depth_map.max() - depth_map.min()) * 255).astype(np.uint8)
-    Image.fromarray(norm).save("depth_out.png")
 
+@cache
+def shared_depth_service() -> DepthEstService:
+    """
+    The one DepthEstService the routes share (/depth and hazard detection), so
+    the model is loaded once.
+    """
+    return DepthEstService()

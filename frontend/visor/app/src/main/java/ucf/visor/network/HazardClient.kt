@@ -2,72 +2,49 @@ package ucf.visor.network
 
 import android.graphics.Bitmap
 import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.ByteArrayOutputStream
-import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
+import okhttp3.MultipartBody
 
-class HazardClient {
-    //val url = "http://10.0.2.2:8000/yolo/runHazardDetection"
-    //Use above for local below for server
-    private val json = Json{ ignoreUnknownKeys=true}
-    private val url = "http://54.173.104.183:8000/yolo/runHazardDetection"
+/**
+ * The backend's hazard detection endpoint:
+ *   POST /yolo/runHazardDetection  multipart { image (JPEG) } -> [{ object, classID, coords, conf, depth }]
+ * YOLO finds the objects in the photo, and a depth model measures how far away
+ * each one is.
+ *
+ * [accessToken] is sent with every request, so the server can start requiring
+ * a login without an app change.
+ */
+class HazardClient(
+    private val accessToken: () -> String? = { null },
+) {
+    private val json = Json { ignoreUnknownKeys = true }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(
-            300,
-            TimeUnit.SECONDS
-        )   // 5 minutes for CPU inference BECAUSE IT KEEPS TIMING OUT AAAAAAAAA
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
-
-    suspend fun runHazardDetection(
-        frame: Bitmap
-    ): List<Hazard>?= withContext(Dispatchers.IO) {
-        val outputStream = ByteArrayOutputStream()
-        frame.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-        val imageBytes = outputStream.toByteArray()
-
-        val imageBody = imageBytes.toRequestBody("image/jpeg".toMediaType())
-
-        val requestBody = MultipartBody.Builder()
+    /**
+     * The objects in [bitmap], each with its distance. Null when the server
+     * can't be reached or doesn't answer with a list of them (logged).
+     */
+    suspend fun detect(bitmap: Bitmap): List<Hazard>? {
+        val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart(
-                "image",
-                "photo.jpg",
-                imageBody
-            )
+            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap))
             .build()
 
-        val request = Request.Builder().url(url).post(requestBody).build()
-
-        try {
-            client.newCall(request).execute().use{ response ->
-                if(response.isSuccessful){
-                    val string = response.body?.string() ?: return@use null
-                    Log.d("Hazard Detection", "Success: $string" )
-                    //Deserialize object
-                    json.decodeFromString<List<Hazard>>(string)
-                }
-                else{
-                    val e = response.body?.string()
-                    Log.d("Hazard Detection", "Error: $e")
-                    null
-                }
+        return when (val result = ApiClient.send("/yolo/runHazardDetection", accessToken()) { post(body) }) {
+            is ApiResult.Success -> try {
+                json.decodeFromString<List<Hazard>>(result.body)
+            } catch (e: IllegalArgumentException) { // includes SerializationException
+                Log.e(TAG, "Unexpected hazard detection answer: ${result.body.take(200)}", e)
+                null
             }
 
-        } catch (e: Exception){
-            Log.d("Hazard Detection", "Error running hazard detection: $e")
-            null
+            is ApiResult.Error -> {
+                Log.e(TAG, "Hazard detection failed (${result.code}): ${result.message}")
+                null
+            }
         }
-
     }
 
+    private companion object {
+        const val TAG = "VisorHazards"
+    }
 }

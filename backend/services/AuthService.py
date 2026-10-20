@@ -34,17 +34,8 @@ class AuthService:
         return response
     
     
-    def delete_account(self, token: str):
-        database = supabase_client()
-        
-        try:
-            user = database.auth.get_user(token)
-        except Exception:
-            raise HTTPException(status_code=401, detail="Invalid or expired user token")
-        
-        if user is None or user.user is None:
-            raise HTTPException(status_code=401, detail="Invalid or expired user token")
-        
-        database.auth.admin.delete_user(user.user.id)
+    def delete_account(self, user_id: str):
+        # The caller's token was already checked by dependencies.get_current_user.
+        supabase_client().auth.admin.delete_user(user_id)
 
         

@@ -59,6 +59,14 @@ android {
         // Stamped into every head-motion lab recording, so the analysis knows
         // which SDK produced it — taken from the catalog so it cannot go stale.
         buildConfigField("String", "MWDAT_VERSION", "\"${libs.versions.mwdat.get()}\"")
+
+        // The VISOR backend every API call goes to (see network/ApiClient.kt).
+        // Unset, builds use the hosted server; to use a backend running on
+        // this computer from the Android emulator, add to local.properties:
+        //   visor_api_base_url=http://10.0.2.2:8000
+        val apiBaseUrl = providers.gradleProperty("visor_api_base_url").orNull
+            ?: localProperties.getProperty("visor_api_base_url", "http://54.173.104.183:8000")
+        buildConfigField("String", "VISOR_API_BASE_URL", "\"$apiBaseUrl\"")
     }
 
     buildTypes {
@@ -78,7 +86,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
     signingConfigs {
         getByName("debug") {
@@ -96,17 +103,17 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation.layout)
-    implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.navigation.runtime.ktx)
-    debugImplementation("androidx.compose.ui:ui-tooling")
     implementation(libs.kotlinx.collections.immutable)
+    // Compose Tooling & Preview Support (for dev purposes)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.json)
@@ -117,14 +124,16 @@ dependencies {
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
-    // Compose Tooling & Preview Support (for dev purposes)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation(libs.androidx.compose.ui.tooling)
 
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.mlkit:text-recognition:16.0.1")
-    implementation("com.google.mlkit:image-labeling:17.0.9") // pretrained
-    implementation("com.google.mlkit:image-labeling-custom:17.0.3") // for custom
+    // Backend calls (network/), and reading the hazard detection answer (Hazard)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    // On-device recognition (recognition/): text, ML Kit's default labels,
+    // and custom labels for CustomObjectDetector
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.image.labeling)
+    implementation(libs.mlkit.image.labeling.custom)
+    // Wake-word spotting (stt/Listener)
     implementation(files("lib/sherpa-onnx-1.13.5.aar"))
     // MWDAT (Maven Central from 1.0.0)
     implementation(libs.mwdat.core)
@@ -133,6 +142,4 @@ dependencies {
     // Experimental in 1.0: dev and beta release channels only, not production.
     implementation(libs.mwdat.motion)
     implementation(libs.mwdat.mockdevice)
-
-    implementation(libs.kotlinx.serialization.json)
 }

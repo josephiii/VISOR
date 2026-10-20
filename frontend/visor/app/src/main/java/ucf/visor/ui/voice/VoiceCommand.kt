@@ -1,7 +1,7 @@
 package ucf.visor.ui.voice
 
-import ucf.visor.ui.profile.TextScale
-import ucf.visor.ui.profile.Verbosity
+import ucf.visor.data.TextScale
+import ucf.visor.data.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
 
 /**

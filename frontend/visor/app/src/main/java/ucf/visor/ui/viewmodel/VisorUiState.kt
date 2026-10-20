@@ -1,6 +1,5 @@
-// WearablesUiState - DAT API State Management
-//
-// This data class aggregates DAT API state for the UI layer
+// VisorUiState - the app's screen state: MWDAT registration and device state,
+// plus the one-shot navigation flags VisorLayout observes.
 
 package ucf.visor.ui.viewmodel
 
@@ -17,12 +16,11 @@ data class VisorUiState(
     /** The pair VISOR would use (worn and connected first), with MWDAT 1.0 device state. */
     val glassesStatus: GlassesStatus? = null,
 
-    val isStreaming: Boolean = false,
     val isDebugMenuVisible: Boolean = false,
-    val isGettingStartedSheetVisible: Boolean = false,
+    /** A paired device reports DEVICE_UPDATE_REQUIRED: Pair Glasses offers "Update firmware". */
     val isFirmwareUpdateRequired: Boolean = false,
+    /** A glasses session was refused until the DAT app on the glasses is updated. */
     val isDatAppUpdateRequired: Boolean = false,
-    val hasActiveDevice: Boolean = false,
     val canRegister: Boolean = false,
 
     // Interface Error Component.

@@ -23,7 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ucf.visor.R
-import ucf.visor.net.AuthApi
+import ucf.visor.network.ApiResult
+import ucf.visor.network.AuthApi
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorTextField
 import ucf.visor.ui.components.scrollIndicator
@@ -117,14 +118,14 @@ fun SignUpScreen(
                         isLoading = true
                         scope.launch {
                             when (val result = AuthApi.register(username, email, password)) {
-                                is AuthApi.Result.Success -> {
+                                is ApiResult.Success -> {
                                     // Backend returns { "user_id": ... } — no token yet,
                                     // so the user still logs in next. Advance the flow.
                                     isLoading = false
                                     onSignUpClick()
                                 }
 
-                                is AuthApi.Result.Error -> {
+                                is ApiResult.Error -> {
                                     isLoading = false
                                     errorMessage = result.message
                                 }

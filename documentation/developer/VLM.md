@@ -2,65 +2,57 @@
 
 The Vision Language Model (VLM) is used to generate scene descriptions or answer questions about an image. It can analyze visual content and infer information in a similar way that a large language model reasons about text.
 
+In the app, "VISOR, what do you see?" takes a photo with the glasses and sends it to `POST /vlm/image_prompt` (`frontend/.../capture/SceneDescriber.kt` → `network/VlmClient.kt`). If the server can't answer, the app falls back to on-device labels.
+
 ## Project Structure
 
-The Python backend is organized into three main components:
+The VLM code lives in `backend/`:
 
-### `model_class.py`
+### `services/vision_language_models/model_class.py`
 
 Defines the base class for all vision language models. This provides a common interface so that different models can be swapped in without changing the rest of the code.
 
-### `model_manager.py`
-
-Used primarily for testing models locally.
-
-Running this file loads a model and executes a prompt against an image.
-
-To switch models, change the model initialization:
-
-```
-model = QwenVL()  # or any other supported model
-```
-
-To test a different image or prompt, modify:
-
-```
-text = model.describe_image("images.jpg", "Describe this image")
-```
-
-### `model_[type].py`
+### `services/vision_language_models/model_[type].py`
 
 Contains the implementation for each supported model.
 
 Current implementations include:
 
 ```
-from model_qwen import QwenVL
-from model_moondream import Moondream
-from model_gemma import Gemma
+from services.vision_language_models.model_qwen import QwenVL
+from services.vision_language_models.model_moondream import Moondream
+from services.vision_language_models.model_gemma import Gemma
 ```
+
+### `scripts/try_vlm.py`
+
+Used for testing models locally, without the server. Running it loads a model and describes a few images from `samples/vlm/`.
 
 ## Testing
 
 ### Testing in Python
 
-Run `model_manager.py`.
+From `backend/`:
 
-To test a different model:
+```
+python -m scripts.try_vlm
+```
+
+To test a different model, change the model initialization in `scripts/try_vlm.py`:
 
 ```
 model = QwenVL()  # Replace with another model implementation
 ```
 
-To test a different image or prompt:
+To test a different image or prompt, edit the image list or the prompt passed to:
 
 ```
-text = model.describe_image("images.jpg", "Describe this image")
+model.describe_image("samples/vlm/house.jpg", "Describe this image")
 ```
 
 ### Testing through the API
 
-The active model is selected in `VLMService.py`:
+The active model is selected in `services/VLMService.py`:
 
 ```
 self.vlm: VLModel = QwenVL()
@@ -68,7 +60,7 @@ self.vlm: VLModel = QwenVL()
 
 Replace `QwenVL()` with any supported model implementation.
 
-Once configured, start the FastAPI server and interact with the API endpoints to test the selected model.
+Once configured, start the FastAPI server (see [backend/README.md](../../backend/README.md)) and interact with the API endpoints to test the selected model.
 
 
 ## Model Specifics

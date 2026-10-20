@@ -1,10 +1,12 @@
 package ucf.visor.ui.screens.hardware
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -27,12 +31,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.meta.wearable.dat.core.types.RegistrationState
 import ucf.visor.R
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
@@ -44,6 +51,8 @@ import ucf.visor.wearables.GlassesStatus
 
 // This screen will prompt the user to register VISOR with their glasses, and —
 // once registered — shows the glasses' live state (MWDAT 1.0 device state).
+// It is also where VISOR's glasses can be disconnected, and where an update
+// the glasses need before VISOR can use them is offered.
 @Composable
 fun HardwarePairingScreen(
     viewModel: VisorViewModel,
@@ -54,6 +63,12 @@ fun HardwarePairingScreen(
     val activity = LocalActivity.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+
+    // Registration and updates hand off to the Meta AI app, which needs an Activity.
+    val withActivity: ((Activity) -> Unit) -> Unit = { action ->
+        activity?.let(action)
+            ?: Toast.makeText(context, "Activity not available", Toast.LENGTH_SHORT).show()
+    }
 
     Column(
         modifier =
@@ -93,6 +108,15 @@ fun HardwarePairingScreen(
         uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
             GlassesStatusCard(status = status, onSpeak = { talk(status.spokenSummary()) })
         }
+
+        if (uiState.isFirmwareUpdateRequired || uiState.isDatAppUpdateRequired) {
+            UpdateRequiredCard(
+                firmware = uiState.isFirmwareUpdateRequired,
+                glassesApp = uiState.isDatAppUpdateRequired,
+                onUpdateFirmware = { withActivity(viewModel::openFirmwareUpdate) },
+                onUpdateGlassesApp = { withActivity(viewModel::openDATGlassesAppUpdate) },
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
 
         Column(
@@ -108,12 +132,79 @@ fun HardwarePairingScreen(
             SwitchButton(
                 label = stringResource(R.string.register_button_title),
                 enabled = uiState.canStartRegistration,
-                onClick = {
-                    activity?.let { viewModel.startRegistration(it) }
-                        ?: Toast.makeText(context, "Activity not available", Toast.LENGTH_SHORT)
-                            .show()
-                },
+                onClick = { withActivity(viewModel::startRegistration) },
             )
+            if (uiState.isRegistered) {
+                SwitchButton(
+                    label = stringResource(R.string.unregister_button_title),
+                    isDestructive = true,
+                    enabled = uiState.registrationState == RegistrationState.REGISTERED,
+                    onClick = { withActivity(viewModel::startUnregistration) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The glasses need an update before VISOR can use them, and the button that
+ * opens the right page of the Meta AI app. The message is a live region so a
+ * screen reader announces it as soon as it appears.
+ */
+@Composable
+private fun UpdateRequiredCard(
+    firmware: Boolean,
+    glassesApp: Boolean,
+    onUpdateFirmware: () -> Unit,
+    onUpdateGlassesApp: () -> Unit,
+) {
+    val message = when {
+        firmware && glassesApp -> stringResource(R.string.update_required_both_message)
+        firmware -> stringResource(R.string.update_required_firmware_message)
+        else -> stringResource(R.string.update_required_dat_app_message)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = VisorShapes.Control,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(imageVector = Icons.Default.Warning, contentDescription = null)
+                Text(
+                    stringResource(R.string.update_required_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.semantics { heading() },
+                )
+            }
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            if (firmware) {
+                SwitchButton(
+                    label = stringResource(R.string.update_firmware_button_title),
+                    onClick = onUpdateFirmware,
+                )
+            }
+            if (glassesApp) {
+                SwitchButton(
+                    label = stringResource(R.string.update_dat_app_button_title),
+                    onClick = onUpdateGlassesApp,
+                )
+            }
         }
     }
 }

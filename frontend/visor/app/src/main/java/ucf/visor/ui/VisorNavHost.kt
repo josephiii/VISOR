@@ -8,8 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
-import ucf.visor.ui.phase1.Phase1ModeConfigurationScreen
-import ucf.visor.ui.profile.ProfileFlowHost
+import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
+import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
 import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
@@ -33,6 +33,7 @@ fun VisorNavHost(
     talk: (String) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
+    onCapture: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -127,8 +128,8 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 talk = talk,
                 onRequestWearablesPermission = onRequestWearablesPermission,
-
-                )
+                onCapture = onCapture,
+            )
         }
 
         composable("hardware_pairing") {
@@ -143,7 +144,6 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
-                // TODO: POST /auth/deleteAccount once it exists.
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
                 onHelp = { viewModel.help() },
             );

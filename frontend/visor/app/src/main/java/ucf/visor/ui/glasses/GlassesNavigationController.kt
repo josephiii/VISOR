@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import ucf.visor.ui.voice.VoiceCommand
+import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.GlassesLease
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.isWarningOnly
@@ -158,7 +159,7 @@ class GlassesNavigationController(
                                 "lease=${leaseHolder ?: "free"} ready=$ready"
                     )
                     if (ready) {
-                        //if (session == null) createSession()
+                        if (session == null) createSession()
                     } else {
                         tearDownSession()
                     }
@@ -172,6 +173,7 @@ class GlassesNavigationController(
                 session = created
                 sessionErrorJob = scope.launch {
                     created.errors.collect { error ->
+                        GlassesAppUpdate.report(error)
                         Log.w(
                             TAG,
                             "Glasses display session ${if (error.isWarningOnly) "warning" else "error"}: " +
@@ -189,6 +191,7 @@ class GlassesNavigationController(
                         Log.i(TAG, "Glasses session state: $state")
                         if (state == DeviceSessionState.STARTED) {
                             hasStarted = true
+                            GlassesAppUpdate.onSessionStarted()
                             if (display == null) attachDisplay(created)
                         }
                         // A session the device tore down never restarts itself, so
@@ -202,6 +205,7 @@ class GlassesNavigationController(
                 created.start()
             }
             .onFailure { error, _ ->
+                GlassesAppUpdate.report(error)
                 Log.w(TAG, "Unable to start glasses display session: ${error.description}")
             }
     }

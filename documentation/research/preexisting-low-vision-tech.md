@@ -134,15 +134,15 @@ These are long-standing accessibility utilities that predate many of the above a
 
 ---
 
-## Key Takeaways for MIRA
+## Key Takeaways for VISOR
 
-| Capability | Best Example(s) | Relevance to MIRA |
+| Capability | Best Example(s) | Relevance to VISOR |
 |---|---|---|
 | Local AI processing | OrCam MyEye | Reduces latency, no cloud dependency |
 | Bone conduction audio | OrCam, Envision | Discreet output without blocking ambient sound |
 | Real-time scene narration | Lookout | Model for continuous environment description |
-| Text reading | OrCam, Envision, Seeing AI | Core MIRA feature (Image Text-to-Speech) |
+| Text reading | OrCam, Envision, Seeing AI | Core VISOR feature (Image Text-to-Speech) |
 | Obstacle / distance detection | SuperSense, SWAN | Relevant to spatial awareness feature (deferred) |
-| Remote sighted assistance | Be My Eyes, Envision | Potential future MIRA feature |
+| Remote sighted assistance | Be My Eyes, Envision | Potential future VISOR feature |
 | Spatial audio navigation | Voice | Novel input model worth exploring |
 | Macular degeneration UX | IrisVision (bubble view) | Design consideration for target users |
