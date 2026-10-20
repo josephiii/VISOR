@@ -43,6 +43,9 @@ data class VisorUiState(
     val atMotionLab: Boolean = false,
     val isOnboarding: Boolean = false,
 
+    // Email awaiting verification (set at sign-up, or when login finds it unverified).
+    val pendingEmail: String = "",
+
     // Component States.
     val isAuthComplete: Boolean = false,
     val isSessionActive: Boolean = false,

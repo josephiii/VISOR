@@ -40,7 +40,7 @@ import ucf.visor.R
 @Composable
 fun AuthCodeInput(
     codeLength: Int = 6,
-    onCodeComplete: () -> Unit
+    onCodeComplete: (String) -> Unit
 ) {
     var code by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
@@ -55,7 +55,7 @@ fun AuthCodeInput(
                 code = value
                 if (code.length == codeLength) {
                     keyboardController?.hide()
-                    onCodeComplete()
+                    onCodeComplete(code)
                 }
             }
         },

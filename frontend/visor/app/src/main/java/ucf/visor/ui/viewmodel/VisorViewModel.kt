@@ -342,14 +342,23 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isEnteringCode = true) }
     }
 
-    // DISABLED: email verification is cut for now (sign-up goes straight to
-    // login — see SignUpScreen + VisorNavHost). Restore this and its callers
-    // when email verification is added back.
-    // fun verifyAccount() {
-    //     _uiState.update { it.copy(isLoggingIn = false) }
-    //     _uiState.update { it.copy(isSigningUp = false) }
-    //     _uiState.update { it.copy(isVerifyingAccount = true) }
-    // }
+    /** Sign-up (or a login that found the email unverified) lands here to enter the emailed code. */
+    fun verifyAccount(email: String) {
+        _uiState.update { it.copy(pendingEmail = email) }
+        _uiState.update { it.copy(isLoggingIn = false) }
+        _uiState.update { it.copy(isSigningUp = false) }
+        _uiState.update { it.copy(isVerifyingAccount = true) }
+    }
+
+    /**
+     * Called by EnterCodeScreen after POST /auth/verify succeeds. The backend
+     * returns a session, so save it and send the new user through onboarding.
+     */
+    fun onEmailVerified(accessToken: String, refreshToken: String) {
+        sessionStore.saveTokens(accessToken, refreshToken)
+        _uiState.update { it.copy(pendingEmail = "") }
+        onboard()
+    }
 
     fun resetPassword() {
         _uiState.update { it.copy(hasForgottenPassword = false) }

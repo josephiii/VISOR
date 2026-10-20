@@ -56,6 +56,7 @@ fun LoginScreen(
     onLoginSuccess: (accessToken: String, refreshToken: String) -> Unit,
     onForgotPasswordClick: () -> Unit,
     onSignUpClick: () -> Unit,
+    onUnverified: (email: String) -> Unit,
     modifier: Modifier = Modifier,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
 ) {
@@ -113,6 +114,13 @@ fun LoginScreen(
 
                 is ApiResult.Error -> {
                     isLoading = false
+                    // 403 = registered but never entered the emailed code:
+                    // send a fresh one and go finish verifying.
+                    if (result.code == 403) {
+                        AuthApi.resendCode(email.trim())
+                        onUnverified(email.trim())
+                        return@launch
+                    }
                     Log.w(TAG, "Logging in failed (${result.code}): ${result.message}")
                     requestError = authErrorMessage(result, AuthRequest.LOG_IN)
                 }

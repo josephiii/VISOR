@@ -66,7 +66,7 @@
 
     <!-- Verify Account Screen -->
     <string name="verify_account_title" description="The title for the Verify Account screen">Verify your account</string>
-    <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
+    <string name="verify_account_description" description="The description for Verify Account screen">We sent a code to this email</string>
 
     <!-- Enter Code Screen -->
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
