@@ -8,6 +8,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import ucf.visor.data.SoundCategory
+import ucf.visor.data.VoiceCategory
+import ucf.visor.data.Volumes
 import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -30,9 +33,12 @@ import ucf.visor.ui.voice.VoiceNavigationController
 fun VisorNavHost(
     navController: NavHostController,
     viewModel: VisorViewModel,
-    talk: (String) -> Unit = {},
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
+    speakAt: (String, Float) -> Unit = { _, _ -> },
+    playSample: (SoundCategory) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
+    onToggleSession: () -> Unit = {},
     onCapture: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,8 +54,6 @@ fun VisorNavHost(
         composable("title") {
             TitleScreen(
                 viewModel = viewModel,
-                talk = talk,
-                voiceNav = voiceNav,
                 onLoginClick = { viewModel.login() },
                 onSignUpClick = { viewModel.signUp() },
             )
@@ -58,6 +62,7 @@ fun VisorNavHost(
         composable("login") {
             LoginScreen(
                 viewModel = viewModel,
+                talk = talk,
                 // On a successful login the ViewModel persists tokens + goes home.
                 onLoginSuccess = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
@@ -68,6 +73,7 @@ fun VisorNavHost(
         composable("sign_up") {
             SignUpScreen(
                 viewModel = viewModel,
+                talk = talk,
                 // Register only creates the account (no token yet, no email
                 // verification for now) — send the new user to the login screen.
                 onSignUpClick = { viewModel.login() },
@@ -127,7 +133,7 @@ fun VisorNavHost(
             HomeScreen(
                 viewModel = viewModel,
                 talk = talk,
-                onRequestWearablesPermission = onRequestWearablesPermission,
+                onToggleSession = onToggleSession,
                 onCapture = onCapture,
             )
         }
@@ -142,6 +148,9 @@ fun VisorNavHost(
         composable("settings") {
             SettingsScreen(
                 viewModel = viewModel,
+                talk = talk,
+                speakAt = speakAt,
+                playSample = playSample,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },
@@ -152,17 +161,25 @@ fun VisorNavHost(
         composable("motion_lab") {
             MotionLabScreen(
                 wearablesReady = uiState.canRegister,
-                talk = talk,
+                // The lab's spoken cues are part of its research protocol, like
+                // its tones (motionlab/CuePlayer), so VISOR's volume sliders
+                // don't apply to them. The phone's volume buttons still do.
+                talk = { speakAt(it, Volumes.Max) },
                 onRequestWearablesPermission = onRequestWearablesPermission,
                 onPairGlasses = { viewModel.hardwarePairing() },
             )
         }
 
         composable("help") {
-            HelpScreen(onBack = {
-                viewModel.closeHelp()
-                navController.popBackStack()
-            })
+            HelpScreen(
+                talk = talk,
+                // Back to Settings, which Help belongs to (its tab stays
+                // selected here), not to the screen before Settings.
+                onBack = {
+                    viewModel.closeHelp()
+                    viewModel.settings()
+                },
+            )
         }
 
         composable("onboarding") {

@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
+import ucf.visor.data.ThemeMode
 import ucf.visor.data.UserProfile
 
 // The four accessibility-first themes VISOR supports:
@@ -29,12 +30,23 @@ enum class AppTheme {
         get() = this == ClarityDark || this == HighContrastDark
 
     companion object {
-        /** Maps the user's saved accessibility preference onto one of the four themes. */
-        fun forProfile(profile: UserProfile, systemInDarkTheme: Boolean): AppTheme = when {
-            profile.appHighContrast && systemInDarkTheme -> HighContrastDark
-            profile.appHighContrast -> HighContrastLight
-            systemInDarkTheme -> ClarityDark
-            else -> ClarityLight
+        /**
+         * Maps the user's saved accessibility preferences onto one of the four
+         * themes: High contrast or not, and light or dark, which follows the
+         * phone unless the user has picked one in Settings.
+         */
+        fun forProfile(profile: UserProfile, systemInDarkTheme: Boolean): AppTheme {
+            val dark = when (profile.themeMode) {
+                ThemeMode.SYSTEM -> systemInDarkTheme
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+            return when {
+                profile.appHighContrast && dark -> HighContrastDark
+                profile.appHighContrast -> HighContrastLight
+                dark -> ClarityDark
+                else -> ClarityLight
+            }
         }
     }
 }
@@ -48,6 +60,17 @@ data class VisorStatusColors(
     val onError: Color
 )
 
+/**
+ * The ring drawn around a control that has keyboard, switch-access or D-pad
+ * focus (see ui/feedback/ControlFeedback): the theme's outline color, except
+ * in High Contrast Dark, where it is that theme's yellow, the color its users
+ * pick it for.
+ */
+internal fun focusRingFor(theme: AppTheme): Color =
+    if (theme == AppTheme.HighContrastDark) HighContrastDarkColors.Secondary else colorSchemeFor(theme).outline
+
+private val LocalFocusRingColor = staticCompositionLocalOf { ClarityLightColors.Outline }
+
 private val LocalVisorStatusColors = staticCompositionLocalOf {
     VisorStatusColors(
         success = StatusColors.SuccessLight,
@@ -59,7 +82,8 @@ private val LocalVisorStatusColors = staticCompositionLocalOf {
     )
 }
 
-private fun colorSchemeFor(theme: AppTheme) = when (theme) {
+/** The Material color scheme for [theme]; internal so ThemeContrastTest can check it. */
+internal fun colorSchemeFor(theme: AppTheme) = when (theme) {
     AppTheme.ClarityLight -> lightColorScheme(
         primary = ClarityLightColors.Primary,
         onPrimary = ClarityLightColors.OnPrimary,
@@ -79,7 +103,13 @@ private fun colorSchemeFor(theme: AppTheme) = when (theme) {
         onSurface = ClarityLightColors.Text,
         surfaceVariant = ClarityLightColors.SurfaceVariant,
         onSurfaceVariant = ClarityLightColors.OnSurfaceVariant,
+        surfaceContainerLowest = ClarityLightColors.SurfaceContainerLowest,
+        surfaceContainerLow = ClarityLightColors.SurfaceContainerLow,
         surfaceContainer = ClarityLightColors.SurfaceContainer,
+        surfaceContainerHigh = ClarityLightColors.SurfaceContainerHigh,
+        surfaceContainerHighest = ClarityLightColors.SurfaceContainerHighest,
+        surfaceBright = ClarityLightColors.SurfaceBright,
+        surfaceDim = ClarityLightColors.SurfaceDim,
         outline = ClarityLightColors.Outline,
         outlineVariant = ClarityLightColors.OutlineVariant,
         error = StatusColors.ErrorLight,
@@ -112,7 +142,13 @@ private fun colorSchemeFor(theme: AppTheme) = when (theme) {
         onSurface = ClarityDarkColors.Text,
         surfaceVariant = ClarityDarkColors.SurfaceVariant,
         onSurfaceVariant = ClarityDarkColors.OnSurfaceVariant,
+        surfaceContainerLowest = ClarityDarkColors.SurfaceContainerLowest,
+        surfaceContainerLow = ClarityDarkColors.SurfaceContainerLow,
         surfaceContainer = ClarityDarkColors.SurfaceContainer,
+        surfaceContainerHigh = ClarityDarkColors.SurfaceContainerHigh,
+        surfaceContainerHighest = ClarityDarkColors.SurfaceContainerHighest,
+        surfaceBright = ClarityDarkColors.SurfaceBright,
+        surfaceDim = ClarityDarkColors.SurfaceDim,
         outline = ClarityDarkColors.Outline,
         outlineVariant = ClarityDarkColors.OutlineVariant,
         error = StatusColors.ErrorDark,
@@ -145,7 +181,13 @@ private fun colorSchemeFor(theme: AppTheme) = when (theme) {
         onSurface = HighContrastLightColors.Text,
         surfaceVariant = HighContrastLightColors.SurfaceVariant,
         onSurfaceVariant = HighContrastLightColors.OnSurfaceVariant,
+        surfaceContainerLowest = HighContrastLightColors.SurfaceContainerLowest,
+        surfaceContainerLow = HighContrastLightColors.SurfaceContainerLow,
         surfaceContainer = HighContrastLightColors.SurfaceContainer,
+        surfaceContainerHigh = HighContrastLightColors.SurfaceContainerHigh,
+        surfaceContainerHighest = HighContrastLightColors.SurfaceContainerHighest,
+        surfaceBright = HighContrastLightColors.SurfaceBright,
+        surfaceDim = HighContrastLightColors.SurfaceDim,
         outline = HighContrastLightColors.Outline,
         outlineVariant = HighContrastLightColors.OutlineVariant,
         error = StatusColors.ErrorLight,
@@ -178,7 +220,13 @@ private fun colorSchemeFor(theme: AppTheme) = when (theme) {
         onSurface = HighContrastDarkColors.Text,
         surfaceVariant = HighContrastDarkColors.SurfaceVariant,
         onSurfaceVariant = HighContrastDarkColors.OnSurfaceVariant,
+        surfaceContainerLowest = HighContrastDarkColors.SurfaceContainerLowest,
+        surfaceContainerLow = HighContrastDarkColors.SurfaceContainerLow,
         surfaceContainer = HighContrastDarkColors.SurfaceContainer,
+        surfaceContainerHigh = HighContrastDarkColors.SurfaceContainerHigh,
+        surfaceContainerHighest = HighContrastDarkColors.SurfaceContainerHighest,
+        surfaceBright = HighContrastDarkColors.SurfaceBright,
+        surfaceDim = HighContrastDarkColors.SurfaceDim,
         outline = HighContrastDarkColors.Outline,
         outlineVariant = HighContrastDarkColors.OutlineVariant,
         error = StatusColors.ErrorDark,
@@ -193,7 +241,7 @@ private fun colorSchemeFor(theme: AppTheme) = when (theme) {
     )
 }
 
-private fun statusColorsFor(theme: AppTheme) = if (theme.isDark) {
+internal fun statusColorsFor(theme: AppTheme) = if (theme.isDark) {
     VisorStatusColors(
         success = StatusColors.SuccessDark,
         onSuccess = StatusColors.OnSuccessDark,
@@ -264,7 +312,10 @@ fun VisorTheme(
     val statusColors = statusColorsFor(appTheme)
     val typography = if (textScale == 1f) Typography else Typography.scaled(textScale)
 
-    CompositionLocalProvider(LocalVisorStatusColors provides statusColors) {
+    CompositionLocalProvider(
+        LocalVisorStatusColors provides statusColors,
+        LocalFocusRingColor provides focusRingFor(appTheme),
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
@@ -278,4 +329,9 @@ object VisorTheme {
     val statusColors: VisorStatusColors
         @Composable
         get() = LocalVisorStatusColors.current
+
+    /** The color of the ring around a focused control. */
+    val focusRing: Color
+        @Composable
+        get() = LocalFocusRingColor.current
 }

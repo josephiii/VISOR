@@ -17,6 +17,8 @@ data class VisorUiState(
     val glassesStatus: GlassesStatus? = null,
 
     val isDebugMenuVisible: Boolean = false,
+    /** Debug menu → Hide debug button. Kept only in memory: the button is back when VISOR restarts. */
+    val isDebugButtonHidden: Boolean = false,
     /** A paired device reports DEVICE_UPDATE_REQUIRED: Pair Glasses offers "Update firmware". */
     val isFirmwareUpdateRequired: Boolean = false,
     /** A glasses session was refused until the DAT app on the glasses is updated. */
@@ -46,6 +48,8 @@ data class VisorUiState(
     val isSessionActive: Boolean = false,
     val isLogoutConfirmVisible: Boolean = false,
     val isDeleteAccountConfirmVisible: Boolean = false,
+    /** Which part of Settings is open, or null for the Settings hub. */
+    val settingsSection: SettingsSection? = null,
 
     // PHASE 1 States.
     val phase1Initiated: Boolean = false,

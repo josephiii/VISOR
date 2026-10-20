@@ -1,16 +1,20 @@
 package ucf.visor.ui.screens.auth
 
-import androidx.compose.foundation.border
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,163 +22,212 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ucf.visor.R
+import ucf.visor.data.VoiceCategory
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
+import ucf.visor.ui.components.ErrorMessage
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.VisorTextField
+import ucf.visor.ui.components.isScreenReaderOn
 import ucf.visor.ui.components.scrollIndicator
-import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
 
+private const val TAG = "VISOR Sign up"
+
+/**
+ * NOTE: there is no email verification yet (no confirmation code or verified
+ * flag), so a registered account is usable at once; the email is only checked
+ * for its shape here (see [checkSignUp]). TODO: add email verification later
+ * (send a code on register, gate login/onboarding on a verified status) and
+ * route sign-up back through the verify_account / enter_code screens once that
+ * exists.
+ *
+ * @param talk says what went wrong when signing up fails, for a user who isn't
+ *   looking at the screen (see [ErrorMessage]).
+ */
 @Composable
 fun SignUpScreen(
     viewModel: VisorViewModel,
     onSignUpClick: () -> Unit,
     onLoginClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val errorInView = remember { BringIntoViewRequester() }
+    val usernameFocus = remember { FocusRequester() }
+    val emailFocus = remember { FocusRequester() }
+    val passwordFocus = remember { FocusRequester() }
+    val confirmFocus = remember { FocusRequester() }
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmedPassword by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    // Under each field once Sign up is pressed, until that field is changed.
+    var fieldErrors by remember { mutableStateOf(SignUpFieldErrors(null, null, null, null)) }
+    // What went wrong with the request itself, such as no connection.
+    var requestError by remember { mutableStateOf<Int?>(null) }
     val scrollState = rememberScrollState()
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(vertical = 24.dp)
-            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState)
-    ) {
-        Card(
-            shape = VisorShapes.Control,
-            modifier = Modifier
-                .padding(
-                    horizontal = 35.dp,
-                    vertical = 20.dp
+    fun signUp() {
+        if (isLoading) return
+        requestError = null
+        fieldErrors = checkSignUp(username, email, password, confirmedPassword)
+        if (fieldErrors.any) {
+            // Checked before the request. The first field with a problem takes
+            // focus, so a screen reader reads it and its error, and VISOR says
+            // the error for everyone else.
+            val (firstError, focus) = listOf(
+                fieldErrors.username to usernameFocus,
+                fieldErrors.email to emailFocus,
+                fieldErrors.password to passwordFocus,
+                fieldErrors.confirmPassword to confirmFocus,
+            ).first { (error, _) -> error != null }
+            focus.requestFocus()
+            if (firstError != null && !context.isScreenReaderOn()) {
+                // MinPasswordLength fills in "Use at least %1$d characters."; the others have no blank.
+                talk(
+                    "${context.getString(R.string.error_prefix)} ${context.getString(firstError, MinPasswordLength)}",
+                    VoiceCategory.ANSWERS,
                 )
-                .border(
-                    width = 2.dp,
-                    color = MaterialTheme.colorScheme.outline,
-                    shape = VisorShapes.Control
-                ),
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(vertical = 20.dp)
-            ) {
+            }
+            return
+        }
 
-                Text(
-                    text = stringResource(R.string.sign_up_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+        // The keyboard would cover the button's progress, and any error under it.
+        keyboard?.hide()
+        focusManager.clearFocus()
+        isLoading = true
+        scope.launch {
+            when (val result = AuthApi.register(username.trim(), email.trim(), password)) {
+                is ApiResult.Success -> {
+                    // Backend returns { "user_id": ... } — no token yet,
+                    // so the user still logs in next. Advance the flow.
+                    isLoading = false
+                    onSignUpClick()
+                }
 
-                VisorTextField(
-                    value = username,
-                    label = stringResource(R.string.username_label),
-                    onValueChange = { username = it },
-                )
-
-                VisorTextField(
-                    value = email,
-                    label = stringResource(R.string.email_label),
-                    onValueChange = { email = it },
-                )
-
-                VisorTextField(
-                    value = password,
-                    label = stringResource(R.string.password_label),
-                    onValueChange = { password = it },
-                    isPassword = true
-                )
-
-                VisorTextField(
-                    value = confirmedPassword,
-                    label = stringResource(R.string.confirm_password_label),
-                    onValueChange = { confirmedPassword = it },
-                    isPassword = true
-                )
-
-                VisorButton(
-                    text = stringResource(R.string.sign_up_title),
-                    onClick = {
-                        if (isLoading) return@VisorButton
-
-                        errorMessage = validateSignUp(email, password, confirmedPassword)
-                        if (errorMessage != null) return@VisorButton
-
-                        isLoading = true
-                        scope.launch {
-                            when (val result = AuthApi.register(username, email, password)) {
-                                is ApiResult.Success -> {
-                                    // Backend returns { "user_id": ... } — no token yet,
-                                    // so the user still logs in next. Advance the flow.
-                                    isLoading = false
-                                    onSignUpClick()
-                                }
-
-                                is ApiResult.Error -> {
-                                    isLoading = false
-                                    errorMessage = result.message
-                                }
-                            }
-                        }
-                    }
-                )
-
-                errorMessage?.let { message ->
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                is ApiResult.Error -> {
+                    isLoading = false
+                    Log.w(TAG, "Signing up failed (${result.code}): ${result.message}")
+                    requestError = authErrorMessage(result, AuthRequest.SIGN_UP)
                 }
             }
         }
-        Text(stringResource(R.string.already_have_account))
+    }
 
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState)
+            .padding(vertical = 24.dp),
+    ) {
+        AuthCard(
+            title = stringResource(R.string.sign_up_title),
+            modifier = Modifier.padding(bottom = 16.dp),
+        ) {
+            VisorTextField(
+                value = username,
+                label = stringResource(R.string.username_label),
+                onValueChange = {
+                    username = it
+                    fieldErrors = fieldErrors.copy(username = null)
+                },
+                imeAction = ImeAction.Next,
+                errorMessage = fieldErrors.username?.let { stringResource(it) },
+                modifier = Modifier.focusRequester(usernameFocus),
+            )
+
+            VisorTextField(
+                value = email,
+                label = stringResource(R.string.email_label),
+                onValueChange = {
+                    email = it
+                    fieldErrors = fieldErrors.copy(email = null)
+                },
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+                errorMessage = fieldErrors.email?.let { stringResource(it) },
+                modifier = Modifier.focusRequester(emailFocus),
+            )
+
+            VisorTextField(
+                value = password,
+                label = stringResource(R.string.password_label),
+                onValueChange = {
+                    password = it
+                    fieldErrors = fieldErrors.copy(password = null)
+                },
+                isPassword = true,
+                imeAction = ImeAction.Next,
+                errorMessage = fieldErrors.password?.let { stringResource(it, MinPasswordLength) },
+                modifier = Modifier.focusRequester(passwordFocus),
+            )
+
+            VisorTextField(
+                value = confirmedPassword,
+                label = stringResource(R.string.confirm_password_label),
+                onValueChange = {
+                    confirmedPassword = it
+                    fieldErrors = fieldErrors.copy(confirmPassword = null)
+                },
+                isPassword = true,
+                imeAction = ImeAction.Done,
+                keyboardActions = KeyboardActions(onDone = { signUp() }),
+                errorMessage = fieldErrors.confirmPassword?.let { stringResource(it) },
+                modifier = Modifier.focusRequester(confirmFocus),
+            )
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                VisorButton(
+                    text = stringResource(if (isLoading) R.string.sign_up_busy else R.string.sign_up_title),
+                    width = 1f,
+                    busy = isLoading,
+                    onClick = { signUp() },
+                )
+                ErrorMessage(
+                    message = requestError?.let { stringResource(it) },
+                    modifier = Modifier
+                        .padding(top = 20.dp)
+                        .bringIntoViewRequester(errorInView),
+                    talk = talk,
+                )
+                // At large text sizes the error starts below the screen's edge.
+                LaunchedEffect(requestError) {
+                    if (requestError != null) errorInView.bringIntoView()
+                }
+            }
+        }
+
+        Text(
+            stringResource(R.string.already_have_account),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+        )
         VisorButton(
             text = stringResource(R.string.login_title),
-            width = 0.5f,
-            onClick = {
-                onLoginClick()
-            }
+            onClick = onLoginClick,
         )
-    }
-}
-
-/**
- * Cheap client-side checks before hitting the network. Returns an error message
- * to show the user, or null when the input looks valid. Uniqueness and the real
- * password policy are enforced by the backend.
- *
- * NOTE: We only sanity-check the email with a regex here — there is no email
- * verification yet (no confirmation code / verified flag). A registered account
- * is immediately usable. TODO: add email verification later (send a code on
- * register, gate login/onboarding on a verified status) and route sign-up back
- * through the verify_account / enter_code screens once that exists.
- */
-private fun validateSignUp(
-    email: String,
-    password: String,
-    confirmedPassword: String
-): String? {
-    val emailRegex = Regex("""^\w+@\w+\.\w+$""")
-    return when {
-        !emailRegex.matches(email) -> "Invalid email"
-        password != confirmedPassword -> "The passwords do not match"
-        else -> null
     }
 }

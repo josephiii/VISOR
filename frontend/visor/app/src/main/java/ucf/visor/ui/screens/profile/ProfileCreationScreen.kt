@@ -3,21 +3,15 @@ package ucf.visor.ui.screens.profile
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -38,9 +31,12 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionType
+import ucf.visor.data.VoiceCategory
 import ucf.visor.data.label
-import ucf.visor.ui.components.AutoSizeText
 import ucf.visor.ui.components.SelectableChip
+import ucf.visor.ui.components.StepIndicator
+import ucf.visor.ui.components.SwitchButton
+import ucf.visor.ui.components.VisorSlider
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -78,7 +74,7 @@ private enum class Step(@StringRes val title: Int, @StringRes val spokenPrompt: 
 @Composable
 fun ProfileCreationScreen(
     viewModel: VisorViewModel,
-    speak: (String) -> Unit = {},
+    speak: (String, VoiceCategory) -> Unit = { _, _ -> },
     voiceNav: VoiceNavigationController? = null,
     onFinished: (UserProfile) -> Unit = {},
 ) {
@@ -96,7 +92,8 @@ fun ProfileCreationScreen(
     // VOICE NAVIGATION
     LaunchedEffect(step) {
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
-        speak(context.getString(step.spokenPrompt))
+        // VISOR's half of a voice conversation, like its replies to commands.
+        speak(context.getString(step.spokenPrompt), VoiceCategory.VOICE_COMMANDS)
         val askedStep = step
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()?.lowercase()
@@ -183,15 +180,13 @@ fun ProfileCreationScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
             .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
-            .verticalScroll(scrollState),
+            .padding(horizontal = 24.dp)
+            .verticalScroll(scrollState)
+            .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        LinearProgressIndicator(
-            progress = { (step.ordinal + 1) / Step.entries.size.toFloat() },
-            modifier = Modifier.fillMaxWidth(),
-        )
+        StepIndicator(step = step.ordinal + 1, of = Step.entries.size)
 
         Text(
             text = stringResource(step.title),
@@ -201,7 +196,7 @@ fun ProfileCreationScreen(
         )
 
         when (step) {
-            Step.NAME -> BigTextField(profile.displayName, "Your name") {
+            Step.NAME -> BigTextField(profile.displayName, stringResource(R.string.settings_name_label)) {
                 profile = profile.copy(displayName = it)
             }
 
@@ -214,13 +209,16 @@ fun ProfileCreationScreen(
                 }
             }
 
-            Step.DESCRIBE -> BigTextField(profile.visionDescription, "In your own words…") {
+            Step.DESCRIBE -> BigTextField(
+                profile.visionDescription,
+                stringResource(R.string.settings_vision_description_label),
+            ) {
                 profile = profile.copy(visionDescription = it)
             }
 
             Step.VISION -> VisionType.entries.forEach { type ->
                 val selected = type in profile.visionTypes
-                BigChoiceButton(type.label(), selected) {
+                BigChoiceButton(type.label(), selected, multiSelect = true) {
                     val base = profile.visionTypes - VisionType.NOT_SURE
                     profile = profile.copy(
                         visionTypes = (if (selected) base - type else base + type)
@@ -241,7 +239,7 @@ fun ProfileCreationScreen(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Slider(
+                VisorSlider(
                     value = profile.speechRate,
                     onValueChange = { position ->
                         val rate = SpeechRates.snap(position)
@@ -249,20 +247,15 @@ fun ProfileCreationScreen(
                     },
                     valueRange = SpeechRates.Min..SpeechRates.Max,
                     steps = SpeechRates.SliderSteps,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics {
-                            contentDescription =
-                                "Speech rate: ${SpeechRates.spokenLabel(profile.speechRate)}"
-                        },
+                    label = stringResource(R.string.settings_speech_rate_label),
+                    valueDescription = SpeechRates.spokenLabel(profile.speechRate),
+                    decreaseDescription = stringResource(R.string.settings_speech_rate_slower_button),
+                    increaseDescription = stringResource(R.string.settings_speech_rate_faster_button),
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Slower", style = MaterialTheme.typography.bodyMedium)
-                    Text("Faster", style = MaterialTheme.typography.bodyMedium)
-                }
+                SliderEnds(
+                    start = stringResource(R.string.settings_speech_rate_slower),
+                    end = stringResource(R.string.settings_speech_rate_faster),
+                )
             }
 
             Step.VERBOSITY -> Verbosity.entries.forEach { v ->
@@ -279,33 +272,34 @@ fun ProfileCreationScreen(
 
         Spacer(Modifier.weight(1f))
 
-        Button(
+        SwitchButton(
+            label = stringResource(if (step == Step.DONE) R.string.onboarding_start else R.string.onboarding_continue),
             onClick = ::next,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 72.dp),
-            shape = VisorShapes.Control,
-        ) {
-            AutoSizeText(
-                if (step == Step.DONE) "Start using VISOR" else "Continue",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+            textStyle = MaterialTheme.typography.titleLarge,
+            minHeight = 72.dp,
+        )
 
         // Skip is always available — every profile field has a safe default.
+        // A full button, as easy to find and press as Continue, not a line of text.
         if (step != Step.DONE) {
-            TextButton(onClick = ::next, modifier = Modifier.fillMaxWidth()) {
-                AutoSizeText("Skip for now", style = MaterialTheme.typography.titleMedium)
-            }
+            SwitchButton(
+                label = stringResource(R.string.onboarding_skip),
+                onClick = ::next,
+                outlined = true,
+                textStyle = MaterialTheme.typography.titleMedium,
+            )
         }
     }
 }
 
+/**
+ * A large text field with a real label, which stays above what is typed. It
+ * had only a placeholder, gone as soon as there was a name in the field.
+ */
 @Composable
 private fun BigTextField(
     value: String,
-    placeholder: String,
+    label: String,
     onChange: (String) -> Unit,
 ) {
     OutlinedTextField(
@@ -313,21 +307,26 @@ private fun BigTextField(
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth(),
         textStyle = MaterialTheme.typography.headlineSmall,
-        placeholder = { Text(placeholder, style = MaterialTheme.typography.headlineSmall) },
+        label = { Text(label) },
         shape = VisorShapes.Control,
     )
 }
 
-/** One large, high-contrast option row. Min 72dp tall = easy touch target. */
+/**
+ * One large, high-contrast option row. Min 72dp tall = easy touch target.
+ * [multiSelect] for a question whose answers can be picked together.
+ */
 @Composable
 private fun BigChoiceButton(
     label: String,
     selected: Boolean,
+    multiSelect: Boolean = false,
     onClick: () -> Unit,
 ) {
     SelectableChip(
         label = label,
         selected = selected,
+        multiSelect = multiSelect,
         modifier = Modifier.fillMaxWidth(),
         minHeight = 72.dp,
         textStyle = MaterialTheme.typography.titleLarge,

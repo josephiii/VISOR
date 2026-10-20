@@ -1,6 +1,7 @@
 package ucf.visor.ui.screens.profile
 
 import androidx.compose.runtime.Composable
+import ucf.visor.data.VoiceCategory
 import ucf.visor.ui.screens.profile.ProfileCreationScreen
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavigationController
@@ -20,7 +21,7 @@ import ucf.visor.ui.voice.VoiceNavigationController
 @Composable
 fun ProfileFlowHost(
     viewModel: VisorViewModel,
-    speak: (String) -> Unit = {},
+    speak: (String, VoiceCategory) -> Unit = { _, _ -> },
     voiceNav: VoiceNavigationController? = null,
     onSetupComplete: () -> Unit = {},
 ) {

@@ -4,6 +4,7 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
 import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
  * Turns the free-form text recognized after "VISOR GO" into a [VoiceCommand].
@@ -23,15 +24,19 @@ object VoiceCommandParser {
 
         return when {
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
-            containsAny(text, "settings", "setting") -> VoiceCommand.OpenSettings
+            containsAny(text, "settings", "setting") ->
+                settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
             containsAny(text, "help") -> VoiceCommand.OpenHelp
             containsAny(text, "pair", "hardware", "connect my glasses", "connect glasses") ->
                 VoiceCommand.PairDevice
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
-            containsAny(text, "start session", "end session", "stop session", "start", "stop") ->
-                VoiceCommand.ToggleSession
+            containsAny(text, "end session", "stop session", "end the session", "stop") ->
+                VoiceCommand.EndSession
+
+            containsAny(text, "start session", "begin session", "start a session", "start") ->
+                VoiceCommand.StartSession
 
             containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
             containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
@@ -116,10 +121,39 @@ object VoiceCommandParser {
         }
     }
 
+    /** Which part of Settings "open … settings" names, if any. */
+    private fun settingsSectionIn(text: String): SettingsSection? = when {
+        containsAny(text, "sound", "volume", "loud", "vibration") -> SettingsSection.SOUND
+        containsAny(text, "speech", "speed", "talk") -> SettingsSection.SPEECH
+        containsAny(text, "display", "text", "contrast", "dark", "light") -> SettingsSection.DISPLAY
+        containsAny(text, "command") -> SettingsSection.COMMANDS
+        containsAny(text, "account") -> SettingsSection.ACCOUNT
+        containsAny(text, "about", "profile", "vision", "name") -> SettingsSection.ABOUT_YOU
+        else -> null
+    }
+
     private fun containsAny(text: String, vararg phrases: String): Boolean =
         phrases.any { text.contains(it) }
 
     /** Whole-word match — avoids e.g. "broken" or "know" false-matching "ok"/"no". */
     private fun containsWord(text: String, vararg words: String): Boolean =
         words.any { word -> Regex("\\b${Regex.escape(word)}\\b").containsMatchIn(text) }
+}
+
+/**
+ * What can be said after "VISOR GO", by kind, as Settings lists it. Only
+ * phrases [VoiceCommandParser] understands: a unit test parses every one, so
+ * Settings never suggests something VISOR won't act on.
+ */
+enum class VoiceCommandKind(val examples: List<String>) {
+    GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
+    SESSIONS(listOf("start session", "end session", "hazard mode", "scene mode", "reading mode")),
+    SETTINGS(
+        listOf(
+            "faster", "slower", "normal speed", "brief", "detailed",
+            "large text", "extra large text", "high contrast",
+        )
+    ),
+    ACCOUNT(listOf("log out", "delete my account")),
+    ANSWERING(listOf("yes", "no", "repeat that")),
 }

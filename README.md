@@ -81,15 +81,16 @@ VISOR/
 | `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
-| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`). |
-| `stt/` | Listening: wake phrases (sherpa-onnx) and spoken commands. |
-| `tts/` | Speaking: `Speaker`, the "thinking" beep, and `SpokenPhrases` (everything the camera features say). |
+| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`). |
+| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
+| `tts/` | Speaking: `Speaker`, the "thinking" beep, the session chimes (`Chimes`), and `SpokenPhrases` (everything the camera features say). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |
 | `ui/screens/` | One folder per screen, plus any ViewModel used only by that screen (e.g. `debug/DebugViewModel`): `title/`, `auth/`, `home/`, `hardware/` (Pair Glasses), `profile/` (setup wizard, Settings), `help/`, `motionlab/`, `debug/`, `phase1/`. |
 | `ui/viewmodel/` | `VisorViewModel` and `VisorUiState`: app-wide state and navigation requests. |
-| `ui/components/` | Shared widgets: buttons, text fields, header, navigation bar. |
+| `ui/components/` | Shared widgets: buttons, choice chips and switches, sliders, dialogs, error messages, text fields, header, navigation and session status bars. |
+| `ui/feedback/` | How VISOR feels and moves: one vibration pattern per meaning (`Haptics`), the pressed and focused look every control shares (`ControlFeedback`), and the motion rules (`Motion`). |
 | `ui/glasses/` | Navigation rendered on the glasses' display and driven by taps. |
 | `ui/voice/` | "VISOR GO" voice navigation commands. |
 | `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. |

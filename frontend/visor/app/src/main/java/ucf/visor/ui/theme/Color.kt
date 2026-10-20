@@ -2,12 +2,16 @@ package ucf.visor.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Each theme below defines every Material3 ColorScheme role VISOR actually
-// references (see colorSchemeFor in Theme.kt) rather than leaving them at
-// Compose's stock baseline defaults. Every pairing here (container/on-container,
-// surfaceVariant/onSurfaceVariant, outline against background/surface) has been
-// checked against WCAG contrast targets: 4.5:1 for text pairs, 3:1 for the
-// outline/UI-component pairs. See documentation/research/section-508-accessibility-guidelines.md.
+// Each theme below defines every Material3 ColorScheme role VISOR's screens
+// can reach (see colorSchemeFor in Theme.kt) rather than leaving any at
+// Compose's stock baseline, whose lavender would otherwise show through in
+// whatever component used it: dialogs (SurfaceContainerHigh), cards
+// (SurfaceContainerHighest) and bottom sheets (SurfaceContainerLow).
+//
+// Every pairing is held to WCAG contrast targets (4.5:1 for text, 3:1 for the
+// parts of a control you need to see to use it) by ThemeContrastTest, so a
+// color changed here that breaks one fails the build's unit tests. See
+// documentation/research/section-508-accessibility-guidelines.md.
 
 object ClarityLightColors {
     val Background = Color(0xFFFFFFFF)
@@ -23,7 +27,13 @@ object ClarityLightColors {
     val OnSecondaryContainer = Color(0xFF052E2B)
     val SurfaceVariant = Color(0xFFDCE6F2)
     val OnSurfaceVariant = Color(0xFF3C4A5E)
+    val SurfaceContainerLowest = Color(0xFFFFFFFF)
+    val SurfaceContainerLow = Color(0xFFF5F8FC)
     val SurfaceContainer = Color(0xFFF1F5FA)
+    val SurfaceContainerHigh = Color(0xFFEAF1F9)
+    val SurfaceContainerHighest = Color(0xFFE2EAF4)
+    val SurfaceBright = Color(0xFFFFFFFF)
+    val SurfaceDim = Color(0xFFD8E1EC)
     val Outline = Color(0xFF56657C)
     val OutlineVariant = Color(0xFFC6D2E1)
 }
@@ -42,11 +52,20 @@ object ClarityDarkColors {
     val OnSecondaryContainer = Color(0xFFCFF3EE)
     val SurfaceVariant = Color(0xFF1D2C48)
     val OnSurfaceVariant = Color(0xFFC3D0E3)
+    val SurfaceContainerLowest = Color(0xFF070C16)
+    val SurfaceContainerLow = Color(0xFF0E1728)
     val SurfaceContainer = Color(0xFF101A2E)
+    val SurfaceContainerHigh = Color(0xFF15233D)
+    val SurfaceContainerHighest = Color(0xFF1D2C48)
+    val SurfaceBright = Color(0xFF22324F)
+    val SurfaceDim = Color(0xFF0B1220)
     val Outline = Color(0xFF7C8CA8)
     val OutlineVariant = Color(0xFF33415C)
 }
 
+// The High Contrast themes keep their containers at, or within a shade of, the
+// background: text there stays at full contrast, and VISOR's cards and
+// dialogs are set apart by their outlines rather than by a tint.
 object HighContrastLightColors {
     val Background = Color(0xFFFFFFFF)
     val Surface = Color(0xFFFFFFFF)
@@ -61,7 +80,13 @@ object HighContrastLightColors {
     val OnSecondaryContainer = OnSecondary
     val SurfaceVariant = Color(0xFFF0F0F0)
     val OnSurfaceVariant = Color(0xFF000000)
+    val SurfaceContainerLowest = Color(0xFFFFFFFF)
+    val SurfaceContainerLow = Color(0xFFFFFFFF)
     val SurfaceContainer = Color(0xFFF2F2F2)
+    val SurfaceContainerHigh = Color(0xFFFFFFFF)
+    val SurfaceContainerHighest = Color(0xFFFFFFFF)
+    val SurfaceBright = Color(0xFFFFFFFF)
+    val SurfaceDim = Color(0xFFE6E6E6)
     val Outline = Color(0xFF000000)
     val OutlineVariant = Color(0xFF4D4D4D)
 }
@@ -80,7 +105,14 @@ object HighContrastDarkColors {
     val OnSecondaryContainer = OnSecondary
     val SurfaceVariant = Color(0xFF1A1A1A)
     val OnSurfaceVariant = Color(0xFFFFFFFF)
+    val SurfaceContainerLowest = Color(0xFF000000)
+    val SurfaceContainerLow = Color(0xFF0D0D0D)
     val SurfaceContainer = Color(0xFF0D0D0D)
+    // A shade up from black, so a dialog stands apart from the black screen behind it.
+    val SurfaceContainerHigh = Color(0xFF1A1A1A)
+    val SurfaceContainerHighest = Color(0xFF1A1A1A)
+    val SurfaceBright = Color(0xFF262626)
+    val SurfaceDim = Color(0xFF000000)
     val Outline = Color(0xFFFFFFFF)
     val OutlineVariant = Color(0xFFB3B3B3)
 }

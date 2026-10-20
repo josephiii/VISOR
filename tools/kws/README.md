@@ -20,8 +20,11 @@ than plain words. This folder turns plain phrases into that file.
    pip install -r requirements.txt
    python make_keywords.py
    ```
-3. Add the phrase, uppercase with spaces removed (`VISORWHATISTHIS`), to the matching
-   `*_WAKE_PHRASES` set in `MainActivity.kt`. That set decides which feature a phrase starts.
+3. Add the phrase, written as people say it (`"VISOR, what is this"`), to the matching
+   `CameraCommand` in `frontend/visor/app/src/main/java/ucf/visor/stt/WakePhrases.kt`. That
+   decides which feature the phrase starts, and Settings lists it under that command, which a
+   user can turn off. The unit tests (`./gradlew testDebugUnitTest`) fail until
+   `keywords_raw.txt` and `WakePhrases.kt` list the same phrases.
 
 The full model (encoder, decoder, joiner and tokens) already ships in the app's `assets/kws/`. The
 original download is the

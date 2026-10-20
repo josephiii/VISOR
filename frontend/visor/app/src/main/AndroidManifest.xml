@@ -15,6 +15,10 @@
     <!-- For STT sherpa-onnx -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- VISOR's own vibration patterns (ui/feedback/Haptics), such as two short
+         pulses as a session starts. Granted at install; nothing to ask for. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <!-- Lets SpeechRecognizer.isRecognitionAvailable() resolve the on-device recognizer
          service on Android 11+ (package-visibility rules) for voice navigation. -->
     <queries>

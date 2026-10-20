@@ -223,8 +223,10 @@ or failure with "Please log in on your phone" when logged out.
 
 Pair a mock **Ray-Ban Meta** or **Ray-Ban Display**. Replay a synthetic 1 Hz
 head shake on the mock IMU. Set battery to 12%/95%, make hot or cool. Simulate
-"Hey Meta, start VISOR". The **Test Suite** section, at the top, holds VISOR's
-testing environments: initiate Phase 1, or open the head-motion lab.
+"Hey Meta, start VISOR". The **Debug Button** section, at the top, hides the bug
+button (for demos or screenshots) until VISOR next starts. The **Test Suite**
+section, just below it, holds VISOR's testing environments: initiate Phase 1, or
+open the head-motion lab.
 
 The mock head shake is five minutes long. MockDeviceKit replays a looped feed
 with the feed's own timestamps, so the "device clock" jumps back at every loop.

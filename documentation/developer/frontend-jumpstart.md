@@ -6,6 +6,25 @@ The purpose of this document is to provide some useful tips and tricks on gettin
 
 Within `VisorLayout.kt`, we use an Observer pattern via `LaunchedEffects` based on the observed uiState
 
+### Screen Padding and the Navigation Bar
+
+VISOR draws edge-to-edge, and `VisorLayout`'s `Scaffold` already keeps every screen clear of the status bar, the system navigation bar and VISOR's own navigation bar (its `bottomBar`). So a screen should:
+
+- **Not** add `navigationBarsPadding()` or `statusBarsPadding()` itself. That is how the band of empty space above the navigation bar kept coming back: the same inset applied twice. (`VisorLayout` now consumes those insets, so a stray one does nothing, but it does not belong there.)
+- Put `scrollIndicator(...)` **before** its **horizontal** padding: the scroll bar is drawn inside the bounds it is applied to, at their trailing edge, so it lands in that padding. Use the theme's `outline` color on every screen.
+- Put its **vertical** padding **inside** `verticalScroll(...)`, so content scrolls all the way to the navigation bar instead of vanishing short of it.
+
+```kotlin
+Column(
+    modifier = Modifier
+        .fillMaxSize()
+        .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+        .padding(horizontal = 24.dp)
+        .verticalScroll(scrollState)
+        .padding(vertical = 24.dp),
+) { /* ... */ }
+```
+
 ### VISOR App Static Resources
 
 The way Android projects are set up, we can store all of our application's static resources within the `VISOR/frontend/visor/app/src/main/res/` directory. 

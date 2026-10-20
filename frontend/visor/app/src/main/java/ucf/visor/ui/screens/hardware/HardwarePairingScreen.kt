@@ -7,10 +7,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -26,9 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -41,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.types.RegistrationState
 import ucf.visor.R
-import ucf.visor.ui.components.SelectableChip
+import ucf.visor.data.VoiceCategory
+import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
+import ucf.visor.ui.components.iconSizeFor
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -57,7 +55,7 @@ import ucf.visor.wearables.GlassesStatus
 fun HardwarePairingScreen(
     viewModel: VisorViewModel,
     modifier: Modifier = Modifier,
-    talk: (String) -> Unit = {},
+    talk: (String, VoiceCategory) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
@@ -74,39 +72,65 @@ fun HardwarePairingScreen(
         modifier =
             modifier
                 .fillMaxSize()
+                // Before the padding, so the bar is drawn in the screen's margin.
                 .scrollIndicator(scrollState, MaterialTheme.colorScheme.outline)
+                .padding(horizontal = 24.dp)
                 .verticalScroll(scrollState)
-                .padding(all = 24.dp)
-                .navigationBarsPadding(),
+                .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Spacer(modifier = Modifier.weight(1f))
+        ScreenTitle(stringResource(R.string.hardware_pairing_title), modifier = Modifier.fillMaxWidth())
+
+        // A picture of the glasses' camera, for the eye only. It was drawn at
+        // 80dp times the screen's density (210dp on most phones), which pushed
+        // the button below off the screen.
+        Icon(
+            painter = painterResource(id = R.drawable.camera_access_icon),
+            contentDescription = null,
+            modifier = Modifier.size(96.dp),
+        )
+
+        // Connecting comes first: until the glasses are connected, nothing
+        // else on this screen does anything.
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.camera_access_icon),
-                contentDescription = stringResource(R.string.camera_access_icon_description),
-                modifier = Modifier.size(80.dp * LocalDensity.current.density),
+            // App Registration Button
+            Text(
+                text = stringResource(R.string.home_redirect_message),
+                // Not Color.Gray: that is under 4.5:1 against the light themes.
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
-            ) {
-                TipItem(
-                    iconResId = R.drawable.smart_glasses_icon,
-                    title = stringResource(R.string.environment_capture_title),
-                    text = stringResource(R.string.environment_capture),
-                )
-            }
+            // One button that follows the registration: "Connect my glasses"
+            // until VISOR is registered, then "Disconnect my glasses". Either is
+            // disabled while the Meta AI app is still busy with the last request.
+            val registered = uiState.isRegistered
+            SwitchButton(
+                label = stringResource(
+                    if (registered) R.string.unregister_button_title
+                    else R.string.register_button_title
+                ),
+                isDestructive = registered,
+                enabled =
+                    if (registered) uiState.registrationState == RegistrationState.REGISTERED
+                    else uiState.canStartRegistration,
+                onClick = {
+                    withActivity(
+                        if (registered) viewModel::startUnregistration
+                        else viewModel::startRegistration
+                    )
+                },
+            )
         }
 
         uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
-            GlassesStatusCard(status = status, onSpeak = { talk(status.spokenSummary()) })
+            GlassesStatusCard(
+                status = status,
+                onSpeak = { talk(status.spokenSummary(), VoiceCategory.ANSWERS) },
+            )
         }
 
         if (uiState.isFirmwareUpdateRequired || uiState.isDatAppUpdateRequired) {
@@ -117,32 +141,12 @@ fun HardwarePairingScreen(
                 onUpdateGlassesApp = { withActivity(viewModel::openDATGlassesAppUpdate) },
             )
         }
-        Spacer(modifier = Modifier.weight(1f))
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            // App Registration Button
-            Text(
-                text = stringResource(R.string.home_redirect_message),
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 24.dp),
-            )
-            SwitchButton(
-                label = stringResource(R.string.register_button_title),
-                enabled = uiState.canStartRegistration,
-                onClick = { withActivity(viewModel::startRegistration) },
-            )
-            if (uiState.isRegistered) {
-                SwitchButton(
-                    label = stringResource(R.string.unregister_button_title),
-                    isDestructive = true,
-                    enabled = uiState.registrationState == RegistrationState.REGISTERED,
-                    onClick = { withActivity(viewModel::startUnregistration) },
-                )
-            }
-        }
+        TipItem(
+            iconResId = R.drawable.smart_glasses_icon,
+            title = stringResource(R.string.glasses_camera_tip_title),
+            text = stringResource(R.string.glasses_camera_tip),
+        )
     }
 }
 
@@ -180,7 +184,11 @@ private fun UpdateRequiredCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(imageVector = Icons.Default.Warning, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSizeFor(MaterialTheme.typography.titleLarge)),
+                )
                 Text(
                     stringResource(R.string.update_required_title),
                     style = MaterialTheme.typography.titleLarge,
@@ -227,28 +235,34 @@ private fun GlassesStatusCard(status: GlassesStatus, onSpeak: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "${status.model}: ${if (status.connected) "connected" else "not connected"}",
+                stringResource(
+                    if (status.connected) R.string.motion_lab_glasses_connected
+                    else R.string.motion_lab_glasses_not_connected,
+                    status.model,
+                ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics { heading() },
             )
             val details = buildList {
                 status.batteryPercent?.let {
-                    add("Battery $it%" + if (status.charging == true) ", charging" else "")
+                    add(
+                        stringResource(
+                            if (status.charging == true) R.string.motion_lab_battery_charging
+                            else R.string.motion_lab_battery,
+                            it,
+                        )
+                    )
                 }
-                status.worn?.let { add(if (it) "Being worn" else "Not being worn") }
-                status.temperatureWord?.let { add("Temperature $it") }
+                status.worn?.let {
+                    add(stringResource(if (it) R.string.motion_lab_worn else R.string.motion_lab_not_worn))
+                }
+                status.temperatureWord?.let { add(stringResource(R.string.motion_lab_temperature, it)) }
             }
             if (details.isNotEmpty()) {
                 Text(details.joinToString(" · "), style = MaterialTheme.typography.bodyLarge)
             }
-            SelectableChip(
-                label = "Read glasses status aloud",
-                selected = false,
-                showCheckmark = false,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = onSpeak,
-            )
+            SwitchButton(label = stringResource(R.string.motion_lab_read_status), onClick = onSpeak)
         }
     }
 }

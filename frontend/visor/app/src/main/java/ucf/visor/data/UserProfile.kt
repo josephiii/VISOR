@@ -4,6 +4,7 @@ import ucf.visor.data.SpeechRates.BaselineSyllablesPerSecond
 import ucf.visor.data.SpeechRates.Fast
 import ucf.visor.data.SpeechRates.Normal
 import ucf.visor.data.SpeechRates.Step
+import ucf.visor.stt.CameraCommand
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -116,6 +117,13 @@ object SpeechRates {
 enum class Verbosity { BRIEF, STANDARD, DETAILED }
 
 /**
+ * Light or dark: as the phone is set ([SYSTEM]), or always one of them.
+ * Light-sensitive users may want VISOR dark even when the rest of their phone
+ * isn't, and some users read dark text on light far better.
+ */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/**
  * User-controlled text size, layered on top of the app's already-enlarged
  * base type scale. Section 508 calls for text resizable up to 200% without
  * losing content or functionality; EXTRA_LARGE combines with a user's OS
@@ -137,17 +145,35 @@ data class UserProfile(
     val visionDescription: String = "",
     val severity: Severity = Severity.MODERATE,
     val speechRate: Float = SpeechRates.Normal,
+    /** How loud each kind of thing VISOR says and plays is — see [AudioMix]. */
+    val audio: AudioMix = AudioMix(),
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val textScale: TextScale = TextScale.EXTRA_LARGE,
+
+    // Commands. Every one is on until the user turns it off.
+
     /**
-     * Say "VISOR GO" to navigate by voice.
+     * Say "VISOR GO" to navigate by voice. On by default like the rest: the
+     * microphone already listens for the camera wake phrases, so this adds a
+     * phrase to listen for, not a microphone.
      */
-    val voiceNavigationEnabled: Boolean = false,
+    val voiceNavigationEnabled: Boolean = true,
     /** Tap-fallback navigation buttons rendered on the glasses' own display —
-     *  see GlassesNavigationController. Defaults on: unlike voice, it has no
-     *  privacy/noise trade-off, so it should just work once glasses are paired. */
+     *  see GlassesNavigationController. */
     val glassesTapNavigationEnabled: Boolean = true,
+    /** The camera features a wake phrase alone starts, such as "VISOR, read this". */
+    val cameraCommands: Set<CameraCommand> = CameraCommand.entries.toSet(),
+    /** "Hey Meta, start VISOR" starts a session. VISOR opens either way: Meta AI opens it. */
+    val voiceLaunchEnabled: Boolean = true,
+
+    /**
+     * VISOR's buzzes: as a session starts and ends, as it starts and stops
+     * listening, and as a button is pressed (see ui.feedback.Haptics). On until
+     * the user turns it off, like the sounds it goes with.
+     */
+    val vibrationEnabled: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About

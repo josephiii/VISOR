@@ -18,6 +18,11 @@ import androidx.compose.ui.unit.sp
 /**
  * A single-line [Text] that shrinks its own font size in small steps until it fits
  * the available width, instead of wrapping or getting clipped.
+ *
+ * Only for the VISOR wordmark in [VisorHeader], which is a logo set in type. Never
+ * use it for a control's label: shrunk below the size the user chose and then cut
+ * off, labels read "Forgot Passwor" and "SIGN UI" at large text sizes (WCAG 1.4.4).
+ * A label wraps onto more lines instead, as in [VisorButton] and [SelectableChip].
  */
 @Composable
 fun AutoSizeText(

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -24,12 +25,13 @@ fun TipItem(
     title: String? = null,
 ) {
     Row(modifier = modifier.fillMaxWidth()) {
+        // For the eye only: the tip's words say it all.
         Icon(
             painter = painterResource(id = iconResId),
-            contentDescription = "Tip icon",
+            contentDescription = null,
             modifier = Modifier
                 .padding(start = 4.dp, top = 4.dp)
-                .width(24.dp),
+                .size(iconSizeFor(MaterialTheme.typography.titleMedium)),
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(

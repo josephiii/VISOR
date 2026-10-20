@@ -17,6 +17,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -42,21 +43,32 @@ import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
+import ucf.visor.data.AudioMix
 import ucf.visor.data.SessionStore
+import ucf.visor.data.SoundCategory
+import ucf.visor.data.VoiceCategory
 import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
 import ucf.visor.recognition.TextReaderOCR
+import ucf.visor.stt.CameraCommand
 import ucf.visor.stt.Listener
+import ucf.visor.stt.WakePhrases
+import ucf.visor.tts.Chimes
+import ucf.visor.tts.Chimes.Chime
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
 import ucf.visor.ui.VisorLayout
+import ucf.visor.ui.feedback.Haptics
+import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
+import ucf.visor.ui.viewmodel.SessionChange
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
@@ -71,30 +83,11 @@ class MainActivity : ComponentActivity() {
         val PERMISSIONS: Array<String> =
             arrayOf(BLUETOOTH, BLUETOOTH_CONNECT, CAMERA, INTERNET, RECORD_AUDIO)
 
-        private val OCR_WAKE_PHRASES = setOf(
-            "VISORWHATDOESTHISSAY",
-            "VISORREADTHIS",
-            "VISORWHATISTHIS",
-        )
-
-        private val OBJECT_WAKE_PHRASES = setOf(
-            "VISORIDENTIFY",
-            "VISORWHATISINFRONTOFME",
-            "VISORWHATAMIHOLDING"
-        )
-
-        private val SCENE_WAKE_PHRASES = setOf(
-            "VISORWHATDOYOUSEE",
-            "VISORDESCRIBESCENE",
-            "VISORSCENEDESCRIPTION",
-        )
-        private const val NAV_WAKE_PHRASE = "VISORGO"
+        // The camera wake phrases are CameraCommand's (stt/WakePhrases.kt).
+        private val NAV_WAKE_PHRASE = WakePhrases.keyword(WakePhrases.VOICE_NAVIGATION)
 
         /** How long a voice launch waits for its stream delivery before acting on the intent alone. */
         private const val VOICE_STREAM_GRACE_MS = 3_000L
-
-        private fun normalizeKeyword(phrase: String): String =
-            phrase.uppercase().filter { it.isLetter() }
     }
 
     val viewModel: VisorViewModel by viewModels()
@@ -109,7 +102,7 @@ class MainActivity : ComponentActivity() {
                 // Initialize the DAT SDK once the permissions are granted
                 // This is REQUIRED before using any Wearables APIs
                 Wearables.initialize(this)
-                listener.start()
+                updateWakeListening()
                 // Only now may the on-glasses nav touch the SDK — resolving
                 // viewModel.deviceSelector any earlier throws WearablesException.
                 glassesNav.onWearablesReady()
@@ -159,6 +152,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var sceneDescriber: ReadRequester
     private lateinit var hazardDetector: ReadRequester
     private lateinit var thinkingBeeper: ThinkingBeeper
+    private lateinit var chimes: Chimes
+    private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
 
 
@@ -173,6 +168,10 @@ class MainActivity : ComponentActivity() {
                 voiceNav.setEnabled(profile.voiceNavigationEnabled)
             }
 
+            LaunchedEffect(profile.voiceNavigationEnabled, profile.cameraCommands) {
+                updateWakeListening()
+            }
+
             LaunchedEffect(profile.glassesTapNavigationEnabled) {
                 glassesNav.setEnabled(profile.glassesTapNavigationEnabled)
             }
@@ -183,15 +182,20 @@ class MainActivity : ComponentActivity() {
 
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    VisorLayout(
-                        talk = { speaker.speak(it) },
-                        lastSpoken = { speaker.lastUtterance },
-                        viewModel = viewModel,
-                        onRequestWearablesPermission = ::requestWearablesPermission,
-                        onCapture = ::captureForMode,
-                        voiceNav = voiceNav,
-                        glassesNav = glassesNav,
-                    )
+                    CompositionLocalProvider(LocalHaptics provides haptics) {
+                        VisorLayout(
+                            talk = { text, category -> speaker.speak(text, category) },
+                            speakAt = { text, volume -> speaker.speakAt(text, volume) },
+                            playSample = ::playSample,
+                            lastSpoken = { speaker.lastUtterance },
+                            viewModel = viewModel,
+                            onRequestWearablesPermission = ::requestWearablesPermission,
+                            onToggleSession = ::toggleSession,
+                            onCapture = ::captureForMode,
+                            voiceNav = voiceNav,
+                            glassesNav = glassesNav,
+                        )
+                    }
                 }
 
             }
@@ -202,19 +206,37 @@ class MainActivity : ComponentActivity() {
         )
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
-        speaker = Speaker(this)
-        thinkingBeeper = ThinkingBeeper(isSpeaking = { speaker.isSpeaking() })
+        // Volumes are read from the profile as each sound plays, not pushed in a
+        // LaunchedEffect like the speech rate: Settings plays a preview the
+        // moment a volume changes, before an effect would have run.
+        chimes = Chimes(loudness = { audio().loudness(it) })
+        haptics = Haptics(this) { viewModel.userProfile.value.vibrationEnabled }
+        speaker = Speaker(
+            this,
+            loudness = { audio().loudness(it) },
+            leadInMs = { chimes.remainingMs() },
+        )
+        thinkingBeeper = ThinkingBeeper(
+            isSpeaking = { speaker.isSpeaking() },
+            volume = { audio().loudness(SoundCategory.THINKING_BEEPS) },
+        )
 
         // Without real glasses, pair mock glasses in the debug menu and pick
         // the photo they should "take" (Select image).
-        textReader = TextReader(glassesCamera.forReading, textReaderOCR)
+        // Each camera feature says when its picture is taken, so Home can show
+        // "Thinking…" in place of "Taking picture…".
+        val camera = NotifyingPhotoSource(glassesCamera) { viewModel.onPictureTaken() }
+        textReader = TextReader(
+            NotifyingPhotoSource(glassesCamera.forReading) { viewModel.onPictureTaken() },
+            textReaderOCR,
+        )
 
-        objectIdentifier = ObjectIdentifier(glassesCamera, objectDetector)
+        objectIdentifier = ObjectIdentifier(camera, objectDetector)
 
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
-            photoSource = NotifyingPhotoSource(glassesCamera) {
-                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION)
+            photoSource = NotifyingPhotoSource(camera) {
+                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.SESSION_UPDATES)
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
@@ -222,16 +244,18 @@ class MainActivity : ComponentActivity() {
         )
 
         hazardDetector = HazardDetector(
-            photoSource = glassesCamera,
+            photoSource = camera,
             client = HazardClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
         )
 
         voiceNav = VoiceNavigationController(
             context = this,
-            speak = { speaker.speak(it) },
+            speak = { speaker.speak(it, VoiceCategory.VOICE_COMMANDS) },
             pauseWakeListening = { listener.stop() },
-            resumeWakeListening = { listener.start() },
+            // Not updateWakeListening(): this runs while voice navigation still
+            // holds the microphone, which that waits out.
+            resumeWakeListening = { if (wantsWakeListening()) listener.start() },
             isSpeaking = { speaker.isSpeaking() },
         )
 
@@ -243,12 +267,9 @@ class MainActivity : ComponentActivity() {
         // which phrase actually fired instead of owning a second Listener.
         listener = Listener(assets) { phrase ->
             Log.d("VISOR", "WAKE HEARD: $phrase")
-            when (normalizeKeyword(phrase)) {
-                in OCR_WAKE_PHRASES -> runCameraFeature(textReader)
-                in OBJECT_WAKE_PHRASES -> runCameraFeature(objectIdentifier)
-                in SCENE_WAKE_PHRASES -> runCameraFeature(sceneDescriber)
-                NAV_WAKE_PHRASE -> voiceNav.activate()
-            }
+            val keyword = WakePhrases.keyword(phrase)
+            if (keyword == NAV_WAKE_PHRASE) voiceNav.activate()
+            else CameraCommand.forKeyword(keyword)?.let(::onCameraCommand)
         }
 
         // Answer every "Hey Meta, start VISOR" the glasses deliver, exactly once.
@@ -265,17 +286,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** The volumes Settings has set for each kind of sound, as of right now. */
+    private fun audio(): AudioMix = viewModel.userProfile.value.audio
+
     /**
      * Every camera feature sounds the same, whether a wake phrase or Home's
      * capture button asked for it: "Taking picture", beeps while it thinks,
-     * then the answer.
+     * then the answer. Home shows each step too (see VisorViewModel.capture),
+     * and keeps the answer on screen, for anyone who can't hear them.
      */
     private fun runCameraFeature(feature: ReadRequester) {
-        speaker.speak(SpokenPhrases.TAKING_PICTURE)
+        viewModel.onCaptureStarted()
+        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.SESSION_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
             thinkingBeeper.stop()
-            speaker.speak(text)
+            viewModel.onAnswered(text)
+            speaker.speak(text, VoiceCategory.ANSWERS)
         }
     }
 
@@ -287,6 +314,96 @@ class MainActivity : ComponentActivity() {
             SessionMode.READER -> textReader
         }
     )
+
+    /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
+    private fun onCameraCommand(command: CameraCommand) {
+        if (command !in viewModel.userProfile.value.cameraCommands) {
+            // Silent on purpose. A command is often turned off because it kept
+            // starting by mistake, and announcing that would be the same nuisance.
+            Log.d("VISOR", "Wake phrase for $command ignored: turned off in Settings")
+            return
+        }
+        // A camera command needs a session running, as Home's capture button
+        // does. Said as voice navigation's own replies are, with the wake
+        // phrase listener paused (it says "VISOR GO"), and kept at the top of
+        // the screen as well, with the rejected buzz, for anyone who can't
+        // hear it.
+        val state = viewModel.uiState.value
+        if (!state.isSessionActive) {
+            val problem = getString(
+                when {
+                    !state.isAuthComplete -> R.string.camera_command_needs_login
+                    command == CameraCommand.READ_TEXT -> R.string.camera_command_needs_session_read_text
+                    command == CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_needs_session_identify_objects
+                    else -> R.string.camera_command_needs_session_describe_scene
+                }
+            )
+            haptics.rejected()
+            voiceNav.speakGuarded(problem)
+            viewModel.setRecentError(problem)
+            return
+        }
+        runCameraFeature(
+            when (command) {
+                CameraCommand.READ_TEXT -> textReader
+                CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
+                CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+            }
+        )
+    }
+
+    /**
+     * Home's session button, "start session" by voice and the glasses' own
+     * button: starts or ends the session and says so, with a chime and then
+     * words, each at its own volume.
+     */
+    private fun toggleSession() = viewModel.toggleSession(::requestWearablesPermission) { change ->
+        when (change) {
+            SessionChange.Started -> {
+                chimes.play(Chime.SESSION_START)
+                haptics.sessionStarted()
+                speaker.speak(SpokenPhrases.STARTING_SESSION, VoiceCategory.SESSION_UPDATES)
+            }
+
+            SessionChange.Ended -> {
+                chimes.play(Chime.SESSION_END)
+                haptics.sessionEnded()
+                speaker.speak(SpokenPhrases.ENDING_SESSION, VoiceCategory.SESSION_UPDATES)
+            }
+
+            // Why the button did nothing is the answer to pressing it: too
+            // important to go quiet along with "Starting session".
+            is SessionChange.NotStarted -> {
+                haptics.rejected()
+                speaker.speak(change.problem, VoiceCategory.ANSWERS)
+            }
+        }
+    }
+
+    /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */
+    private fun playSample(category: SoundCategory) = when (category) {
+        SoundCategory.THINKING_BEEPS -> thinkingBeeper.beepOnce()
+        SoundCategory.SESSION_CHIMES -> chimes.play(Chime.SESSION_START)
+    }
+
+    /**
+     * Whether any spoken command is on. With every one of them turned off in
+     * Settings, VISOR leaves the microphone alone.
+     */
+    private fun wantsWakeListening(): Boolean {
+        val profile = viewModel.userProfile.value
+        return profile.voiceNavigationEnabled || profile.cameraCommands.isNotEmpty()
+    }
+
+    /**
+     * Starts or stops listening for wake phrases to match Settings. Not while
+     * "VISOR GO" has the microphone: voice navigation hands it back itself, and
+     * checks [wantsWakeListening] as it does.
+     */
+    private fun updateWakeListening() {
+        if (!wearablesInitialized || voiceNav.state.value != VoiceNavState.IDLE) return
+        if (wantsWakeListening()) listener.start() else listener.stop()
+    }
 
     override fun onStart() {
         super.onStart()
@@ -329,13 +446,21 @@ class MainActivity : ComponentActivity() {
     private fun performVoiceLaunch(): VisorViewModel.VoiceLaunchResult {
         lastVoiceLaunchAt = SystemClock.elapsedRealtime()
         val result = viewModel.startSessionFromVoice()
-        speaker.speak(result.spoken)
+        if (result.startedSession) {
+            chimes.play(Chime.SESSION_START)
+            haptics.sessionStarted()
+        }
+        // As with Home's button, why a session did not start is an answer.
+        speaker.speak(
+            result.spoken,
+            if (result.success) VoiceCategory.SESSION_UPDATES else VoiceCategory.ANSWERS,
+        )
         return result
     }
 
     /** Registration begun in the Meta AI app: continue it here, and say so. */
     private fun onRegistrationRequest(request: RegistrationRequest) {
-        speaker.speak("Connecting VISOR to your glasses.")
+        speaker.speak("Connecting VISOR to your glasses.", VoiceCategory.SESSION_UPDATES)
         request.continueRegistration(this)
             .onFailure { error, _ -> Log.w("VISOR", "Registration request: ${error.description}") }
     }
@@ -349,6 +474,7 @@ class MainActivity : ComponentActivity() {
         voiceNav.shutdown()
         glassesNav.shutdown()
         thinkingBeeper.stop()
+        chimes.release()
         glassesCamera.close()
     }
 }

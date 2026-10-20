@@ -24,9 +24,20 @@ class CommandRecognizer(private val context: Context) {
 
     fun isAvailable(): Boolean = SpeechRecognizer.isRecognitionAvailable(context)
 
-    /** Starts listening for one utterance. [onResult] is called exactly once, with
-     *  the best-guess recognized text, or null if nothing usable was heard. */
-    fun listen(onResult: (String?) -> Unit) {
+    /**
+     * Starts listening for one utterance. [onResult] is called exactly once, with
+     * the best-guess recognized text, or null if nothing usable was heard.
+     *
+     * The microphone only opens some time after this is called, 0.6 to 0.9 s on
+     * most phones, which often play a tone of their own as it does. [onReady]
+     * says when it has opened and the user can speak, and [onSpeechEnded] when
+     * the user has stopped and the recognizer is working out what was said.
+     */
+    fun listen(
+        onReady: () -> Unit = {},
+        onSpeechEnded: () -> Unit = {},
+        onResult: (String?) -> Unit,
+    ) {
         if (!isAvailable()) {
             Log.w("VISOR CommandRecognizer", "Speech recognition unavailable on this device")
             onResult(null)
@@ -52,11 +63,11 @@ class CommandRecognizer(private val context: Context) {
 
             // Overridden functions to be updated as necessary...
             override fun onPartialResults(partialResults: Bundle) = Unit
-            override fun onReadyForSpeech(params: Bundle?) = Unit
+            override fun onReadyForSpeech(params: Bundle?) = onReady()
             override fun onBeginningOfSpeech() = Unit
             override fun onRmsChanged(rmsdB: Float) = Unit
             override fun onBufferReceived(buffer: ByteArray?) = Unit
-            override fun onEndOfSpeech() = Unit
+            override fun onEndOfSpeech() = onSpeechEnded()
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
         })
 

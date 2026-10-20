@@ -45,9 +45,44 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
+    private val _capture = MutableStateFlow(CaptureStatus.IDLE)
+    /** What the camera feature asked for last is doing (see [onCaptureStarted]). */
+    val capture: StateFlow<CaptureStatus> = _capture.asStateFlow()
+
+    private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
+    /** What a camera feature last answered, for Home's Last answer card. */
+    val lastAnswer: StateFlow<LastAnswer?> = _lastAnswer.asStateFlow()
+
+    // Wake phrases and Home's button can ask for a second picture before the
+    // first is answered; VISOR is working until every one of them is.
+    private var capturesInFlight = 0
+
     fun updateProfile(profile: UserProfile) {
         _userProfile.value = profile
         profileStore.save(profile)
+    }
+
+    /** A camera feature has been asked for: VISOR is taking a picture. Call on the main thread. */
+    fun onCaptureStarted() {
+        capturesInFlight++
+        _capture.value = CaptureStatus.TAKING_PICTURE
+    }
+
+    /** The glasses have taken the picture: VISOR is working out what is in it. */
+    fun onPictureTaken() {
+        if (_capture.value == CaptureStatus.TAKING_PICTURE) _capture.value = CaptureStatus.THINKING
+    }
+
+    /** A camera feature has answered with [text], which VISOR is now saying. */
+    fun onAnswered(text: String) {
+        capturesInFlight = (capturesInFlight - 1).coerceAtLeast(0)
+        if (capturesInFlight == 0) _capture.value = CaptureStatus.IDLE
+        showAnswer(text)
+    }
+
+    /** Shows [text] on Home's Last answer card, as an answer just given. */
+    fun showAnswer(text: String) {
+        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis())
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -161,6 +196,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
+     * Hides the debug menu's floating button, e.g. for a demo. Not saved
+     * anywhere, so it is back the next time VISOR starts (a rotation keeps it
+     * hidden: this ViewModel outlives that).
+     */
+    fun hideDebugButton() {
+        _uiState.update { it.copy(isDebugButtonHidden = true) }
+    }
+
+    /**
      * Clears every pending navigation request.
      *
      * The screen flags in [VisorUiState] are one-shot *events*, not state:
@@ -247,6 +291,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         sessionStore.clear() // drops tokens + loggedIn flag
+        // It may be text read off someone's mail: not for the next person to log in.
+        _lastAnswer.value = null
     }
 
     /**
@@ -326,10 +372,16 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
-    fun settings() {
+    /** Opens Settings at [section], or at its hub of sections when null (the navigation bar's tab). */
+    fun settings(section: SettingsSection? = null) {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(isPairingHardware = false) }
-        _uiState.update { it.copy(atSettings = true) }
+        _uiState.update { it.copy(atSettings = true, settingsSection = section) }
+    }
+
+    /** Within Settings: opens [section], or goes back to the hub when null. */
+    fun openSettingsSection(section: SettingsSection?) {
+        _uiState.update { it.copy(settingsSection = section) }
     }
 
     fun help() {
@@ -369,7 +421,8 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Starts or ends the session (Home's button, or "start session" by voice
-     * or on the glasses), then [announce]s what happened.
+     * or on the glasses), then tells [onChange] what happened, for it to
+     * announce.
      *
      * A session uses the glasses camera, so starting one first makes sure VISOR
      * may use it, asking through the Meta AI app if needed ([requestPermission]).
@@ -378,27 +431,34 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun toggleSession(
         requestPermission: suspend (Permission) -> PermissionStatus,
-        announce: (String) -> Unit,
+        onChange: (SessionChange) -> Unit,
     ) {
         if (_uiState.value.isSessionActive) {
             _uiState.update { it.copy(isSessionActive = false) }
-            announce("Ending session")
+            onChange(SessionChange.Ended)
             return
         }
         viewModelScope.launch {
             val problem = cameraPermissionProblem(requestPermission)
             if (problem != null) {
                 setRecentError(problem)
-                announce(problem)
+                onChange(SessionChange.NotStarted(problem))
                 return@launch
             }
             _uiState.update { it.copy(isSessionActive = true) }
-            announce("Starting session")
+            onChange(SessionChange.Started)
         }
     }
 
-    /** What VISOR did for one "Hey Meta, start VISOR", and what to tell the wearer. */
-    data class VoiceLaunchResult(val success: Boolean, val spoken: String)
+    /**
+     * What VISOR did for one "Hey Meta, start VISOR", and what to tell the
+     * wearer. [startedSession] is false when one was already running.
+     */
+    data class VoiceLaunchResult(
+        val success: Boolean,
+        val spoken: String,
+        val startedSession: Boolean = false,
+    )
 
     /**
      * The action behind a voice launch: go Home and make sure a session is
@@ -407,6 +467,14 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      * and a second "start" must not end the session the first one began.
      */
     fun startSessionFromVoice(): VoiceLaunchResult {
+        // Turned off in Settings. Meta AI has already opened VISOR, so say why
+        // that is all that happened.
+        if (!_userProfile.value.voiceLaunchEnabled) {
+            return VoiceLaunchResult(
+                success = false,
+                spoken = "VISOR is open. Starting a session by voice is turned off in Settings.",
+            )
+        }
         if (!_uiState.value.isAuthComplete) {
             return VoiceLaunchResult(
                 success = false,
@@ -420,6 +488,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             success = true,
             spoken = if (alreadyRunning) "VISOR is ready. Your session is already running."
             else "VISOR is ready. Session started.",
+            startedSession = !alreadyRunning,
         )
     }
 
