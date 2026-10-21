@@ -149,6 +149,7 @@
     <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
     <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
+    <string name="settings_command_ask_question">Ask a question</string>
     <!-- Said and shown at the top of the screen when a camera command is said with no session running -->
     <string name="camera_command_needs_session_read_text" description="A camera command was said with no session running">Start a session first to read text. Say \"VISOR GO, start session\", or press Start session on Home.</string>
     <string name="camera_command_needs_session_identify_objects" description="A camera command was said with no session running">Start a session first to identify objects. Say \"VISOR GO, start session\", or press Start session on Home.</string>

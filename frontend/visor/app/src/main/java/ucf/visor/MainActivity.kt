@@ -73,6 +73,8 @@ import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
 
+import ucf.visor.stt.CommandRecognizer
+import ucf.visor.ui.voice.SceneQuestionController
 
 class MainActivity : ComponentActivity() {
 
@@ -85,7 +87,10 @@ class MainActivity : ComponentActivity() {
 
         // The camera wake phrases are CameraCommand's (stt/WakePhrases.kt).
         private val NAV_WAKE_PHRASE = WakePhrases.keyword(WakePhrases.VOICE_NAVIGATION)
-
+        private val QUESTION_WAKE_PHRASES = setOf(
+            "VISORQUESTION",
+            "VISORIHAVEAQUESTION",
+        )
         /** How long a voice launch waits for its stream delivery before acting on the intent alone. */
         private const val VOICE_STREAM_GRACE_MS = 3_000L
     }
@@ -127,6 +132,8 @@ class MainActivity : ComponentActivity() {
             permissionContinuation = null
         }
 
+
+
     // Convenience method to make a permission request in a sequential manner
     // Uses a Mutex to ensure requests are processed one at a time, preventing race conditions
     suspend fun requestWearablesPermission(permission: Permission): PermissionStatus {
@@ -155,6 +162,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var chimes: Chimes
     private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
+
+    private lateinit var commandRecognizer: CommandRecognizer
+    private lateinit var sceneQuestion: SceneQuestionController
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -241,6 +251,21 @@ class MainActivity : ComponentActivity() {
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
             fallback = objectDetector,
+        )
+
+        commandRecognizer = CommandRecognizer(this)
+        sceneQuestion = SceneQuestionController(
+            recognizer = commandRecognizer,
+            describer = SceneDescriber(
+                photoSource = camera,
+                vlm = VlmClient(accessToken = sessionStore::accessToken),
+                scope = lifecycleScope,
+            ),
+            beeper = thinkingBeeper,
+            speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
+            isSpeaking = { speaker.isSpeaking() },
+            pauseWakeListening = { listener.stop() },
+            resumeWakeListening = { if (wantsWakeListening()) listener.start() },
         )
 
         hazardDetector = HazardDetector(
@@ -343,11 +368,16 @@ class MainActivity : ComponentActivity() {
             viewModel.setRecentError(problem)
             return
         }
+        if (command == CameraCommand.ASK_QUESTION) {
+            sceneQuestion.activate()
+            return
+        }
         runCameraFeature(
             when (command) {
                 CameraCommand.READ_TEXT -> textReader
                 CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
                 CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+                CameraCommand.ASK_QUESTION -> sceneDescriber   // unreachable, handled above
             }
         )
     }
@@ -476,5 +506,6 @@ class MainActivity : ComponentActivity() {
         thinkingBeeper.stop()
         chimes.release()
         glassesCamera.close()
+        commandRecognizer.shutdown()
     }
 }
