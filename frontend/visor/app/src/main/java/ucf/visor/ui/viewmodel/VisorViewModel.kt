@@ -551,29 +551,22 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
     }
 
-    fun toggleHazardAwarenessMode() {
-        _session.update { it.copy(inHazardAwarenessMode = true) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-    }
+    fun toggleHazardAwarenessMode() = setMode(SessionMode.HAZARD)
 
-    fun toggleSceneDescriptionMode() {
-        _session.update { it.copy(inSceneDescriptionMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-    }
+    fun toggleSceneDescriptionMode() = setMode(SessionMode.SCENE)
 
-    fun toggleReadingAssistanceMode() {
-        _session.update { it.copy(inReadingAssistanceMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-    }
+    fun toggleReadingAssistanceMode() = setMode(SessionMode.READER)
+
+    fun toggleQuestionMode() = setMode(SessionMode.QUESTION)
 
     fun setMode(newMode: SessionMode) {
-        when (newMode) {
-            SessionMode.HAZARD -> toggleHazardAwarenessMode()
-            SessionMode.SCENE -> toggleSceneDescriptionMode()
-            else -> toggleReadingAssistanceMode()
+        _session.update {
+            VisorSession(
+                inHazardAwarenessMode = newMode == SessionMode.HAZARD,
+                inSceneDescriptionMode = newMode == SessionMode.SCENE,
+                inReadingAssistanceMode = newMode == SessionMode.READER,
+                inQuestionMode = newMode == SessionMode.QUESTION,
+            )
         }
     }
 

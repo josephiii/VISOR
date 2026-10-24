@@ -332,13 +332,18 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Home's capture button: the camera feature for the session's mode. */
-    private fun captureForMode() = runCameraFeature(
-        when (viewModel.session.value.mode) {
+    private fun captureForMode() {
+        val feature = when (viewModel.session.value.mode) {
             SessionMode.HAZARD -> hazardDetector
             SessionMode.SCENE -> sceneDescriber
             SessionMode.READER -> textReader
+            SessionMode.QUESTION -> {
+                sceneQuestion.activate()
+                return
+            }
         }
-    )
+        runCameraFeature(feature)
+    }
 
     /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
     private fun onCameraCommand(command: CameraCommand) {

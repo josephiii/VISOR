@@ -16,6 +16,7 @@ class SceneQuestionController(
     private val isSpeaking: () -> Boolean,
     private val pauseWakeListening: () -> Unit,
     private val resumeWakeListening: () -> Unit,
+    private val listenDelayMs: Long = 500L,
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
@@ -26,7 +27,10 @@ class SceneQuestionController(
         pauseWakeListening()
         speak("What's your question?")
         whenQuiet {
-            recognizer.listen { question -> onQuestion(question) }
+            handler.postDelayed(
+                { recognizer.listen { question -> onQuestion(question) } },
+                listenDelayMs,
+            )
         }
     }
 
