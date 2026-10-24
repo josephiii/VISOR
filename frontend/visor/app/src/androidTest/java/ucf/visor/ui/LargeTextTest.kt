@@ -68,6 +68,7 @@ class LargeTextTest {
             onLoginSuccess = { _, _ -> },
             onForgotPasswordClick = {},
             onSignUpClick = {},
+            onUnverified = {},
         )
     }
 

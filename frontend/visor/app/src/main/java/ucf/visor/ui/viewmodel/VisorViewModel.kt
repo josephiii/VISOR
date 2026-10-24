@@ -564,25 +564,36 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _session.update { it.copy(inHazardAwarenessMode = true) }
         _session.update { it.copy(inSceneDescriptionMode = false) }
         _session.update { it.copy(inReadingAssistanceMode = false) }
+        _session.update { it.copy(inObjectIdentificationMode = false) }
     }
 
     fun toggleSceneDescriptionMode() {
         _session.update { it.copy(inSceneDescriptionMode = true) }
         _session.update { it.copy(inHazardAwarenessMode = false) }
         _session.update { it.copy(inReadingAssistanceMode = false) }
+        _session.update { it.copy(inObjectIdentificationMode = false) }
     }
 
     fun toggleReadingAssistanceMode() {
         _session.update { it.copy(inReadingAssistanceMode = true) }
         _session.update { it.copy(inHazardAwarenessMode = false) }
         _session.update { it.copy(inSceneDescriptionMode = false) }
+        _session.update { it.copy(inObjectIdentificationMode = false) }
+    }
+
+    fun toggleObjectIdentificationMode() {
+        _session.update { it.copy(inObjectIdentificationMode = true) }
+        _session.update { it.copy(inHazardAwarenessMode = false) }
+        _session.update { it.copy(inSceneDescriptionMode = false) }
+        _session.update { it.copy(inReadingAssistanceMode = false) }
     }
 
     fun setMode(newMode: SessionMode) {
         when (newMode) {
             SessionMode.HAZARD -> toggleHazardAwarenessMode()
             SessionMode.SCENE -> toggleSceneDescriptionMode()
-            else -> toggleReadingAssistanceMode()
+            SessionMode.READER -> toggleReadingAssistanceMode()
+            SessionMode.IDENTIFY -> toggleObjectIdentificationMode()
         }
     }
 

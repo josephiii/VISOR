@@ -312,6 +312,7 @@ class MainActivity : ComponentActivity() {
             SessionMode.HAZARD -> hazardDetector
             SessionMode.SCENE -> sceneDescriber
             SessionMode.READER -> textReader
+            SessionMode.IDENTIFY -> objectIdentifier
         }
     )
 

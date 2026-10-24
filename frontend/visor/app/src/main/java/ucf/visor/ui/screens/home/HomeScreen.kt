@@ -473,4 +473,5 @@ private fun captureLabel(mode: SessionMode): Int = when (mode) {
     SessionMode.HAZARD -> R.string.home_capture_hazard
     SessionMode.SCENE -> R.string.home_capture_scene
     SessionMode.READER -> R.string.home_capture_reader
+    SessionMode.IDENTIFY -> R.string.home_capture_identify
 }
