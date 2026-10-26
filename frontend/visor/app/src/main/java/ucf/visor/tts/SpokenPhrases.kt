@@ -17,6 +17,14 @@ object SpokenPhrases {
 
     // A capture has started.
     const val TAKING_PICTURE = "Taking picture"
+
+    /**
+     * "Taking picture", led by the mode a camera wake phrase has just switched
+     * the session to, if it did: "Switched to Reading Assistance. Taking
+     * picture". One sentence, as speaking twice would cut the first one off.
+     */
+    fun takingPicture(switchedTo: SessionMode? = null): String =
+        if (switchedTo == null) TAKING_PICTURE else "Switched to ${modeName(switchedTo)}. $TAKING_PICTURE"
     const val AWAITING_SCENE_DESCRIPTION = "Awaiting scene description"
 
     // Glasses camera.
@@ -60,6 +68,12 @@ object SpokenPhrases {
     const val ENDING_SESSION = "Ending session"
 
     /** Said when the session switches to [mode], from Home, by voice, or in Phase 1. */
+    private fun modeName(mode: SessionMode): String = when (mode) {
+        SessionMode.HAZARD -> "Hazard Awareness"
+        SessionMode.SCENE -> "Scene Description"
+        SessionMode.READER -> "Reading Assistance"
+    }
+
     fun modeActivated(mode: SessionMode): String = when (mode) {
         SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
         SessionMode.SCENE -> "Scene Description Mode Activated!"

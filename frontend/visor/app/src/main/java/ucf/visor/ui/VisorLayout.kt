@@ -104,7 +104,8 @@ fun VisorLayout(
     // below), for a user who isn't looking at the screen: a firm buzz as the
     // microphone opens for a command, and a light tick as it closes. The
     // microphone opens a moment after VISOR says "Listening." (see
-    // VoiceNavState.PROMPTING), and the buzz waits for it, so it means "speak now".
+    // VoiceNavState.PROMPTING), and the buzz and the glow both wait for it, so
+    // they mean "speak now".
     val haptics = LocalHaptics.current
     LaunchedEffect(voiceNav, haptics) {
         voiceNav?.state

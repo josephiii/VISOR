@@ -45,33 +45,35 @@ import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.icon
 import ucf.visor.ui.viewmodel.labelRes
 
-/** Between the dot, the words, the mode's icon and the mode's name. */
+/** Between the dot, the mode's icon and the mode's name. */
 private val PartGap = 10.dp
 
 /**
  * Whether a session is running, at the top of every screen once logged in:
- * "Session on · ⚠ Hazard Awareness", or "Session off". A session goes on
- * across every screen, but Home's button was the only place it showed. The
- * top edge is where a user with central vision loss can catch it.
+ * "● ⚠ Hazard Awareness", or "○ Session off". A session goes on across every
+ * screen, but Home's button was the only place it showed. The top edge is
+ * where a user with central vision loss can catch it.
  *
- * On, it is filled, with a solid dot; off, it is an outline with a hollow
- * one, so the state shows by shape and words as well as color. It is always
- * there, on or off, and always one line tall, so starting a session never
- * moves the screen below it. Tapping it goes Home, where a session is started
- * and ended.
+ * On, it is filled, with a solid dot, and shows the session's mode; off, it is
+ * an outline with a hollow dot and says "Session off". So the state shows by
+ * shape and words as well as color, without "Session on" in front: Home's
+ * button already says how to start and end one. It is always there, on or off,
+ * and always one line tall, so starting a session never moves the screen below
+ * it. Tapping it goes Home, where a session is started and ended.
  *
- * Text is never shrunk or cut off to keep it to one line (WCAG 1.4.4).
- * Instead, the longest of these that fits is shown, at full size:
+ * Text is never shrunk or cut off to keep it to one line (WCAG 1.4.4). While a
+ * session runs it has two styles, at full size:
  *
- * 1. ● Session on · ⚠ Hazard Awareness
- * 2. ● On · ⚠ Hazard Awareness
- * 3. ● Session on · ⚠
- * 4. ● On · ⚠
+ * 1. ● ⚠ Hazard Awareness
+ * 2. ● ⚠
  *
- * The mode's icon is always there, so when the mode's name has to go, what
- * remains still says which mode it is. The icon is the one beside each mode on
- * Home, so it can be learned there, at full size, next to its name. A screen
- * reader always hears everything: "Session on, Hazard Awareness".
+ * The first is shown only when every mode's name fits, so a text size has one
+ * style for all three modes, and switching modes never changes how the bar
+ * looks. The mode's icon is always there, so what remains still says which
+ * mode it is. The icon is the one beside each mode on Home, so it can be
+ * learned there, at full size, next to its name. Off, it says "Session off",
+ * or "Off" where that doesn't fit. A screen reader always hears everything:
+ * "Session on, Hazard Awareness".
  */
 @Composable
 fun SessionStatusBar(
@@ -85,14 +87,14 @@ fun SessionStatusBar(
     val interactionSource = remember { MutableInteractionSource() }
     val state = interactionSource.controlState()
     val modeName = stringResource(mode.labelRes)
+    val modeNames = SessionMode.entries.map { stringResource(it.labelRes) }
     val spoken = if (active) stringResource(R.string.session_status_on_spoken, modeName)
     else stringResource(R.string.session_status_off)
     val goHome = stringResource(R.string.session_status_go_home)
     val contentColor = if (active) colors.onPrimary else colors.onSurface
     val style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-    val longWords = stringResource(if (active) R.string.session_status_on else R.string.session_status_off)
-    val shortWords = stringResource(if (active) R.string.session_status_on_short else R.string.session_status_off_short)
-    val separator = stringResource(R.string.session_status_separator)
+    val offWords = stringResource(R.string.session_status_off)
+    val offShortWords = stringResource(R.string.session_status_off_short)
 
     Box(
         modifier = modifier
@@ -117,7 +119,7 @@ fun SessionStatusBar(
                         onClick()
                     },
                 )
-                // Named here, without the "·" a screen reader would read aloud.
+                // Named here, for a screen reader to hear in full.
                 .semantics { contentDescription = spoken }
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.CenterStart,
@@ -125,20 +127,6 @@ fun SessionStatusBar(
             val fits = rememberOneLineFit(style, maxWidth)
             val dotSize = iconSizeFor(style) * 0.7f
             val iconSize = iconSizeFor(style)
-            // In the order they are tried: the first that fits is shown.
-            val layouts = if (active) {
-                listOf(
-                    StatusLayout(longWords, separator, modeName),
-                    StatusLayout(shortWords, separator, modeName),
-                    StatusLayout(longWords, separator, null),
-                    StatusLayout(shortWords, separator, null),
-                )
-            } else {
-                listOf(StatusLayout(longWords), StatusLayout(shortWords))
-            }
-            val chosen = layouts.firstOrNull { layout ->
-                fits(layout.texts(), dotSize + layout.iconWidth(iconSize) + PartGap * layout.gaps())
-            } ?: layouts.last()
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(PartGap),
@@ -146,19 +134,22 @@ fun SessionStatusBar(
                 modifier = Modifier.clearAndSetSemantics {},
             ) {
                 StatusDot(on = active, color = if (active) colors.onPrimary else colors.outline, size = dotSize)
-                // The last layout may still not fit at a size no phone has yet;
-                // it wraps then, rather than be cut off.
-                val wrap = chosen == layouts.last()
-                StatusText(chosen.words, style, contentColor, wrap)
                 if (active) {
-                    StatusText(chosen.separator.orEmpty(), style, contentColor, wrap)
                     Icon(
                         imageVector = mode.icon,
                         contentDescription = null,
                         tint = contentColor,
                         modifier = Modifier.size(iconSize),
                     )
-                    chosen.modeName?.let { StatusText(it, style, contentColor, wrap) }
+                    // Named only if the longest mode's name would fit too.
+                    if (modeNames.all { fits(it, dotSize + iconSize + PartGap * 2) }) {
+                        StatusText(modeName, style, contentColor, wrap = false)
+                    }
+                } else {
+                    // "Off" may still not fit at a size no phone has yet; it
+                    // wraps then, rather than be cut off.
+                    val long = fits(offWords, dotSize + PartGap)
+                    StatusText(if (long) offWords else offShortWords, style, contentColor, wrap = !long)
                 }
             }
         }
@@ -166,36 +157,16 @@ fun SessionStatusBar(
 }
 
 /**
- * One way to show the bar: its [words] ("Session on" or "On"), and while a
- * session runs, the [separator], the mode's icon, and the [modeName] when it
- * fits.
- */
-private data class StatusLayout(
-    val words: String,
-    val separator: String? = null,
-    val modeName: String? = null,
-) {
-    fun texts(): List<String> = listOfNotNull(words, separator, modeName)
-
-    fun iconWidth(iconSize: Dp): Dp = if (separator != null) iconSize else 0.dp
-
-    /** Gaps between the parts: one after the dot, and one between each other part. */
-    fun gaps(): Int = texts().size + (if (separator != null) 1 else 0)
-}
-
-/**
- * Whether some pieces of text, each in [style] on one line, and [extra] room
- * besides, fit across [maxWidth].
+ * Whether some text, in [style] on one line, and [extra] room besides, fits
+ * across [maxWidth].
  */
 @Composable
-private fun rememberOneLineFit(style: TextStyle, maxWidth: Dp): (List<String>, Dp) -> Boolean {
+private fun rememberOneLineFit(style: TextStyle, maxWidth: Dp): (String, Dp) -> Boolean {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     return remember(measurer, density, style, maxWidth) {
-        { texts, extra ->
-            val textWidth = texts.sumOf { text ->
-                measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
-            }
+        { text, extra ->
+            val textWidth = measurer.measure(text, style, maxLines = 1, softWrap = false).size.width
             with(density) { textWidth.toDp() + extra } <= maxWidth
         }
     }

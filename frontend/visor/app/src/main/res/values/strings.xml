@@ -217,10 +217,7 @@
     <string name="home_read_again" description="Says the last answer again">Read again</string>
 
     <!-- The session status bar at the top of every screen once logged in -->
-    <!-- The bar is always one line: when "Session on · Hazard Awareness" doesn't fit, it shortens to "On", then shows only the mode's icon -->
-    <string name="session_status_on" description="Session status bar while a session runs, before the mode's icon and name">Session on</string>
-    <string name="session_status_on_short" description="Session status bar while a session runs, when Session on doesn't fit on one line">On</string>
-    <string name="session_status_separator" translatable="false">·</string>
+    <!-- The bar is always one line. While a session runs it shows the mode's icon and name, or only the icon when any mode's name doesn't fit -->
     <string name="session_status_on_spoken" description="What a screen reader says for the session status bar while a session runs">Session on, <xliff:g id="mode">%1$s</xliff:g></string>
     <string name="session_status_off" description="Session status bar while no session runs">Session off</string>
     <string name="session_status_off_short" description="Session status bar while no session runs, when Session off doesn't fit on one line">Off</string>

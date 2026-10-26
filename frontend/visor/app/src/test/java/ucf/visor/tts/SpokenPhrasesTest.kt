@@ -3,8 +3,12 @@ package ucf.visor.tts
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import ucf.visor.network.Hazard
+import ucf.visor.ui.viewmodel.SessionMode
 
-/** What a wearer hears from hazard detection: the nearest first, in whole feet. */
+/**
+ * What a wearer hears from hazard detection, the nearest first, in whole feet;
+ * and as a capture starts.
+ */
 class SpokenPhrasesTest {
 
     private fun hazard(name: String, meters: Float) =
@@ -25,5 +29,14 @@ class SpokenPhrasesTest {
     @Test
     fun noHazardsSaysSoWithoutSoundingLikeTheWayIsClear() {
         assertEquals(SpokenPhrases.NO_HAZARDS_FOUND, SpokenPhrases.hazardsAhead(emptyList()))
+    }
+
+    @Test
+    fun aCaptureThatSwitchedModesSaysSoInTheSameSentence() {
+        assertEquals(SpokenPhrases.TAKING_PICTURE, SpokenPhrases.takingPicture())
+        assertEquals(
+            "Switched to Reading Assistance. Taking picture",
+            SpokenPhrases.takingPicture(switchedTo = SessionMode.READER),
+        )
     }
 }

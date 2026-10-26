@@ -29,8 +29,8 @@ import ucf.visor.ui.viewmodel.SessionMode
 /**
  * The session status bar is one line tall whatever the text size, on or off,
  * in every mode: on the walkthrough's phone (411 dp wide) at VISOR's Extra
- * large, with Android's font size at 100% and at 200%. It shortens its words,
- * and then shows the mode's icon alone, rather than wrap.
+ * large, with Android's font size at 100% and at 200%. It shows the mode's
+ * icon alone, rather than wrap, when any mode's name doesn't fit.
  */
 @RunWith(AndroidJUnit4::class)
 class SessionStatusBarTest {

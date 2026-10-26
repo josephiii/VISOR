@@ -38,10 +38,14 @@ import androidx.compose.ui.unit.dp
  * is one of three cues: VISOR also says "Listening." out loud, and VisorLayout
  * buzzes the phone as listening starts and stops.
  *
- * It glows steadily while VISOR says "Listening." ([VoiceNavState.PROMPTING])
- * and while it works out what was said, and breathes only while the
- * microphone is actually open ([VoiceNavState.LISTENING]): the breathing,
- * like the buzz, means "speak now".
+ * It comes on only once the microphone is actually open
+ * ([VoiceNavState.LISTENING]), the same moment the phone buzzes, and not while
+ * VISOR is still saying "Listening." ([VoiceNavState.PROMPTING]): the
+ * microphone opens a moment after that, and a glow then would tell the user to
+ * speak before anything can hear them. Like the buzz, the glow means "speak
+ * now". It breathes while the microphone is open, then holds steady while
+ * VISOR works out what was said ([VoiceNavState.PROCESSING]), and fades out as
+ * VISOR answers.
  *
  * The breathing is slow, about one breath every two seconds, nowhere near the
  * three flashes a second Section 508 warns about. With the system's animations
@@ -53,9 +57,10 @@ fun VoiceListeningGlow(state: VoiceNavState, modifier: Modifier = Modifier) {
     val cornerRadius = screenCornerRadius()
 
     AnimatedVisibility(
-        visible = state != VoiceNavState.IDLE,
+        visible = state == VoiceNavState.LISTENING || state == VoiceNavState.PROCESSING,
         modifier = modifier,
-        enter = fadeIn(),
+        // Quick, so the glow arrives with the buzz rather than after it.
+        enter = fadeIn(tween(FadeInMillis)),
         exit = fadeOut(),
     ) {
         val strength by rememberInfiniteTransition(label = "listening").animateFloat(
@@ -124,3 +129,4 @@ private val EdgeWidth = 6.dp
 private val GlowWidth = 28.dp
 private const val GlowAlpha = 0.5f
 private const val BreathMillis = 1_100
+private const val FadeInMillis = 120

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.vector.ImageVector
 import ucf.visor.R
+import ucf.visor.stt.CameraCommand
 
 enum class SessionMode { HAZARD, SCENE, READER }
 
@@ -31,6 +32,21 @@ val SessionMode.icon: ImageVector
         SessionMode.HAZARD -> Icons.Filled.Warning
         SessionMode.SCENE -> Icons.Filled.Landscape
         SessionMode.READER -> Icons.AutoMirrored.Filled.MenuBook
+    }
+
+/**
+ * The mode a camera wake phrase belongs to. Saying one switches the session to
+ * its mode, so the status bar, Home's mode choices and Home's capture button
+ * all follow what the user last asked for: after "VISOR, read this", the
+ * capture button reads text too. Naming objects goes with describing the
+ * scene, the mode about what is around the wearer (its description falls back
+ * to naming objects when the server can't be reached).
+ */
+val CameraCommand.mode: SessionMode
+    get() = when (this) {
+        CameraCommand.READ_TEXT -> SessionMode.READER
+        CameraCommand.IDENTIFY_OBJECTS -> SessionMode.SCENE
+        CameraCommand.DESCRIBE_SCENE -> SessionMode.SCENE
     }
 
 /** What [VisorViewModel.toggleSession] did, for the caller to announce. */

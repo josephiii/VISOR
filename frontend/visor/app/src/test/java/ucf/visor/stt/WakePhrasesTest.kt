@@ -4,10 +4,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.mode
 import java.io.File
 
 /**
- * The wake phrases: which camera feature each starts, and that the app (and so
+ * The wake phrases: which camera feature each starts, the session mode it
+ * switches to, and that the app (and so
  * Settings, which lists them) and the keyword model listen for the same ones.
  */
 class WakePhrasesTest {
@@ -18,6 +21,13 @@ class WakePhrasesTest {
         assertEquals(CameraCommand.READ_TEXT, CameraCommand.forKeyword("▁VI S OR ▁RE AD ▁THIS"))
         assertEquals(CameraCommand.IDENTIFY_OBJECTS, CameraCommand.forKeyword("VISOR WHAT AM I HOLDING"))
         assertEquals(CameraCommand.DESCRIBE_SCENE, CameraCommand.forKeyword("VISOR, what do you see?"))
+    }
+
+    @Test
+    fun eachCameraCommandSwitchesToTheModeThatDoesTheSameKindOfThing() {
+        assertEquals(SessionMode.READER, CameraCommand.READ_TEXT.mode)
+        assertEquals(SessionMode.SCENE, CameraCommand.IDENTIFY_OBJECTS.mode)
+        assertEquals(SessionMode.SCENE, CameraCommand.DESCRIBE_SCENE.mode)
     }
 
     @Test

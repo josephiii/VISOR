@@ -68,6 +68,7 @@ import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SessionChange
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.viewmodel.mode
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
@@ -293,11 +294,12 @@ class MainActivity : ComponentActivity() {
      * Every camera feature sounds the same, whether a wake phrase or Home's
      * capture button asked for it: "Taking picture", beeps while it thinks,
      * then the answer. Home shows each step too (see VisorViewModel.capture),
-     * and keeps the answer on screen, for anyone who can't hear them.
+     * and keeps the answer on screen, for anyone who can't hear them. A wake
+     * phrase that has just switched the session's mode says so first.
      */
-    private fun runCameraFeature(feature: ReadRequester) {
+    private fun runCameraFeature(feature: ReadRequester, switchedTo: SessionMode? = null) {
         viewModel.onCaptureStarted()
-        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.SESSION_UPDATES)
+        speaker.speak(SpokenPhrases.takingPicture(switchedTo), VoiceCategory.SESSION_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
             thinkingBeeper.stop()
@@ -315,7 +317,10 @@ class MainActivity : ComponentActivity() {
         }
     )
 
-    /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
+    /**
+     * A camera wake phrase: its feature, in its mode, unless Settings has
+     * turned it off or no session is running.
+     */
     private fun onCameraCommand(command: CameraCommand) {
         if (command !in viewModel.userProfile.value.cameraCommands) {
             // Silent on purpose. A command is often turned off because it kept
@@ -343,12 +348,18 @@ class MainActivity : ComponentActivity() {
             viewModel.setRecentError(problem)
             return
         }
+        // The session moves to the command's mode (nothing changes if it is
+        // already there), so the status bar, Home and its capture button
+        // follow what was asked.
+        val switched = command.mode != viewModel.session.value.mode
+        viewModel.setMode(command.mode)
         runCameraFeature(
             when (command) {
                 CameraCommand.READ_TEXT -> textReader
                 CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
                 CameraCommand.DESCRIBE_SCENE -> sceneDescriber
-            }
+            },
+            switchedTo = command.mode.takeIf { switched },
         )
     }
 
