@@ -28,11 +28,38 @@ class AuthService:
                 "email": email,
                 "password": password
             })
-        except Exception:
+        except Exception as e:
+            # Supabase rejects sign-in until the signup code has been entered.
+            if "email not confirmed" in str(e).lower():
+                raise HTTPException(status_code=403, detail="Email not confirmed")
             raise HTTPException(status_code=401, detail="Invalid email or password")
-        
+
         return response
-    
+
+
+    def verify_email(self, email: str, code: str):
+        database = supabase_client()
+
+        try:
+            response = database.auth.verify_otp({
+                "email": email,
+                "token": code,
+                "type": "signup"
+            })
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid or expired code")
+
+        return response
+
+
+    def resend_code(self, email: str):
+        database = supabase_client()
+
+        try:
+            database.auth.resend({"type": "signup", "email": email})
+        except Exception:
+            raise HTTPException(status_code=400, detail="Could not resend code")
+
     
     def delete_account(self, user_id: str):
         # The caller's token was already checked by dependencies.get_current_user.

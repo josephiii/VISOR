@@ -41,6 +41,7 @@ object VoiceCommandParser {
             containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
             containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
             containsAny(text, "reader", "reading") -> VoiceCommand.SwitchMode(SessionMode.READER)
+            containsAny(text, "identify", "object") -> VoiceCommand.SwitchMode(SessionMode.IDENTIFY)
 
             containsAny(
                 text,

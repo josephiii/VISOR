@@ -9,3 +9,10 @@ class RegisterSchema(BaseModel):
 class LoginSchema(BaseModel):
     email: EmailStr
     password: str
+
+class VerifySchema(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendSchema(BaseModel):
+    email: EmailStr

@@ -47,6 +47,7 @@ fun Phase1ModeConfigurationScreen(
         SessionMode.HAZARD -> R.array.hazard_awareness_scripts
         SessionMode.SCENE -> R.array.scene_description_scripts
         SessionMode.READER -> R.array.reading_assistance_scripts
+        SessionMode.IDENTIFY -> R.array.object_identification_scripts
     }
 
     val scripts = stringArrayResource(scriptsArrayRes)

@@ -160,14 +160,12 @@ fun VisorLayout(
     }
 
     // Observe VerifyAccountScreen
-    // DISABLED: email verification is cut for now — nothing sets
-    // isVerifyingAccount, so this observer is dead. Restore when email
-    // verification is added back (see VisorViewModel.verifyAccount()).
-    // LaunchedEffect(uiState.isVerifyingAccount) {
-    //     if (uiState.isVerifyingAccount) {
-    //         navController.navigate("verify_account") { launchSingleTop = true }
-    //     }
-    // }
+    LaunchedEffect(uiState.isVerifyingAccount) {
+        if (uiState.isVerifyingAccount) {
+            navController.navigate("verify_account") { launchSingleTop = true }
+            viewModel.onNavigationHandled()
+        }
+    }
 
     // Observe ResetPasswordScreen
     LaunchedEffect(uiState.isResettingPassword) {

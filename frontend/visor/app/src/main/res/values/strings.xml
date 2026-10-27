@@ -66,7 +66,7 @@
 
     <!-- Verify Account Screen -->
     <string name="verify_account_title" description="The title for the Verify Account screen">Verify your account</string>
-    <string name="verify_account_description" description="The description for Verify Account screen">We\'ll send a code to this email</string>
+    <string name="verify_account_description" description="The description for Verify Account screen">We sent a code to this email</string>
 
     <!-- Enter Code Screen -->
     <string name="enter_code_title" description="Text prompting users to enter the code (on email verification or on forgot password)">Enter your code</string>
@@ -208,6 +208,7 @@
     <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
     <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
     <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
+    <string name="home_capture_identify" description="Home button in Object Identification mode: takes a picture and names the objects in it">Identify objects</string>
     <string name="home_locked_hint" description="Under Home's capture button and modes, which are locked until a session starts">Start a session to use these controls.</string>
     <!-- Home's capture button turns into these while VISOR works, so it can be seen working -->
     <string name="home_capture_taking_picture" description="In place of Home's capture button while the glasses take a picture">Taking picture…</string>
@@ -413,6 +414,7 @@
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
+    <string name="identify_mode" description="The object identification mode: names what the camera sees, on the phone">Object Identification</string>
 
     <!-- Script strings
          The spoken response VISOR gives for each demo image, taken verbatim from
@@ -550,6 +552,14 @@
         <item>The English text says: Torngat Mountains National Park of Canada. Administration and Visitor Reception Centre.</item>
         <!-- RA 25 — Keep off grass notice -->
         <item>The notice says: Please keep off grass.</item>
+    </string-array>
+
+    <!-- Not from "VISOR Demo Scripts Reviewed": Object Identification came after
+         it. Written in the words ObjectDetector speaks (SpokenPhrases.objectsSeen). -->
+    <string-array name="object_identification_scripts">
+        <item>I see cup, table, hand.</item>
+        <item>I see mobile phone, hand.</item>
+        <item>I see bottle, kitchen.</item>
     </string-array>
 
 </resources>
