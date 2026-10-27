@@ -29,8 +29,8 @@ object WakePhrases {
 enum class CameraCommand(val phrases: List<String>) {
     READ_TEXT(listOf("VISOR, read this", "VISOR, what does this say", "VISOR, what is this")),
     IDENTIFY_OBJECTS(listOf("VISOR, what am I holding", "VISOR, identify", "VISOR, what is in front of me")),
-    DESCRIBE_SCENE(listOf("VISOR, what do you see", "VISOR, describe scene", "VISOR, scene description"));
-
+    DESCRIBE_SCENE(listOf("VISOR, what do you see", "VISOR, describe scene", "VISOR, scene description")),
+    ASK_QUESTION(listOf("VISOR, question", "VISOR, I have a question"));
     companion object {
         /** The command a spotted [keyword] starts, or null (for "VISOR GO", say). */
         fun forKeyword(keyword: String): CameraCommand? {

@@ -149,6 +149,7 @@
     <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
     <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
+    <string name="settings_command_ask_question">Ask a question</string>
     <!-- Said and shown at the top of the screen when a camera command is said with no session running -->
     <string name="camera_command_needs_session_read_text" description="A camera command was said with no session running">Start a session first to read text. Say \"VISOR GO, start session\", or press Start session on Home.</string>
     <string name="camera_command_needs_session_identify_objects" description="A camera command was said with no session running">Start a session first to identify objects. Say \"VISOR GO, start session\", or press Start session on Home.</string>
@@ -208,6 +209,7 @@
     <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
     <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
     <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
+    <string name="home_capture_question" description="Home button in Question mode: takes a picture and allows you to ask a question.">Ask a question</string>
     <string name="home_locked_hint" description="Under Home's capture button and modes, which are locked until a session starts">Start a session to use these controls.</string>
     <!-- Home's capture button turns into these while VISOR works, so it can be seen working -->
     <string name="home_capture_taking_picture" description="In place of Home's capture button while the glasses take a picture">Taking picture…</string>
@@ -413,7 +415,7 @@
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
-
+    <string name="question_mode" description="The scene question mode">Ask a question</string>
     <!-- Script strings
          The spoken response VISOR gives for each demo image, taken verbatim from
          the Glasses line of each entry in "VISOR Demo Scripts Reviewed". The ID and
@@ -550,6 +552,17 @@
         <item>The English text says: Torngat Mountains National Park of Canada. Administration and Visitor Reception Centre.</item>
         <!-- RA 25 — Keep off grass notice -->
         <item>The notice says: Please keep off grass.</item>
+    </string-array>
+
+    <string-array name="question_scripts">
+        <!-- Q 01 — Door -->
+        <item>You asked: Is the door open? The door ahead is closed. A silver handle is on the right side.</item>
+        <!-- Q 02 — Color -->
+        <item>You asked: What color is the chair? The chair in front of you is red, with a wooden frame.</item>
+        <!-- Q 03 — Distance -->
+        <item>You asked: How many steps are there? There are three steps ahead, with a handrail on the left.</item>
+        <!-- Q 04 — Sign -->
+        <item>You asked: Is there a sign on the wall? Yes. A small blue sign hangs on the wall ahead, to the right of the doorway.</item>
     </string-array>
 
 </resources>

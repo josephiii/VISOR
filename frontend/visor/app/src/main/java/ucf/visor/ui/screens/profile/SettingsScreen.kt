@@ -830,6 +830,7 @@ private fun CameraCommand.titleRes(): Int = when (this) {
     CameraCommand.READ_TEXT -> R.string.settings_command_read_text
     CameraCommand.IDENTIFY_OBJECTS -> R.string.settings_command_identify_objects
     CameraCommand.DESCRIBE_SCENE -> R.string.settings_command_describe_scene
+    CameraCommand.ASK_QUESTION -> R.string.settings_command_ask_question
 }
 
 @StringRes
