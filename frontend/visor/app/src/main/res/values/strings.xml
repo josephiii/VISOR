@@ -148,11 +148,13 @@
     <string name="settings_command_read_text" description="Camera command: read the text in front of you">Read text</string>
     <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
     <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
+    <string name="settings_command_check_hazards" description="Camera command: check for hazards ahead">Check for hazards</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said with no session running -->
     <string name="camera_command_needs_session_read_text" description="A camera command was said with no session running">Start a session first to read text. Say \"VISOR GO, start session\", or press Start session on Home.</string>
     <string name="camera_command_needs_session_identify_objects" description="A camera command was said with no session running">Start a session first to identify objects. Say \"VISOR GO, start session\", or press Start session on Home.</string>
     <string name="camera_command_needs_session_describe_scene" description="A camera command was said with no session running">Start a session first to describe the scene. Say \"VISOR GO, start session\", or press Start session on Home.</string>
+    <string name="camera_command_needs_session_check_hazards" description="A camera command was said with no session running">Start a session first to check for hazards. Say \"VISOR GO, start session\", or press Start session on Home.</string>
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first, then start a session to use camera commands.</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>

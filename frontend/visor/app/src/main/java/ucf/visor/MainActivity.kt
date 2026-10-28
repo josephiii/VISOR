@@ -336,6 +336,7 @@ class MainActivity : ComponentActivity() {
                     !state.isAuthComplete -> R.string.camera_command_needs_login
                     command == CameraCommand.READ_TEXT -> R.string.camera_command_needs_session_read_text
                     command == CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_needs_session_identify_objects
+                    command == CameraCommand.CHECK_HAZARDS -> R.string.camera_command_needs_session_check_hazards
                     else -> R.string.camera_command_needs_session_describe_scene
                 }
             )
@@ -349,6 +350,7 @@ class MainActivity : ComponentActivity() {
                 CameraCommand.READ_TEXT -> textReader
                 CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
                 CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+                CameraCommand.CHECK_HAZARDS -> hazardDetector
             }
         )
     }
