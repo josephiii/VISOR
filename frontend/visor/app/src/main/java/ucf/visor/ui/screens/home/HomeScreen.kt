@@ -75,7 +75,7 @@ import ucf.visor.ui.feedback.animationsEnabled
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.icon
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.viewmodel.labelRes
@@ -89,7 +89,7 @@ fun HomeScreen(
     onCapture: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val session by viewModel.session.collectAsStateWithLifecycle()
+    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
     val capture by viewModel.capture.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -118,7 +118,7 @@ fun HomeScreen(
             // the moment Home opens. Then what it last found, then the mode
             // that decides what it does.
             CaptureControl(
-                label = stringResource(captureLabel(session.mode)),
+                label = stringResource(captureLabel(currentMode)),
                 status = capture,
                 onClick = onCapture,
             )
@@ -129,10 +129,10 @@ fun HomeScreen(
             )
 
             ModePicker(
-                selected = session.mode,
+                selected = currentMode,
                 onSelect = { mode ->
                     viewModel.setMode(mode)
-                    talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
+                    talk(SpokenPhrases.modeActivated(mode), VoiceCategory.STATUS_UPDATES)
                 },
             )
         }
@@ -373,8 +373,8 @@ private const val FreshAnswerMillis = 3_000L
 
 @Composable
 private fun ModePicker(
-    selected: SessionMode,
-    onSelect: (SessionMode) -> Unit,
+    selected: CaptureMode,
+    onSelect: (CaptureMode) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -387,7 +387,7 @@ private fun ModePicker(
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.semantics { heading() },
         )
-        SessionMode.entries.forEach { mode ->
+        CaptureMode.entries.forEach { mode ->
             SelectableChip(
                 label = stringResource(mode.labelRes),
                 selected = mode == selected,
@@ -400,9 +400,9 @@ private fun ModePicker(
 }
 
 @StringRes
-private fun captureLabel(mode: SessionMode): Int = when (mode) {
-    SessionMode.HAZARD -> R.string.home_capture_hazard
-    SessionMode.SCENE -> R.string.home_capture_scene
-    SessionMode.READER -> R.string.home_capture_reader
-    SessionMode.IDENTIFY -> R.string.home_capture_identify
+private fun captureLabel(mode: CaptureMode): Int = when (mode) {
+    CaptureMode.HAZARD -> R.string.home_capture_hazard
+    CaptureMode.SCENE -> R.string.home_capture_scene
+    CaptureMode.READER -> R.string.home_capture_reader
+    CaptureMode.IDENTIFY -> R.string.home_capture_identify
 }

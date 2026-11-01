@@ -39,7 +39,7 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
     enum class Chime(val category: SoundCategory, val notes: List<Note>) {
         /** Three notes up: VISOR is ready. */
         READY(
-            SoundCategory.SESSION_CHIMES,
+            SoundCategory.READY_CHIME,
             listOf(Note(C5, 0.0, 0.1), Note(E5, 0.12, 0.1), Note(G5, 0.24, 0.18)),
         );
 

@@ -2,7 +2,7 @@ package ucf.visor.ui.glasses
 
 import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.IconName
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -69,7 +69,7 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * or test. [mode] is Home's current mode, which decides what the capture
  * button does.
  */
-fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: SessionMode): GlassesNavScreen {
+fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: CaptureMode): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
@@ -156,9 +156,9 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: SessionMode
 }
 
 /** The label on Home's capture button for [mode] (R.string.home_capture_*), for the glasses. */
-private fun captureLabel(mode: SessionMode): String = when (mode) {
-    SessionMode.HAZARD -> "Check for hazards"
-    SessionMode.SCENE -> "Describe the scene"
-    SessionMode.READER -> "Read text"
-    SessionMode.IDENTIFY -> "Identify objects"
+private fun captureLabel(mode: CaptureMode): String = when (mode) {
+    CaptureMode.HAZARD -> "Check for hazards"
+    CaptureMode.SCENE -> "Describe the scene"
+    CaptureMode.READER -> "Read text"
+    CaptureMode.IDENTIFY -> "Identify objects"
 }

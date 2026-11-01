@@ -395,7 +395,7 @@
     <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode configuration</string>
     <string name="p1_script" description="A Phase 1 demo script button: its number, then its whole text"><xliff:g id="number">%1$d</xliff:g>. <xliff:g id="script">%2$s</xliff:g></string>
 
-    <!-- VISOR Session Modes -->
+    <!-- VISOR Modes: what Home's capture button does -->
     <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
     <string name="scene_mode" description="The scene description mode">Scene Description</string>
     <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>

@@ -81,7 +81,7 @@ fun VisorLayout(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
-    val session by viewModel.session.collectAsStateWithLifecycle()
+    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
     val voiceState by (voiceNav?.state ?: remember { MutableStateFlow(VoiceNavState.IDLE) })
         .collectAsStateWithLifecycle()
 
@@ -261,8 +261,8 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState, session.mode) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, session.mode))
+    LaunchedEffect(glassesNav, currentRoute, uiState, currentMode) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, currentMode))
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -314,7 +314,7 @@ fun VisorLayout(
                 is VoiceCommand.SwitchMode ->
                     if (uiState.isAuthComplete) {
                         viewModel.setMode(command.mode)
-                        talk(SpokenPhrases.modeActivated(command.mode), VoiceCategory.SESSION_UPDATES)
+                        talk(SpokenPhrases.modeActivated(command.mode), VoiceCategory.STATUS_UPDATES)
                     } else {
                         reply("Log in first to switch modes.")
                     }

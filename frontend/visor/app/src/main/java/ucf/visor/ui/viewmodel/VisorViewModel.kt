@@ -37,8 +37,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
-    private val _session = MutableStateFlow(VisorSession())
-    val session: StateFlow<VisorSession> = _session.asStateFlow()
+    private val _mode = MutableStateFlow(CaptureMode.HAZARD)
+    /** What Home's capture button does with its picture (see [setMode]). */
+    val mode: StateFlow<CaptureMode> = _mode.asStateFlow()
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
@@ -507,41 +508,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
     }
 
-    fun toggleHazardAwarenessMode() {
-        _session.update { it.copy(inHazardAwarenessMode = true) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
-
-    fun toggleSceneDescriptionMode() {
-        _session.update { it.copy(inSceneDescriptionMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
-
-    fun toggleReadingAssistanceMode() {
-        _session.update { it.copy(inReadingAssistanceMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
-
-    fun toggleObjectIdentificationMode() {
-        _session.update { it.copy(inObjectIdentificationMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-    }
-
-    fun setMode(newMode: SessionMode) {
-        when (newMode) {
-            SessionMode.HAZARD -> toggleHazardAwarenessMode()
-            SessionMode.SCENE -> toggleSceneDescriptionMode()
-            SessionMode.READER -> toggleReadingAssistanceMode()
-            SessionMode.IDENTIFY -> toggleObjectIdentificationMode()
-        }
+    /** Switches what Home's capture button does, from Home, by voice, or in Phase 1. */
+    fun setMode(newMode: CaptureMode) {
+        _mode.value = newMode
     }
 
     private companion object {

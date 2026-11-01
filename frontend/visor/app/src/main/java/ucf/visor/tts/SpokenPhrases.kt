@@ -1,7 +1,7 @@
 package ucf.visor.tts
 
 import ucf.visor.network.Hazard
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import kotlin.math.roundToInt
 
 /**
@@ -56,11 +56,11 @@ object SpokenPhrases {
         }
 
     /** Said when the mode switches to [mode], from Home, by voice, or in Phase 1. */
-    fun modeActivated(mode: SessionMode): String = when (mode) {
-        SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
-        SessionMode.SCENE -> "Scene Description Mode Activated!"
-        SessionMode.READER -> "Reading Assistance Mode Activated!"
-        SessionMode.IDENTIFY -> "Object Identification Mode Activated!"
+    fun modeActivated(mode: CaptureMode): String = when (mode) {
+        CaptureMode.HAZARD -> "Hazard Awareness Mode Activated!"
+        CaptureMode.SCENE -> "Scene Description Mode Activated!"
+        CaptureMode.READER -> "Reading Assistance Mode Activated!"
+        CaptureMode.IDENTIFY -> "Object Identification Mode Activated!"
     }
 
     /**

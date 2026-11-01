@@ -65,7 +65,7 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
@@ -234,7 +234,7 @@ class MainActivity : ComponentActivity() {
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
             photoSource = NotifyingPhotoSource(camera) {
-                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.SESSION_UPDATES)
+                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.STATUS_UPDATES)
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
@@ -295,7 +295,7 @@ class MainActivity : ComponentActivity() {
      */
     private fun runCameraFeature(feature: ReadRequester) {
         viewModel.onCaptureStarted()
-        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.SESSION_UPDATES)
+        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.STATUS_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
             thinkingBeeper.stop()
@@ -306,11 +306,11 @@ class MainActivity : ComponentActivity() {
 
     /** Home's capture button: the camera feature for the session's mode. */
     private fun captureForMode() = runCameraFeature(
-        when (viewModel.session.value.mode) {
-            SessionMode.HAZARD -> hazardDetector
-            SessionMode.SCENE -> sceneDescriber
-            SessionMode.READER -> textReader
-            SessionMode.IDENTIFY -> objectIdentifier
+        when (viewModel.mode.value) {
+            CaptureMode.HAZARD -> hazardDetector
+            CaptureMode.SCENE -> sceneDescriber
+            CaptureMode.READER -> textReader
+            CaptureMode.IDENTIFY -> objectIdentifier
         }
     )
 
@@ -347,7 +347,7 @@ class MainActivity : ComponentActivity() {
     /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> thinkingBeeper.beepOnce()
-        SoundCategory.SESSION_CHIMES -> chimes.play(Chime.READY)
+        SoundCategory.READY_CHIME -> chimes.play(Chime.READY)
     }
 
     /**
@@ -419,14 +419,14 @@ class MainActivity : ComponentActivity() {
         // go quiet along with the status updates.
         speaker.speak(
             result.spoken,
-            if (result.success) VoiceCategory.SESSION_UPDATES else VoiceCategory.ANSWERS,
+            if (result.success) VoiceCategory.STATUS_UPDATES else VoiceCategory.ANSWERS,
         )
         return result
     }
 
     /** Registration begun in the Meta AI app: continue it here, and say so. */
     private fun onRegistrationRequest(request: RegistrationRequest) {
-        speaker.speak("Connecting VISOR to your glasses.", VoiceCategory.SESSION_UPDATES)
+        speaker.speak("Connecting VISOR to your glasses.", VoiceCategory.STATUS_UPDATES)
         request.continueRegistration(this)
             .onFailure { error, _ -> Log.w("VISOR", "Registration request: ${error.description}") }
     }

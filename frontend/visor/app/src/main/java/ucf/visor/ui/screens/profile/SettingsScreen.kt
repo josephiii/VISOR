@@ -801,27 +801,27 @@ private fun SettingSubsection(title: String) {
 @StringRes
 private fun VoiceCategory.titleRes(): Int = when (this) {
     VoiceCategory.ANSWERS -> R.string.settings_volume_answers_title
-    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_status_updates_title
+    VoiceCategory.STATUS_UPDATES -> R.string.settings_volume_status_updates_title
     VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_title
 }
 
 @StringRes
 private fun VoiceCategory.descriptionRes(): Int = when (this) {
     VoiceCategory.ANSWERS -> R.string.settings_volume_answers_description
-    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_status_updates_description
+    VoiceCategory.STATUS_UPDATES -> R.string.settings_volume_status_updates_description
     VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_description
 }
 
 @StringRes
 private fun SoundCategory.titleRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_title
-    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_ready_chime_title
+    SoundCategory.READY_CHIME -> R.string.settings_volume_ready_chime_title
 }
 
 @StringRes
 private fun SoundCategory.descriptionRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_description
-    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_ready_chime_description
+    SoundCategory.READY_CHIME -> R.string.settings_volume_ready_chime_description
 }
 
 @StringRes

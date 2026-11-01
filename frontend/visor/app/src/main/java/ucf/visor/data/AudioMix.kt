@@ -30,7 +30,7 @@ enum class VoiceCategory(override val key: String) : AudioCategory {
     ANSWERS("answersVolume"),
 
     /** "Taking picture", switching modes, and "VISOR is ready". */
-    SESSION_UPDATES("sessionUpdatesVolume"),
+    STATUS_UPDATES("sessionUpdatesVolume"),
 
     /**
      * VISOR's side of a voice conversation: "Listening." after "VISOR GO", its
@@ -51,7 +51,7 @@ enum class SoundCategory(override val key: String) : AudioCategory {
     THINKING_BEEPS("thinkingBeepsVolume"),
 
     /** As "Hey Meta, start VISOR" opens VISOR, ready for a question. */
-    SESSION_CHIMES("sessionChimesVolume");
+    READY_CHIME("sessionChimesVolume");
 
     override val defaultLevel: Float get() = Volumes.DefaultSoundEffects
 }

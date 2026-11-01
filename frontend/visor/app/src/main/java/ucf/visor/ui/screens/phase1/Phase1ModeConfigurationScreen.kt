@@ -24,7 +24,7 @@ import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.scrollIndicator
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.viewmodel.labelRes
 
@@ -39,14 +39,14 @@ fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> }
 ) {
-    val session by viewModel.session.collectAsStateWithLifecycle()
+    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
-    val scriptsArrayRes = when (session.mode) {
-        SessionMode.HAZARD -> R.array.hazard_awareness_scripts
-        SessionMode.SCENE -> R.array.scene_description_scripts
-        SessionMode.READER -> R.array.reading_assistance_scripts
-        SessionMode.IDENTIFY -> R.array.object_identification_scripts
+    val scriptsArrayRes = when (currentMode) {
+        CaptureMode.HAZARD -> R.array.hazard_awareness_scripts
+        CaptureMode.SCENE -> R.array.scene_description_scripts
+        CaptureMode.READER -> R.array.reading_assistance_scripts
+        CaptureMode.IDENTIFY -> R.array.object_identification_scripts
     }
 
     val scripts = stringArrayResource(scriptsArrayRes)
@@ -72,8 +72,8 @@ fun Phase1ModeConfigurationScreen(
                 .selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            SessionMode.entries.forEach { mode ->
-                val isSelected = mode == session.mode
+            CaptureMode.entries.forEach { mode ->
+                val isSelected = mode == currentMode
                 SelectableChip(
                     label = stringResource(mode.labelRes),
                     selected = isSelected,
@@ -82,7 +82,7 @@ fun Phase1ModeConfigurationScreen(
                         // Switch modes when selecting a non-active mode
                         if (!isSelected) {
                             viewModel.setMode(mode)
-                            talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
+                            talk(SpokenPhrases.modeActivated(mode), VoiceCategory.STATUS_UPDATES)
                         }
                     },
                 )

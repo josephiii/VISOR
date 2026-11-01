@@ -2,7 +2,7 @@ package ucf.visor.ui.voice
 
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -32,7 +32,7 @@ sealed class VoiceCommand {
      * in), so this only says so, for anyone still in the habit.
      */
     object SessionNotNeeded : VoiceCommand()
-    data class SwitchMode(val mode: SessionMode) : VoiceCommand()
+    data class SwitchMode(val mode: CaptureMode) : VoiceCommand()
 
     /**
      * Home's capture button: a picture, answered for the current mode, such as

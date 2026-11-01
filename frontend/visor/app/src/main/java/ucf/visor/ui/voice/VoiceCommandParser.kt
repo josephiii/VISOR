@@ -3,7 +3,7 @@ package ucf.visor.ui.voice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -36,10 +36,10 @@ object VoiceCommandParser {
             // no longer taken: "stop" is what anyone says to make speech stop.
             containsWord(text, "session", "sessions") -> VoiceCommand.SessionNotNeeded
 
-            containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
-            containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
-            containsAny(text, "reader", "reading") -> VoiceCommand.SwitchMode(SessionMode.READER)
-            containsAny(text, "identify", "object") -> VoiceCommand.SwitchMode(SessionMode.IDENTIFY)
+            containsAny(text, "hazard") -> VoiceCommand.SwitchMode(CaptureMode.HAZARD)
+            containsAny(text, "scene") -> VoiceCommand.SwitchMode(CaptureMode.SCENE)
+            containsAny(text, "reader", "reading") -> VoiceCommand.SwitchMode(CaptureMode.READER)
+            containsAny(text, "identify", "object") -> VoiceCommand.SwitchMode(CaptureMode.IDENTIFY)
 
             containsAny(
                 text,
