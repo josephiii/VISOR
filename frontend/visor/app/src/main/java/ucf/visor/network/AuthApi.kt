@@ -8,6 +8,8 @@ import org.json.JSONObject
  * The backend's account endpoints (auth_router, under "/auth"):
  *   POST   /auth/register       { username, email, password } -> { user_id }
  *   POST   /auth/login          { email, password }           -> { access_token, refresh_token }
+ *   POST   /auth/verify         { email, code }               -> { access_token, refresh_token }
+ *   POST   /auth/resend         { email }                     -> { message }
  *   DELETE /auth/deleteAccount  bearer access token           -> { message }
  *
  * Call from any coroutine (rememberCoroutineScope, viewModelScope, ...); the
@@ -32,6 +34,20 @@ object AuthApi {
             payload = JSONObject()
                 .put("email", email)
                 .put("password", password)
+        )
+
+    suspend fun verifyEmail(email: String, code: String): ApiResult =
+        post(
+            path = "/auth/verify",
+            payload = JSONObject()
+                .put("email", email)
+                .put("code", code)
+        )
+
+    suspend fun resendCode(email: String): ApiResult =
+        post(
+            path = "/auth/resend",
+            payload = JSONObject().put("email", email)
         )
 
     suspend fun deleteAccount(accessToken: String): ApiResult =

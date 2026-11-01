@@ -2,6 +2,7 @@ package ucf.visor.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -18,8 +19,7 @@ import ucf.visor.ui.screens.auth.ForgotPasswordScreen
 import ucf.visor.ui.screens.auth.LoginScreen
 import ucf.visor.ui.screens.auth.ResetPasswordScreen
 import ucf.visor.ui.screens.auth.SignUpScreen
-// DISABLED: email verification is cut for now — restore with the verify_account route below.
-// import ucf.visor.ui.screens.auth.VerifyAccountScreen
+import ucf.visor.ui.screens.auth.VerifyAccountScreen
 import ucf.visor.ui.screens.hardware.HardwarePairingScreen
 import ucf.visor.ui.screens.help.HelpScreen
 import ucf.visor.ui.screens.home.HomeScreen
@@ -66,7 +66,8 @@ fun VisorNavHost(
                 // On a successful login the ViewModel persists tokens + goes home.
                 onLoginSuccess = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onForgotPasswordClick = { viewModel.forgotPassword() },
-                onSignUpClick = { viewModel.signUp() }
+                onSignUpClick = { viewModel.signUp() },
+                onUnverified = { email -> viewModel.verifyAccount(email) }
             )
         }
 
@@ -74,9 +75,9 @@ fun VisorNavHost(
             SignUpScreen(
                 viewModel = viewModel,
                 talk = talk,
-                // Register only creates the account (no token yet, no email
-                // verification for now) — send the new user to the login screen.
-                onSignUpClick = { viewModel.login() },
+                // Register only creates the account — the new user must now
+                // verify the emailed code.
+                onSignUpClick = { email -> viewModel.verifyAccount(email) },
                 onLoginClick = { viewModel.login() }
             )
         }
@@ -89,16 +90,12 @@ fun VisorNavHost(
             )
         }
 
-        // DISABLED: email verification is cut for now — sign-up routes straight
-        // to login instead of here. Restore this route (and its import,
-        // VisorViewModel.verifyAccount(), the VisorLayout observer, and the
-        // enter_code verify branch below) when email verification is added back.
-        // composable("verify_account") {
-        //     VerifyAccountScreen(
-        //         viewModel = viewModel,
-        //         onSendCodeClick = { viewModel.enterCode() }
-        //     )
-        // }
+        composable("verify_account") {
+            VerifyAccountScreen(
+                viewModel = viewModel,
+                onSendCodeClick = { viewModel.enterCode() }
+            )
+        }
 
         composable("reset_password") {
             ResetPasswordScreen(
@@ -108,21 +105,16 @@ fun VisorNavHost(
         }
 
         composable("enter_code") {
+            // enter_code is reached from verify_account (email verification) or
+            // forgot_password; only the former checks the code with the backend.
+            val fromVerify = remember {
+                navController.previousBackStackEntry?.destination?.route == "verify_account"
+            }
             EnterCodeScreen(
                 viewModel = viewModel,
-                onCodeComplete = {
-                    // Email verification is cut for now, so enter_code is only
-                    // reached from the forgot-password flow.
-                    viewModel.home()
-                    // DISABLED: restore the branch below when email verification
-                    // is added back (enter_code would again be reachable from
-                    // verify_account, which should route to onboarding):
-                    // val lastRoute = navController.previousBackStackEntry?.destination?.route
-                    // if (lastRoute == "forgot_password")
-                    //     viewModel.home()
-                    // else // == "verify_account"
-                    //     viewModel.onboard()
-                },
+                verifyEmail = if (fromVerify) uiState.pendingEmail else null,
+                onVerified = { access, refresh -> viewModel.onEmailVerified(access, refresh) },
+                onCodeComplete = { viewModel.home() },
                 onResendCodeClick = {
                     // TODO: RESEND CODE LOGIC
                 }

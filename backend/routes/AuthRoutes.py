@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_current_user
 from services.AuthService import AuthService
-from schemas.AuthSchema import RegisterSchema, LoginSchema
+from schemas.AuthSchema import RegisterSchema, LoginSchema, VerifySchema, ResendSchema
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 service = AuthService()
@@ -39,6 +39,36 @@ def login(userData: LoginSchema):
         "access_token": response.session.access_token,
         "refresh_token": response.session.refresh_token
     }
+
+@auth_router.post("/verify")
+def verify(userData: VerifySchema):
+    try:
+        response = service.verify_email(userData.email, userData.code)
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Verification Failed")
+
+    if not response.session:
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
+
+    return {
+        "access_token": response.session.access_token,
+        "refresh_token": response.session.refresh_token
+    }
+
+@auth_router.post("/resend")
+def resend(userData: ResendSchema):
+    try:
+        service.resend_code(userData.email)
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not resend code")
+
+    return {"message": "Code sent"}
 
 @auth_router.delete("/deleteAccount")
 def delete_account(user_id: str = Depends(get_current_user)):

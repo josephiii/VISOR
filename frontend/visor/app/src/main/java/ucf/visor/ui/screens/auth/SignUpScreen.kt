@@ -47,12 +47,9 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 private const val TAG = "VISOR Sign up"
 
 /**
- * NOTE: there is no email verification yet (no confirmation code or verified
- * flag), so a registered account is usable at once; the email is only checked
- * for its shape here (see [checkSignUp]). TODO: add email verification later
- * (send a code on register, gate login/onboarding on a verified status) and
- * route sign-up back through the verify_account / enter_code screens once that
- * exists.
+ * NOTE: the email is only checked for its shape here (see [checkSignUp]);
+ * ownership of the address is proven afterwards by the emailed code, entered on
+ * the verify_account / enter_code screens, so [onSignUpClick] gets the email.
  *
  * @param talk says what went wrong when signing up fails, for a user who isn't
  *   looking at the screen (see [ErrorMessage]).
@@ -60,7 +57,7 @@ private const val TAG = "VISOR Sign up"
 @Composable
 fun SignUpScreen(
     viewModel: VisorViewModel,
-    onSignUpClick: () -> Unit,
+    onSignUpClick: (email: String) -> Unit,
     onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
@@ -118,10 +115,10 @@ fun SignUpScreen(
         scope.launch {
             when (val result = AuthApi.register(username.trim(), email.trim(), password)) {
                 is ApiResult.Success -> {
-                    // Backend returns { "user_id": ... } — no token yet,
-                    // so the user still logs in next. Advance the flow.
+                    // Backend returns { "user_id": ... } — no token yet.
+                    // The backend has emailed a code; the user verifies next.
                     isLoading = false
-                    onSignUpClick()
+                    onSignUpClick(email.trim())
                 }
 
                 is ApiResult.Error -> {
