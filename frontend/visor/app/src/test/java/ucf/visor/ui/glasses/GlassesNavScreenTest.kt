@@ -47,11 +47,11 @@ class GlassesNavScreenTest {
     }
 
     @Test
-    fun homeShowsEveryCameraButtonInHomesOrderOnOnePage() {
+    fun homeShowsEveryCameraButtonButAskAQuestionInHomesOrderOnOnePage() {
         val home = glassesNavScreenFor("home", loggedIn)
 
         assertEquals(
-            CameraCommand.entries.map { VoiceCommand.RunCamera(it) },
+            (CameraCommand.entries - CameraCommand.ASK_QUESTION).map { VoiceCommand.RunCamera(it) },
             home.items.map { it.command },
         )
         assertFalse("all four fit with no More", home.page(0).hasMore)

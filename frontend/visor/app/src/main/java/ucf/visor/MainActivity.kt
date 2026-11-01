@@ -53,6 +53,7 @@ import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
 import ucf.visor.recognition.TextReaderOCR
 import ucf.visor.stt.CameraCommand
+import ucf.visor.stt.CommandRecognizer
 import ucf.visor.stt.Listener
 import ucf.visor.stt.WakePhrases
 import ucf.visor.tts.Chimes
@@ -67,11 +68,11 @@ import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.SceneQuestionController
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
-
 
 class MainActivity : ComponentActivity() {
 
@@ -126,6 +127,8 @@ class MainActivity : ComponentActivity() {
             permissionContinuation = null
         }
 
+
+
     // Convenience method to make a permission request in a sequential manner
     // Uses a Mutex to ensure requests are processed one at a time, preventing race conditions
     suspend fun requestWearablesPermission(permission: Permission): PermissionStatus {
@@ -154,6 +157,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var chimes: Chimes
     private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
+
+    private lateinit var commandRecognizer: CommandRecognizer
+    private lateinit var sceneQuestion: SceneQuestionController
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -240,6 +246,23 @@ class MainActivity : ComponentActivity() {
             fallback = objectDetector,
         )
 
+        commandRecognizer = CommandRecognizer(this)
+        sceneQuestion = SceneQuestionController(
+            recognizer = commandRecognizer,
+            describer = SceneDescriber(
+                photoSource = cameraFor(CameraCommand.ASK_QUESTION),
+                vlm = VlmClient(accessToken = sessionStore::accessToken),
+                scope = lifecycleScope,
+            ),
+            beeper = thinkingBeeper,
+            speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
+            isSpeaking = { speaker.isSpeaking() },
+            pauseWakeListening = { listener.stop() },
+            resumeWakeListening = { if (wantsWakeListening()) listener.start() },
+            onAsked = { viewModel.onCaptureStarted(CameraCommand.ASK_QUESTION) },
+            onAnswered = { answer -> viewModel.onAnswered(CameraCommand.ASK_QUESTION, answer) },
+        )
+
         hazardDetector = HazardDetector(
             photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
             client = HazardClient(accessToken = sessionStore::accessToken),
@@ -299,6 +322,12 @@ class MainActivity : ComponentActivity() {
             CameraCommand.READ_TEXT -> textReader
             CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
             CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+            // Asks what the wearer wants to know before it takes its picture,
+            // so it runs its own steps, and reports each to Home all the same.
+            CameraCommand.ASK_QUESTION -> {
+                sceneQuestion.activate()
+                return
+            }
         }
         viewModel.onCaptureStarted(command)
         speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.STATUS_UPDATES)
@@ -432,5 +461,6 @@ class MainActivity : ComponentActivity() {
         thinkingBeeper.stop()
         chimes.release()
         glassesCamera.close()
+        commandRecognizer.shutdown()
     }
 }

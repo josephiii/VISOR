@@ -16,7 +16,7 @@ enum class CaptureStatus { IDLE, TAKING_PICTURE, THINKING }
  * street, or with Answers turned down, can still be read or heard again.
  *
  * [command] is the feature that answered (or, for a Phase 1 demo script, the
- * one it stands in for), shown with it: four features feed the card, and "No
+ * one it stands in for), shown with it: five features feed the card, and "No
  * text found" means more beside "Read text".
  */
 data class LastAnswer(val text: String, val atMillis: Long, val command: CameraCommand)

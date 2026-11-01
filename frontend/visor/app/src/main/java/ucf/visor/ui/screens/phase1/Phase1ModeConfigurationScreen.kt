@@ -52,6 +52,7 @@ fun Phase1ModeConfigurationScreen(
         CameraCommand.READ_TEXT -> R.array.reading_assistance_scripts
         CameraCommand.IDENTIFY_OBJECTS -> R.array.object_identification_scripts
         CameraCommand.DESCRIBE_SCENE -> R.array.scene_description_scripts
+        CameraCommand.ASK_QUESTION -> R.array.question_scripts
     }
 
     val scripts = stringArrayResource(scriptsArrayRes)

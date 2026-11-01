@@ -150,6 +150,7 @@
     <string name="camera_command_read_text" description="Camera feature: takes a picture and reads its text aloud">Read text</string>
     <string name="camera_command_identify_objects" description="Camera feature: takes a picture and names the objects in it">Identify objects</string>
     <string name="camera_command_describe_scene" description="Camera feature: takes a picture and describes it">Describe the scene</string>
+    <string name="camera_command_ask_question" description="Camera feature: asks what you want to know, takes a picture and answers your question">Ask a question</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
@@ -539,6 +540,17 @@
         <item>I see cup, table, hand.</item>
         <item>I see mobile phone, hand.</item>
         <item>I see bottle, kitchen.</item>
+    </string-array>
+
+    <string-array name="question_scripts">
+        <!-- Q 01 — Door -->
+        <item>You asked: Is the door open? The door ahead is closed. A silver handle is on the right side.</item>
+        <!-- Q 02 — Color -->
+        <item>You asked: What color is the chair? The chair in front of you is red, with a wooden frame.</item>
+        <!-- Q 03 — Distance -->
+        <item>You asked: How many steps are there? There are three steps ahead, with a handrail on the left.</item>
+        <!-- Q 04 — Sign -->
+        <item>You asked: Is there a sign on the wall? Yes. A small blue sign hangs on the wall ahead, to the right of the doorway.</item>
     </string-array>
 
 </resources>

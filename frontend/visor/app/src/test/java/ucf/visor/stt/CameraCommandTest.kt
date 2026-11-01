@@ -15,6 +15,7 @@ class CameraCommandTest {
                 CameraCommand.READ_TEXT,
                 CameraCommand.IDENTIFY_OBJECTS,
                 CameraCommand.DESCRIBE_SCENE,
+                CameraCommand.ASK_QUESTION,
             ),
             CameraCommand.entries,
         )

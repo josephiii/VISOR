@@ -111,11 +111,12 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         )
     }
 
-    // Home is for its four camera buttons, and so are the glasses there: the
-    // four fill the display exactly, with no More. The rest of the navigation
-    // is on every other screen, with a Home button back to these.
+    // Home is for its camera buttons, and so are the glasses there: the four
+    // that take a picture straight away fill the display exactly, with no More.
+    // The rest of the navigation is on every other screen, with a Home button
+    // back to these.
     if (route == "home") {
-        return GlassesNavScreen(title = "Home", items = CameraCommand.entries.map(::cameraItem))
+        return GlassesNavScreen(title = "Home", items = CameraCommand.entries.mapNotNull(::cameraItem))
     }
 
     val items = mutableListOf<GlassesNavItem>()
@@ -155,8 +156,12 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
  * Home's button for [command], on the glasses. Its label matches the phone's
  * (R.string.camera_command_*), and its icon is the display's nearest to the
  * phone's: it has no book, so reading is a speech bubble, for being read to.
+ *
+ * Null for Ask a question, which has no button here: a fifth would push
+ * Describe the scene behind More, and asking means speaking anyway, where
+ * "VISOR, I have a question" is as quick as a tap.
  */
-private fun cameraItem(command: CameraCommand): GlassesNavItem = when (command) {
+private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command) {
     CameraCommand.CHECK_HAZARDS ->
         GlassesNavItem("Check for hazards", IconName.EXCLAMATION_TRIANGLE, VoiceCommand.RunCamera(command))
     CameraCommand.READ_TEXT ->
@@ -165,4 +170,5 @@ private fun cameraItem(command: CameraCommand): GlassesNavItem = when (command) 
         GlassesNavItem("Identify objects", IconName.FOUR_CORNER_FRAME, VoiceCommand.RunCamera(command))
     CameraCommand.DESCRIBE_SCENE ->
         GlassesNavItem("Describe the scene", IconName.MOUNTAIN_SQUARE, VoiceCommand.RunCamera(command))
+    CameraCommand.ASK_QUESTION -> null
 }

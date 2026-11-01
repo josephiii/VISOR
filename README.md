@@ -78,7 +78,7 @@ VISOR/
 | Package | What it holds |
 | --- | --- |
 | `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase, and each of Home's and the glasses' camera buttons, to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in, with no session to start and no mode to pick. |
-| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
+| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene, or answer a spoken question about it, via `ui/SceneQuestionController`), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
 | `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`). |

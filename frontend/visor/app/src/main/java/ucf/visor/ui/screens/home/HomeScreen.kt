@@ -292,7 +292,7 @@ private fun SwapInPlace(
  * live region, and the card's border flashes once as it arrives (not with
  * the system's animations off; the new text and time show it then).
  *
- * Above the answer, which feature gave it ("Read text · 1:09 PM"): four
+ * Above the answer, which feature gave it ("Read text · 1:09 PM"): five
  * features feed the card, wake phrases among them, and "No text found" means
  * more beside "Read text".
  *

@@ -24,8 +24,9 @@ object WakePhrases {
 
 /**
  * One of VISOR's camera features: a picture with the glasses, and an answer.
- * Home has a button for each, so do the glasses, and a wake phrase starts each
- * on its own, with no "VISOR GO" first. Each wake phrase can be turned off in
+ * Home has a button for each, so do the glasses (all but Ask a question, see
+ * GlassesNavScreen), and a wake phrase starts each on its own, with no
+ * "VISOR GO" first. Each wake phrase can be turned off in
  * Settings.
  *
  * In the order every list of them shows them, Home's buttons first among
@@ -49,6 +50,15 @@ enum class CameraCommand(val phrases: List<String>, val suggested: String) {
     DESCRIBE_SCENE(
         listOf("VISOR, what do you see", "VISOR, describe scene", "VISOR, scene description"),
         suggested = "VISOR, what do you see",
+    ),
+
+    /**
+     * Unlike the rest, asks the wearer what they want to know first ("What's
+     * your question?"), then takes the picture and answers that question.
+     */
+    ASK_QUESTION(
+        listOf("VISOR, question", "VISOR, I have a question"),
+        suggested = "VISOR, I have a question",
     );
 
     companion object {
