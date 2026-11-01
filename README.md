@@ -77,7 +77,7 @@ VISOR/
 
 | Package | What it holds |
 | --- | --- |
-| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase (and Home's capture button, by its `CaptureMode`) to its feature. Every feature works as soon as the user is logged in: there is no session to start. |
+| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase, and each of Home's and the glasses' camera buttons, to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in, with no session to start and no mode to pick. |
 | `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
