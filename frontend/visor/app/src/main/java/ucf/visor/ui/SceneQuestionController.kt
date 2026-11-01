@@ -6,8 +6,17 @@ import android.os.SystemClock
 import android.util.Log
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.stt.CommandRecognizer
+import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
 
+/**
+ * "Ask a question" (CameraCommand.ASK_QUESTION): asks the wearer what they want
+ * to know, takes a picture, and answers it. [onAsked] and [onAnswered] report
+ * the same steps every camera feature reports, so Home's button shows it
+ * working and the Last answer card keeps what it said. [takingPicture] is
+ * what it says as it takes the picture, which names the phone's camera when
+ * that is the one in use, as every camera feature does.
+ */
 class SceneQuestionController(
     private val recognizer: CommandRecognizer,
     private val describer: SceneDescriber,
@@ -17,6 +26,9 @@ class SceneQuestionController(
     private val pauseWakeListening: () -> Unit,
     private val resumeWakeListening: () -> Unit,
     private val listenDelayMs: Long = 500L,
+    private val onAsked: () -> Unit = {},
+    private val onAnswered: (String) -> Unit = {},
+    private val takingPicture: () -> String = { SpokenPhrases.TAKING_PICTURE },
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
@@ -41,10 +53,12 @@ class SceneQuestionController(
             return
         }
         Log.d("VISOR", "Scene question: $question")
-        speak("Taking picture")
+        onAsked()
+        speak(takingPicture())
         beeper.start()
         describer.ask(question) { answer ->
             beeper.stop()
+            onAnswered(answer)
             speak(answer)
             finish()
         }

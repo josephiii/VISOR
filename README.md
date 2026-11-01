@@ -54,6 +54,7 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - Get started on frontend development with our [frontend-jumpstart](./documentation/developer/frontend-jumpstart.md).
 - See our [VLM](./documentation/developer/VLM.md) overview.
 - The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.
+- The [phone camera fallback](./documentation/research/phone-camera-fallback.md): why VISOR can use the phone's camera, how users choose it, and how to test without glasses.
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout
@@ -77,19 +78,19 @@ VISOR/
 
 | Package | What it holds |
 | --- | --- |
-| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase (and Home's capture button, by session mode) to its feature. |
-| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene), `HazardDetector` (what's ahead and how far away). Each takes one photo with the glasses (`GlassesPhotoSource`); without glasses, pair mock glasses in the debug menu and choose the photo they take. |
+| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase, and each of Home's and the glasses' camera buttons, to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in, with no session to start and no mode to pick. |
+| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene, or answer a spoken question about it, via `ui/SceneQuestionController`), `HazardDetector` (what's ahead and how far away). Each takes one photo with the camera chosen on the Pair screen (`ChosenPhotoSource`): the glasses (`GlassesPhotoSource`) or the phone's back camera (`PhoneCameraSource`, which catches black photos with `BlackPhoto`). Without glasses, choose the phone (the emulator's camera works too), or pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. |
-| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`). |
+| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). |
 | `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
-| `tts/` | Speaking: `Speaker`, the "thinking" beep, the session chimes (`Chimes`), and `SpokenPhrases` (everything the camera features say). |
+| `tts/` | Speaking: `Speaker`, the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |
 | `ui/screens/` | One folder per screen, plus any ViewModel used only by that screen (e.g. `debug/DebugViewModel`): `title/`, `auth/`, `home/`, `hardware/` (Pair Glasses), `profile/` (setup wizard, Settings), `help/`, `motionlab/`, `debug/`, `phase1/`. |
 | `ui/viewmodel/` | `VisorViewModel` and `VisorUiState`: app-wide state and navigation requests. |
-| `ui/components/` | Shared widgets: buttons, choice chips and switches, sliders, dialogs, error messages, text fields, header, navigation and session status bars. |
+| `ui/components/` | Shared widgets: buttons, choice chips and switches, sliders, dialogs, error messages, text fields, header, navigation bar. |
 | `ui/feedback/` | How VISOR feels and moves: one vibration pattern per meaning (`Haptics`), the pressed and focused look every control shares (`ControlFeedback`), and the motion rules (`Motion`). |
 | `ui/glasses/` | Navigation rendered on the glasses' display and driven by taps. |
 | `ui/voice/` | "VISOR GO" voice navigation commands. |
@@ -120,7 +121,7 @@ Endpoints and setup: [backend/README.md](./backend/README.md).
 | Folder | What it holds |
 | --- | --- |
 | `developer/` | How-to guides: frontend jumpstart, VLM, MWDAT 1.0 upgrade. |
-| `research/` | Background research: low vision, accessibility (Section 508), Meta glasses SDK, models (VLM, depth, YOLO), hosting. |
+| `research/` | Background research: low vision, accessibility (Section 508), Meta glasses SDK, models (VLM, depth, YOLO), hosting, the phone camera fallback. |
 | `testing/` | Test protocols and reports (IMU, VLM). |
 | `assets/` | Diagrams and whiteboard images used by the docs. |
 | `third-party-licenses/` | Licenses for MWDAT and the Atkinson Hyperlegible font. |

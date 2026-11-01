@@ -1,9 +1,10 @@
 package ucf.visor.ui.voice
 
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -30,18 +31,25 @@ object VoiceCommandParser {
             containsAny(text, "pair", "hardware", "connect my glasses", "connect glasses") ->
                 VoiceCommand.PairDevice
 
+            // Which camera takes the pictures. Ahead of "back", for "switch back
+            // to my glasses camera", and of the camera features' own words.
+            containsAny(text, "phone camera", "phone's camera", "phones camera", "use my phone", "use the phone") ->
+                VoiceCommand.UseCamera(CameraChoice.PHONE)
+            containsAny(text, "glasses camera", "glasses' camera", "use my glasses", "use the glasses") ->
+                VoiceCommand.UseCamera(CameraChoice.GLASSES)
+
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
-            containsAny(text, "end session", "stop session", "end the session", "stop") ->
-                VoiceCommand.EndSession
+            // "Start session", "end the session"... Bare "start" and "stop" are
+            // no longer taken: "stop" is what anyone says to make speech stop.
+            containsWord(text, "session", "sessions") -> VoiceCommand.SessionNotNeeded
 
-            containsAny(text, "start session", "begin session", "start a session", "start") ->
-                VoiceCommand.StartSession
-
-            containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
-            containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
-            containsAny(text, "reader", "reading") -> VoiceCommand.SwitchMode(SessionMode.READER)
-            containsAny(text, "identify", "object") -> VoiceCommand.SwitchMode(SessionMode.IDENTIFY)
+            // What used to pick a mode ("hazard mode"): answered with how to ask
+            // for that feature directly, never with a picture.
+            containsAny(text, "hazard") -> VoiceCommand.ModeNotNeeded(CameraCommand.CHECK_HAZARDS)
+            containsAny(text, "scene") -> VoiceCommand.ModeNotNeeded(CameraCommand.DESCRIBE_SCENE)
+            containsAny(text, "reader", "reading") -> VoiceCommand.ModeNotNeeded(CameraCommand.READ_TEXT)
+            containsAny(text, "identify", "object") -> VoiceCommand.ModeNotNeeded(CameraCommand.IDENTIFY_OBJECTS)
 
             containsAny(
                 text,
@@ -148,11 +156,11 @@ object VoiceCommandParser {
  */
 enum class VoiceCommandKind(val examples: List<String>) {
     GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
-    SESSIONS(listOf("start session", "end session", "hazard mode", "scene mode", "reading mode")),
     SETTINGS(
         listOf(
             "faster", "slower", "normal speed", "brief", "detailed",
             "large text", "extra large text", "high contrast",
+            "use my phone camera", "use my glasses camera",
         )
     ),
     ACCOUNT(listOf("log out", "delete my account")),

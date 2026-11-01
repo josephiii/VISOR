@@ -48,7 +48,6 @@ data class VisorUiState(
 
     // Component States.
     val isAuthComplete: Boolean = false,
-    val isSessionActive: Boolean = false,
     val isLogoutConfirmVisible: Boolean = false,
     val isDeleteAccountConfirmVisible: Boolean = false,
     /** Which part of Settings is open, or null for the Settings hub. */

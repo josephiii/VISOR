@@ -124,6 +124,18 @@ enum class Verbosity { BRIEF, STANDARD, DETAILED }
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
+ * Which camera VISOR takes its pictures with. The glasses are what VISOR is
+ * built around: hands free, and pointed wherever the wearer looks. The phone's
+ * back camera is there for when they aren't available (left at home, flat, or
+ * waiting on an update) or the user doesn't have a pair yet.
+ *
+ * Always the user's choice, never switched behind their back: with the
+ * glasses chosen and not connected, VISOR says so and how to switch, rather
+ * than quietly taking a picture of the inside of a pocket.
+ */
+enum class CameraChoice { GLASSES, PHONE }
+
+/**
  * User-controlled text size, layered on top of the app's already-enlarged
  * base type scale. Section 508 calls for text resizable up to 200% without
  * losing content or functionality; EXTRA_LARGE combines with a user's OS
@@ -165,12 +177,13 @@ data class UserProfile(
     val glassesTapNavigationEnabled: Boolean = true,
     /** The camera features a wake phrase alone starts, such as "VISOR, read this". */
     val cameraCommands: Set<CameraCommand> = CameraCommand.entries.toSet(),
-    /** "Hey Meta, start VISOR" starts a session. VISOR opens either way: Meta AI opens it. */
-    val voiceLaunchEnabled: Boolean = true,
+
+    /** The camera every camera feature uses, chosen on the Pair screen. */
+    val camera: CameraChoice = CameraChoice.GLASSES,
 
     /**
-     * VISOR's buzzes: as a session starts and ends, as it starts and stops
-     * listening, and as a button is pressed (see ui.feedback.Haptics). On until
+     * VISOR's buzzes: as "Hey Meta, start VISOR" opens it, as it starts and
+     * stops listening, and as a button is pressed (see ui.feedback.Haptics). On until
      * the user turns it off, like the sounds it goes with.
      */
     val vibrationEnabled: Boolean = true,

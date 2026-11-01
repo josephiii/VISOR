@@ -114,15 +114,15 @@
     <string name="settings_volume_answers_title" description="Volume slider: VISOR's answers">Answers</string>
     <string name="settings_volume_answers_description" description="What counts as an answer">What VISOR reads, identifies and describes, what\'s ahead, and what went wrong when it can\'t.</string>
     <string name="settings_volume_answers_off_warning" description="Shown while answers are silenced">VISOR won\'t say what it reads, identifies or describes.</string>
-    <string name="settings_volume_session_updates_title" description="Volume slider: session announcements">Session updates</string>
-    <string name="settings_volume_session_updates_description" description="What counts as a session update">\"Starting session\", \"Ending session\", switching modes, and \"Taking picture\".</string>
+    <string name="settings_volume_status_updates_title" description="Volume slider: VISOR's status announcements">Status updates</string>
+    <string name="settings_volume_status_updates_description" description="What counts as a status update">\"Taking picture\", \"Awaiting scene description\", and \"VISOR is ready\".</string>
     <string name="settings_volume_voice_commands_title" description="Volume slider: VISOR's side of voice commands">Voice commands</string>
     <string name="settings_volume_voice_commands_description" description="What counts as voice command speech">\"Listening\" after you say \"VISOR GO\", and VISOR\'s replies to your commands.</string>
     <string name="settings_volume_effects_title" description="Heading over the volume sliders for each sound effect">Sound effects</string>
     <string name="settings_volume_thinking_beeps_title" description="Volume slider: the beeps while VISOR thinks">Thinking beeps</string>
     <string name="settings_volume_thinking_beeps_description" description="When the thinking beeps play">While VISOR works on an answer.</string>
-    <string name="settings_volume_session_chimes_title" description="Volume slider: chimes as a session starts and ends">Session chimes</string>
-    <string name="settings_volume_session_chimes_description" description="When the session chimes play">As a session starts, and as it ends.</string>
+    <string name="settings_volume_ready_chime_title" description="Volume slider: the chime as Hey Meta opens VISOR, ready for a question">Ready chime</string>
+    <string name="settings_volume_ready_chime_description" description="When the ready chime plays">As \"Hey Meta, start VISOR\" opens VISOR, ready for your first question.</string>
     <string name="settings_volume_off" description="Volume slider, silent end">Off</string>
     <string name="settings_volume_louder" description="Volume slider, loud end">Louder</string>
     <string name="settings_volume_down_button" description="Screen reader name of the minus button beside a volume slider. The placeholder is the slider's title">Turn <xliff:g id="title">%1$s</xliff:g> down</string>
@@ -138,36 +138,34 @@
     <string name="settings_section_contrast" description="Settings heading: contrast">Contrast</string>
     <string name="settings_high_contrast_description" description="What High contrast does">Black and white throughout, with yellow when it\'s dark, for the strongest contrast.</string>
     <string name="settings_section_vibration" description="Settings section: vibration">Vibration</string>
-    <string name="settings_vibration_description" description="What VISOR's vibrations mean">VISOR buzzes so you can feel what it is doing: two short pulses as a session starts, one long pulse as it ends, a firm buzz when it starts listening for a command, a light tick when you press a button, and three short pulses when a button is locked.</string>
+    <string name="settings_vibration_description" description="What VISOR's vibrations mean">VISOR buzzes so you can feel what it is doing: two short pulses as \"Hey Meta, start VISOR\" opens it, a firm buzz when it starts listening for a command, a light tick when you press a button, and three short pulses when it can\'t do what you asked yet.</string>
     <string name="settings_vibration" description="Name of the Vibration on/off setting">Vibration</string>
     <string name="settings_high_contrast" description="Name of the High contrast on/off setting">High contrast</string>
     <string name="settings_section_commands" description="Settings section: every command and how to turn each off">Commands</string>
     <string name="settings_commands_description" description="What the commands section is">Ways to ask VISOR for something without touching your phone. Each one is on until you turn it off.</string>
     <string name="settings_camera_commands_title" description="Commands heading: wake phrases that start a camera feature">Camera commands</string>
-    <string name="settings_camera_commands_description" description="How camera commands work">During a session, say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses and tells you what it finds.</string>
-    <string name="settings_command_read_text" description="Camera command: read the text in front of you">Read text</string>
-    <string name="settings_command_identify_objects" description="Camera command: say what an object is">Identify objects</string>
-    <string name="settings_command_describe_scene" description="Camera command: describe the scene">Describe the scene</string>
-    <string name="settings_command_check_hazards" description="Camera command: check for hazards ahead">Check for hazards</string>
+    <string name="settings_camera_commands_description" description="How camera commands work">Say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses, or your phone if you chose it on the Pair screen, and tells you what it finds.</string>
+    <!-- Each camera feature's name: its button on Home, its wake phrases in Settings, the Last answer card -->
+    <string name="camera_command_check_hazards" description="Camera feature: takes a picture and says what is ahead and how far away">Check for hazards</string>
+    <string name="camera_command_read_text" description="Camera feature: takes a picture and reads its text aloud">Read text</string>
+    <string name="camera_command_identify_objects" description="Camera feature: takes a picture and names the objects in it">Identify objects</string>
+    <string name="camera_command_describe_scene" description="Camera feature: takes a picture and describes it">Describe the scene</string>
+    <string name="camera_command_ask_question" description="Camera feature: asks what you want to know, takes a picture and answers your question">Ask a question</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
-    <string name="settings_command_ask_question">Ask a question</string>
-    <!-- Said and shown at the top of the screen when a camera command is said with no session running -->
-    <string name="camera_command_needs_session_read_text" description="A camera command was said with no session running">Start a session first to read text. Say \"VISOR GO, start session\", or press Start session on Home.</string>
-    <string name="camera_command_needs_session_identify_objects" description="A camera command was said with no session running">Start a session first to identify objects. Say \"VISOR GO, start session\", or press Start session on Home.</string>
-    <string name="camera_command_needs_session_describe_scene" description="A camera command was said with no session running">Start a session first to describe the scene. Say \"VISOR GO, start session\", or press Start session on Home.</string>
-    <string name="camera_command_needs_session_check_hazards" description="A camera command was said with no session running">Start a session first to check for hazards. Say \"VISOR GO, start session\", or press Start session on Home.</string>
-    <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first, then start a session to use camera commands.</string>
+    <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
+    <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
+    <!-- VISOR's reply to "VISOR GO, hazard mode" and the like: VISOR has no modes, so it says how to ask directly -->
+    <string name="mode_not_needed" description="Reply to an old mode command. First placeholder: a wake phrase; second: a Home button's name">Just say \"<xliff:g id="phrase">%1$s</xliff:g>\", or press <xliff:g id="button">%2$s</xliff:g> on Home.</string>
+    <string name="mode_not_needed_phrase_off" description="Reply to an old mode command when that wake phrase is off in Settings. The placeholder is a Home button's name">Press <xliff:g id="button">%1$s</xliff:g> on Home.</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
     <string name="settings_voice_navigation_examples_title" description="Heading over the list of voice navigation commands">What you can say after \"VISOR GO\"</string>
     <string name="settings_voice_commands_go_places" description="Kind of voice command: moving between screens">Go places</string>
-    <string name="settings_voice_commands_sessions" description="Kind of voice command: sessions and modes">Sessions and modes</string>
     <string name="settings_voice_commands_settings" description="Kind of voice command: changing settings">Change settings</string>
     <string name="settings_voice_commands_account" description="Kind of voice command: the user's account">Your account</string>
     <string name="settings_voice_commands_answering" description="Kind of voice command: answering VISOR's questions">Answering VISOR</string>
     <string name="settings_voice_launch_title" description="Commands heading: Hey Meta voice launch. Keep the quoted phrase as is">\"Hey Meta, start VISOR\"</string>
-    <string name="settings_voice_launch_description" description="How the Hey Meta voice launch works">With your glasses on, say it to open VISOR and start a session. When this is off, VISOR still opens, but it doesn\'t start a session.</string>
-    <string name="settings_voice_launch_switch" description="Name on the Hey Meta voice launch switch, shown with ON or OFF">Hey Meta</string>
+    <string name="settings_voice_launch_description" description="How the Hey Meta voice launch works">With your glasses on, say it to open VISOR on your phone, ready for your first question.</string>
     <string name="settings_section_tap_navigation" description="Commands heading: glasses tap navigation">Glasses tap navigation</string>
     <string name="settings_tap_navigation_description" description="How glasses tap navigation works">When your glasses are connected, the same navigation shows up as buttons on their display — tap or swipe on the temple arm or Neural Band to select one, no phone or voice needed.</string>
     <string name="settings_help" description="Opens the Help screen">Help &amp; how VISOR works</string>
@@ -184,16 +182,16 @@
     <string name="help_title" description="Help screen heading">Help &amp; how VISOR works</string>
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
-    <string name="help_session_title" description="Help topic title">Starting a session</string>
-    <string name="help_session_body" description="Help topic">On the Home screen, the large round button starts and ends a VISOR session. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app.\n\nDuring a session, choose a mode: Hazard Awareness, Scene Description or Reading Assistance. Then press the button above the modes, such as \"Check for hazards\".\n\nVISOR takes a picture with your glasses, then tells you what\'s ahead and how far away, describes the scene, or reads the text. Its answer stays on Home, under Last answer.</string>
+    <string name="help_capture_title" description="Help topic title">Taking a picture</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are four large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead and how far away, Read text reads the text, Identify objects names what\'s in front of you, and Describe the scene describes it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the same four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
-    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
+    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
-    <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home and starts a session — no need to find or unlock your phone.</string>
+    <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home, and chimes when it\'s ready for your first question — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">During a session, say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. With no session running, VISOR tells you to start one first.\n\nVISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
-    <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"start session\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
+    <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
@@ -205,35 +203,27 @@
 
     <!-- Home Screen -->
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
-    <string name="start_session" description="start session">Start session</string>
-    <string name="end_session" description="end session">End session</string>
-    <string name="home_mode_title" description="Heading above the session mode choices on Home">Mode</string>
-    <string name="home_capture_hazard" description="Home button in Hazard Awareness mode: takes a picture and says what is ahead and how far away">Check for hazards</string>
-    <string name="home_capture_scene" description="Home button in Scene Description mode: takes a picture and describes it">Describe the scene</string>
-    <string name="home_capture_reader" description="Home button in Reading Assistance mode: takes a picture and reads its text aloud">Read text</string>
-    <string name="home_capture_identify" description="Home button in Object Identification mode: takes a picture and names the objects in it">Identify objects</string>
-    <string name="home_capture_question" description="Home button in Question mode: takes a picture and allows you to ask a question.">Ask a question</string>
-    <string name="home_locked_hint" description="Under Home's capture button and modes, which are locked until a session starts">Start a session to use these controls.</string>
-    <!-- Home's capture button turns into these while VISOR works, so it can be seen working -->
-    <string name="home_capture_taking_picture" description="In place of Home's capture button while the glasses take a picture">Taking picture…</string>
-    <string name="home_capture_thinking" description="In place of Home's capture button while VISOR works out what is in the picture">Thinking…</string>
+    <!-- A camera button on Home turns into these while VISOR works on it, so it can be seen working -->
+    <string name="home_capture_taking_picture" description="In place of a camera button on Home while the glasses take its picture">Taking picture…</string>
+    <!-- Under Home's title while the phone's camera is chosen on the Pair screen -->
+    <string name="home_using_phone_camera" description="Home: the camera buttons use the phone's camera, not the glasses">Using your phone\'s camera</string>
+    <string name="home_capture_thinking" description="In place of a camera button on Home while VISOR works out what is in its picture">Thinking…</string>
     <string name="home_last_answer_title" description="Heading of the card on Home that shows VISOR's last answer">Last answer</string>
+    <string name="home_last_answer_from" description="Above the last answer: which camera feature gave it, and when">"<xliff:g id="feature">%1$s</xliff:g> · <xliff:g id="time">%2$s</xliff:g>"</string>
+    <string name="home_last_answer_from_spoken" description="What a screen reader says for which camera feature gave the last answer, and when">"<xliff:g id="feature">%1$s</xliff:g>, <xliff:g id="time">%2$s</xliff:g>"</string>
     <string name="home_last_answer_empty" description="The Last answer card before VISOR has answered anything">When VISOR answers, its answer stays here too, to read or hear again.</string>
     <string name="home_read_again" description="Says the last answer again">Read again</string>
 
-    <!-- The session status bar at the top of every screen once logged in -->
-    <!-- The bar is always one line: when "Session on · Hazard Awareness" doesn't fit, it shortens to "On", then shows only the mode's icon -->
-    <string name="session_status_on" description="Session status bar while a session runs, before the mode's icon and name">Session on</string>
-    <string name="session_status_on_short" description="Session status bar while a session runs, when Session on doesn't fit on one line">On</string>
-    <string name="session_status_separator" translatable="false">·</string>
-    <string name="session_status_on_spoken" description="What a screen reader says for the session status bar while a session runs">Session on, <xliff:g id="mode">%1$s</xliff:g></string>
-    <string name="session_status_off" description="Session status bar while no session runs">Session off</string>
-    <string name="session_status_off_short" description="Session status bar while no session runs, when Session off doesn't fit on one line">Off</string>
-    <string name="session_status_go_home" description="What tapping the session status bar does, as a screen reader says it">go to Home</string>
     <string name="glasses_camera_tip_title" description="Tip title on the Pair Glasses screen: how VISOR uses the glasses' camera">How VISOR uses your glasses</string>
-    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses your glasses\' camera only when you ask it to. It takes one picture each time you say a camera command during a session, such as \"VISOR, read this\", or press the button on Home.</string>
+    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses its camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home, and turns the camera off again straight after.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
+    <!-- Pair screen: which camera VISOR takes its pictures with -->
+    <string name="camera_choice_title" description="Pair screen heading: which camera every camera feature uses">Which camera VISOR uses</string>
+    <string name="camera_choice_glasses" description="Camera choice: the Meta glasses' camera">My glasses</string>
+    <string name="camera_choice_phone" description="Camera choice: the phone's back camera">My phone</string>
+    <string name="camera_choice_glasses_description" description="Under the camera choice, with the glasses chosen">Pictures are taken with your glasses, of wherever you are looking. No glasses with you? Choose My phone.</string>
+    <string name="camera_choice_phone_description" description="Under the camera choice, with the phone chosen">Pictures are taken with the camera on the back of your phone. Hold your phone up and point its back at what you want to know about. VISOR needs to be open on your screen.</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect my glasses</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>
     <string name="update_dat_app_button_title" description="Open DAT app update on glasses">Update app on glasses</string>
@@ -413,13 +403,6 @@
     <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
     <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode configuration</string>
     <string name="p1_script" description="A Phase 1 demo script button: its number, then its whole text"><xliff:g id="number">%1$d</xliff:g>. <xliff:g id="script">%2$s</xliff:g></string>
-
-    <!-- VISOR Session Modes -->
-    <string name="hazard_mode" description="The hazard awareness mode">Hazard Awareness</string>
-    <string name="scene_mode" description="The scene description mode">Scene Description</string>
-    <string name="reader_mode" description="The reading assistance mode">Reading Assistance</string>
-    <string name="identify_mode" description="The object identification mode: names what the camera sees, on the phone">Object Identification</string>
-    <string name="question_mode" description="The scene question mode">Ask a question</string>
 
     <!-- Script strings
          The spoken response VISOR gives for each demo image, taken verbatim from

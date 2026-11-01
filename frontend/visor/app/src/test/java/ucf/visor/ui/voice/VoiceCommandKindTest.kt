@@ -30,17 +30,13 @@ class VoiceCommandKindTest {
             this == VoiceCommand.PairDevice ||
             this == VoiceCommand.GoBack
 
-        VoiceCommandKind.SESSIONS ->
-            this == VoiceCommand.StartSession ||
-                this == VoiceCommand.EndSession ||
-                this is VoiceCommand.SwitchMode
-
         VoiceCommandKind.SETTINGS -> this == VoiceCommand.ToggleHighContrast ||
             this is VoiceCommand.SetSpeechRate ||
             this == VoiceCommand.SpeakFaster ||
             this == VoiceCommand.SpeakSlower ||
             this is VoiceCommand.SetVerbosity ||
-            this is VoiceCommand.SetTextScale
+            this is VoiceCommand.SetTextScale ||
+            this is VoiceCommand.UseCamera
 
         VoiceCommandKind.ACCOUNT ->
             this == VoiceCommand.LogOut || this == VoiceCommand.DeleteAccount

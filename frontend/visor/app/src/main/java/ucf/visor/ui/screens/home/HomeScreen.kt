@@ -1,6 +1,5 @@
 package ucf.visor.ui.screens.home
 
-import androidx.annotation.StringRes
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -20,12 +19,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,7 +35,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
@@ -50,61 +47,52 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.VoiceCategory
-import ucf.visor.tts.SpokenPhrases
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ScreenTitle
-import ucf.visor.ui.components.SelectableChip
-import ucf.visor.ui.components.SessionToggleButton
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.feedback.animationsEnabled
+import ucf.visor.ui.icon
+import ucf.visor.ui.labelRes
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
-import ucf.visor.ui.viewmodel.SessionMode
-import ucf.visor.ui.viewmodel.icon
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.ui.viewmodel.labelRes
 import java.util.Date
 
 @Composable
 fun HomeScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
-    // Starts or ends the session, and says so (MainActivity).
-    onToggleSession: () -> Unit = {},
-    // Takes a picture with the glasses and answers it for the session's mode (MainActivity).
-    onCapture: () -> Unit = {},
+    // Takes a picture with the glasses and answers it for one camera feature (MainActivity).
+    onCapture: (CameraCommand) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val session by viewModel.session.collectAsStateWithLifecycle()
-    val capture by viewModel.capture.collectAsStateWithLifecycle()
+    val captures by viewModel.captures.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
+    val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
-
-    // The capture button and the modes only work during a session, but they are
-    // on screen before one too, locked. That shows early what a session offers,
-    // and gives the screen the same layout either way, so the session button
-    // never jumps when a session starts. Locked controls stay full contrast
-    // (dashed, not faded) and still answer a tap, saying what to do first.
-    val locked = !uiState.isSessionActive
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
@@ -120,94 +108,76 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
         ) {
-            ScreenTitle(
-                stringResource(R.string.home_screen_title),
-                textAlign = TextAlign.Center,
+            // Close under the title, so it costs the buttons below little room.
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-            )
-
-            SessionToggleButton(
-                isSessionActive = uiState.isSessionActive,
-                onToggle = onToggleSession,
-            )
-
-            // Both labels are laid out and only one is shown: at large text sizes
-            // "Start Session" can wrap where "End Session" does not, and a label
-            // that changed height would move the button above it.
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.start_session),
-                    style = MaterialTheme.typography.headlineSmall,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                ScreenTitle(
+                    stringResource(R.string.home_screen_title),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.shownOnlyIf(!uiState.isSessionActive),
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                Text(
-                    text = stringResource(R.string.end_session),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.shownOnlyIf(uiState.isSessionActive),
-                )
+                if (profile.camera == CameraChoice.PHONE) PhoneCameraNotice()
             }
 
-            // The capture button, what it last found, then the mode that
-            // decides what it does.
-            CaptureControl(
-                label = stringResource(captureLabel(session.mode)),
-                status = capture,
-                locked = locked,
-                onClick = {
-                    if (locked) {
-                        talk(SpokenPhrases.startSessionToCapture(session.mode), VoiceCategory.SESSION_UPDATES)
-                    } else {
-                        onCapture()
-                    }
-                },
-            )
+            // What Home is for, first: a button for each camera feature, each
+            // always in the same place and always doing the same thing, hazards
+            // at the top. Full width, one to a row, so a long name wraps at a
+            // large text size rather than shrinking. Then what VISOR last found.
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(CaptureGap),
+            ) {
+                CameraCommand.entries.forEach { command ->
+                    CaptureControl(
+                        label = stringResource(command.labelRes),
+                        icon = command.icon,
+                        status = captures[command] ?: CaptureStatus.IDLE,
+                        onClick = { onCapture(command) },
+                    )
+                }
+            }
 
             LastAnswerCard(
                 answer = lastAnswer,
                 onReadAgain = { talk(it, VoiceCategory.ANSWERS) },
             )
-
-            ModePicker(
-                selected = session.mode,
-                locked = locked,
-                onSelect = { mode ->
-                    viewModel.setMode(mode)
-                    talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
-                },
-                onLockedClick = {
-                    talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES, VoiceCategory.SESSION_UPDATES)
-                },
-            )
-
-            // What the locked controls are waiting for. Its space is kept during
-            // a session too, for the same reason as the label's above.
-            Row(
-                modifier = Modifier.shownOnlyIf(locked),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSizeFor(MaterialTheme.typography.bodyLarge)),
-                )
-                Text(
-                    text = stringResource(R.string.home_locked_hint),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
         }
     }
 }
 
-/** Keeps an element's space while hiding it from sight and from screen readers. */
-private fun Modifier.shownOnlyIf(shown: Boolean): Modifier =
-    if (shown) this else alpha(0f).clearAndSetSemantics {}
+/**
+ * Shown on Home while the phone's camera is chosen (on the Pair screen): the
+ * buttons below take their pictures with the phone, not the glasses. Only
+ * then, as the glasses are what VISOR uses unless told otherwise.
+ */
+@Composable
+private fun PhoneCameraNotice() {
+    val style = MaterialTheme.typography.bodyLarge
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Smartphone,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(iconSizeFor(style)),
+        )
+        Text(
+            stringResource(R.string.home_using_phone_camera),
+            style = style,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
 
 /**
- * The capture button, which turns into a panel saying what VISOR is doing
+ * A camera feature's button, which turns into a panel saying what VISOR is doing
  * while it takes a picture and works out what is in it: "Taking picture…",
  * then "Thinking…". A user can see VISOR is working with its beeps turned off.
  *
@@ -217,16 +187,18 @@ private fun Modifier.shownOnlyIf(shown: Boolean): Modifier =
  * so a screen reader says it as it changes.
  *
  * The button and the panel take the same room, so nothing below moves as they
- * swap.
+ * swap. Both are taller than any other button, with larger text: what Home
+ * is for should be the easiest thing on it to find and press.
  */
 @Composable
 private fun CaptureControl(
     label: String,
+    icon: ImageVector,
     status: CaptureStatus,
-    locked: Boolean,
     onClick: () -> Unit,
 ) {
     val working = status != CaptureStatus.IDLE
+    val style = MaterialTheme.typography.headlineSmall
     Box(modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
         SwapInPlace(
             showSecond = working,
@@ -234,23 +206,25 @@ private fun CaptureControl(
                 VisorButton(
                     text = label,
                     width = 1f,
-                    locked = locked,
                     onClick = onClick,
-                    modifier = if (working) Modifier.clearAndSetSemantics {} else Modifier,
+                    textStyle = style,
+                    icon = icon,
+                    modifier = Modifier
+                        .heightIn(min = CaptureMinHeight)
+                        .then(if (working) Modifier.clearAndSetSemantics {} else Modifier),
                 )
             },
             second = {
                 // A new node for each step, so a screen reader hears each one.
-                key(status) { CaptureStatusPanel(status) }
+                key(status) { CaptureStatusPanel(status, style) }
             },
         )
     }
 }
 
 @Composable
-private fun CaptureStatusPanel(status: CaptureStatus) {
+private fun CaptureStatusPanel(status: CaptureStatus, style: TextStyle) {
     val colors = MaterialTheme.colorScheme
-    val style = MaterialTheme.typography.labelLarge
     val sweep: State<Float>? = if (animationsEnabled()) {
         rememberInfiniteTransition(label = "working").animateFloat(
             initialValue = 0f,
@@ -263,7 +237,7 @@ private fun CaptureStatusPanel(status: CaptureStatus) {
     }
     Row(
         modifier = Modifier
-            .heightIn(min = 56.dp)
+            .heightIn(min = CaptureMinHeight)
             .background(colors.surface, VisorShapes.Control)
             .sweepingRing(sweep, track = colors.outline, ring = colors.primary)
             .padding(horizontal = 24.dp, vertical = 8.dp),
@@ -357,8 +331,11 @@ private fun SwapInPlace(
  * live region, and the card's border flashes once as it arrives (not with
  * the system's animations off; the new text and time show it then).
  *
- * The card is on Home from the start, saying what it is for, so the first
- * answer doesn't push the modes below it down the screen.
+ * Above the answer, which feature gave it ("Read text · 1:09 PM"): five
+ * features feed the card, wake phrases among them, and "No text found" means
+ * more beside "Read text".
+ *
+ * The card is on Home from the start, saying what it is for.
  */
 @Composable
 private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
@@ -409,10 +386,15 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
                     )
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        val time = DateFormat.getTimeFormat(context).format(Date(answer.atMillis))
+                        val source = stringResource(answer.command.labelRes)
+                        // Read without the "·", which a screen reader would say aloud.
+                        val spoken = stringResource(R.string.home_last_answer_from_spoken, source, time)
                         Text(
-                            DateFormat.getTimeFormat(context).format(Date(answer.atMillis)),
+                            stringResource(R.string.home_last_answer_from, source, time),
                             style = MaterialTheme.typography.bodyLarge,
                             color = colors.onSurfaceVariant,
+                            modifier = Modifier.semantics { contentDescription = spoken },
                         )
                         Text(answer.text, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     }
@@ -428,51 +410,15 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
     }
 }
 
+// Half again VisorButton's 56dp, and at 200% text the top three still fit on
+// a phone's screen without scrolling.
+private val CaptureMinHeight = 88.dp
+
+// Between the camera buttons: room enough that a tap meant for one doesn't land on the next.
+private val CaptureGap = 16.dp
 private const val SweepMillis = 2_000
 private const val SweepFraction = 0.25f
 private val SweepWidth = 5.dp
 private const val FlashMillis = 900
 private const val FreshAnswerMillis = 3_000L
 
-@Composable
-private fun ModePicker(
-    selected: SessionMode,
-    locked: Boolean,
-    onSelect: (SessionMode) -> Unit,
-    onLockedClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectableGroup(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            stringResource(R.string.home_mode_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.semantics { heading() },
-        )
-        SessionMode.entries.forEach { mode ->
-            SelectableChip(
-                label = stringResource(mode.labelRes),
-                selected = mode == selected,
-                locked = locked,
-                icon = mode.icon,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    if (locked) onLockedClick()
-                    else if (mode != selected) onSelect(mode)
-                },
-            )
-        }
-    }
-}
-
-@StringRes
-private fun captureLabel(mode: SessionMode): Int = when (mode) {
-    SessionMode.HAZARD -> R.string.home_capture_hazard
-    SessionMode.SCENE -> R.string.home_capture_scene
-    SessionMode.READER -> R.string.home_capture_reader
-    SessionMode.IDENTIFY -> R.string.home_capture_identify
-    SessionMode.QUESTION -> R.string.home_capture_question
-}

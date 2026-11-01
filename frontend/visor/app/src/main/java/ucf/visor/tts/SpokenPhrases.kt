@@ -1,7 +1,6 @@
 package ucf.visor.tts
 
 import ucf.visor.network.Hazard
-import ucf.visor.ui.viewmodel.SessionMode
 import kotlin.math.roundToInt
 
 /**
@@ -15,8 +14,11 @@ import kotlin.math.roundToInt
  */
 object SpokenPhrases {
 
-    // A capture has started.
+    // A capture has started. With the phone's camera, VISOR says so every
+    // time: it is the cue to hold the phone up, and nobody has to remember
+    // which camera they chose.
     const val TAKING_PICTURE = "Taking picture"
+    const val TAKING_PICTURE_WITH_PHONE = "Taking picture with your phone"
     const val AWAITING_SCENE_DESCRIPTION = "Awaiting scene description"
 
     // Glasses camera.
@@ -24,6 +26,29 @@ object SpokenPhrases {
     const val GLASSES_CAMERA_UNAVAILABLE = "I couldn't connect to your glasses camera."
     const val GLASSES_PHOTO_FAILED = "I couldn't take a picture with your glasses."
     const val GLASSES_PHOTO_UNREADABLE = "I couldn't read the photo from your glasses."
+
+    /** No glasses to take the picture: what to check, and the way to carry on without them. */
+    const val NO_GLASSES_TRY_PHONE =
+        "No connected glasses were found. Make sure your glasses are on and connected, " +
+            "or switch to your phone's camera on the Pair screen."
+
+    // Phone camera.
+    const val NO_PHONE_CAMERA_PERMISSION =
+        "VISOR does not have access to your phone's camera. Allow it in your phone's settings."
+    const val PHONE_CAMERA_NEEDS_SCREEN = "Open VISOR on your phone to use its camera."
+    const val NO_PHONE_CAMERA = "I couldn't find a camera on the back of your phone."
+    const val PHONE_CAMERA_UNAVAILABLE =
+        "I couldn't use your phone's camera. Another app may be using it."
+    const val PHONE_PHOTO_FAILED = "I couldn't take a picture with your phone."
+
+    /** A black picture: most likely the phone is in a pocket, or face down. */
+    const val PHONE_PHOTO_TOO_DARK =
+        "The picture came out black. Make sure nothing is covering the camera on the back of your phone."
+
+    /** Said when the user switches cameras (Pair screen or "VISOR GO, use my phone camera"). */
+    const val USING_PHONE_CAMERA =
+        "Using your phone's camera. Point the back of your phone at what you want to know about."
+    const val USING_GLASSES_CAMERA = "Using your glasses' camera."
 
     // Reading text.
     const val NO_TEXT_FOUND = "No text found. Try moving closer."
@@ -55,29 +80,11 @@ object SpokenPhrases {
             "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead."
         }
 
-    // A session starting or ending, from Home's button, by voice, or on the glasses.
-    const val STARTING_SESSION = "Starting session"
-    const val ENDING_SESSION = "Ending session"
-
-    /** Said when the session switches to [mode], from Home, by voice, or in Phase 1. */
-    fun modeActivated(mode: SessionMode): String = when (mode) {
-        SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
-        SessionMode.SCENE -> "Scene Description Mode Activated!"
-        SessionMode.READER -> "Reading Assistance Mode Activated!"
-        SessionMode.IDENTIFY -> "Object Identification Mode Activated!"
-        SessionMode.QUESTION -> "Question Mode Activated!"
-    }
-
-    // Home's capture button and modes are locked until a session starts; a tap
-    // on one (or asking for a mode by voice) says what to do first.
-    const val START_SESSION_TO_SWITCH_MODES = "Start a session first to switch modes."
-
-    /** Said when Home's capture button, for [mode], is pressed before a session has started. */
-    fun startSessionToCapture(mode: SessionMode): String = when (mode) {
-        SessionMode.HAZARD -> "Start a session first to check for hazards."
-        SessionMode.SCENE -> "Start a session first to describe the scene."
-        SessionMode.READER -> "Start a session first to read text."
-        SessionMode.IDENTIFY -> "Start a session first to identify objects."
-        SessionMode.QUESTION -> "Start a session first to ask a question."
-    }
+    /**
+     * The reply to "VISOR GO, start session" (or "end session"). VISOR used to
+     * need a session started before its camera features worked; now they
+     * always do, and this says so to anyone still in that habit.
+     */
+    const val NO_SESSION_NEEDED =
+        "VISOR is always ready. Just say \"VISOR, read this\", or press a button on Home."
 }

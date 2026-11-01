@@ -36,14 +36,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.ChosenPhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
+import ucf.visor.capture.PhoneCameraSource
+import ucf.visor.capture.PhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
 import ucf.visor.data.AudioMix
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.SessionStore
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
@@ -52,6 +56,7 @@ import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
 import ucf.visor.recognition.TextReaderOCR
 import ucf.visor.stt.CameraCommand
+import ucf.visor.stt.CommandRecognizer
 import ucf.visor.stt.Listener
 import ucf.visor.stt.WakePhrases
 import ucf.visor.tts.Chimes
@@ -65,16 +70,12 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.SessionChange
-import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
+import ucf.visor.ui.voice.SceneQuestionController
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.wearables.VoiceLaunches
 import kotlin.coroutines.resume
-
-import ucf.visor.stt.CommandRecognizer
-import ucf.visor.ui.voice.SceneQuestionController
 
 class MainActivity : ComponentActivity() {
 
@@ -87,10 +88,7 @@ class MainActivity : ComponentActivity() {
 
         // The camera wake phrases are CameraCommand's (stt/WakePhrases.kt).
         private val NAV_WAKE_PHRASE = WakePhrases.keyword(WakePhrases.VOICE_NAVIGATION)
-        private val QUESTION_WAKE_PHRASES = setOf(
-            "VISORQUESTION",
-            "VISORIHAVEAQUESTION",
-        )
+
         /** How long a voice launch waits for its stream delivery before acting on the intent alone. */
         private const val VOICE_STREAM_GRACE_MS = 3_000L
     }
@@ -162,6 +160,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var chimes: Chimes
     private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
+    private lateinit var phoneCamera: PhoneCameraSource
 
     private lateinit var commandRecognizer: CommandRecognizer
     private lateinit var sceneQuestion: SceneQuestionController
@@ -200,8 +199,7 @@ class MainActivity : ComponentActivity() {
                             lastSpoken = { speaker.lastUtterance },
                             viewModel = viewModel,
                             onRequestWearablesPermission = ::requestWearablesPermission,
-                            onToggleSession = ::toggleSession,
-                            onCapture = ::captureForMode,
+                            onCapture = ::runCameraFeature,
                             voiceNav = voiceNav,
                             glassesNav = glassesNav,
                         )
@@ -214,6 +212,7 @@ class MainActivity : ComponentActivity() {
         glassesCamera = GlassesPhotoSource(
             requestPermission = ::requestWearablesPermission,
         )
+        phoneCamera = PhoneCameraSource(this)
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
         // Volumes are read from the profile as each sound plays, not pushed in a
@@ -231,22 +230,27 @@ class MainActivity : ComponentActivity() {
             volume = { audio().loudness(SoundCategory.THINKING_BEEPS) },
         )
 
-        // Without real glasses, pair mock glasses in the debug menu and pick
-        // the photo they should "take" (Select image).
-        // Each camera feature says when its picture is taken, so Home can show
-        // "Thinking…" in place of "Taking picture…".
-        val camera = NotifyingPhotoSource(glassesCamera) { viewModel.onPictureTaken() }
-        textReader = TextReader(
-            NotifyingPhotoSource(glassesCamera.forReading) { viewModel.onPictureTaken() },
-            textReaderOCR,
-        )
+        // Each picture comes from the camera chosen on the Pair screen: the
+        // glasses, or the phone's own. Without real glasses, either choose the
+        // phone (the emulator's camera works too), or pair mock glasses in the
+        // debug menu and pick the photo they should "take" (Select image).
+        val chosenCamera = ChosenPhotoSource(glassesCamera, phoneCamera, ::chosenCamera)
+        val chosenReadingCamera =
+            ChosenPhotoSource(glassesCamera.forReading, phoneCamera.forReading, ::chosenCamera)
 
-        objectIdentifier = ObjectIdentifier(camera, objectDetector)
+        // Each camera feature says when its picture is taken, so its button on
+        // Home can show "Thinking…" in place of "Taking picture…".
+        fun cameraFor(command: CameraCommand, source: PhotoSource = chosenCamera) =
+            NotifyingPhotoSource(source) { viewModel.onPictureTaken(command) }
+
+        textReader = TextReader(cameraFor(CameraCommand.READ_TEXT, chosenReadingCamera), textReaderOCR)
+
+        objectIdentifier = ObjectIdentifier(cameraFor(CameraCommand.IDENTIFY_OBJECTS), objectDetector)
 
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
-            photoSource = NotifyingPhotoSource(camera) {
-                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.SESSION_UPDATES)
+            photoSource = NotifyingPhotoSource(cameraFor(CameraCommand.DESCRIBE_SCENE)) {
+                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.STATUS_UPDATES)
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
@@ -257,7 +261,7 @@ class MainActivity : ComponentActivity() {
         sceneQuestion = SceneQuestionController(
             recognizer = commandRecognizer,
             describer = SceneDescriber(
-                photoSource = camera,
+                photoSource = cameraFor(CameraCommand.ASK_QUESTION),
                 vlm = VlmClient(accessToken = sessionStore::accessToken),
                 scope = lifecycleScope,
             ),
@@ -266,10 +270,13 @@ class MainActivity : ComponentActivity() {
             isSpeaking = { speaker.isSpeaking() },
             pauseWakeListening = { listener.stop() },
             resumeWakeListening = { if (wantsWakeListening()) listener.start() },
+            onAsked = { viewModel.onCaptureStarted(CameraCommand.ASK_QUESTION) },
+            onAnswered = { answer -> viewModel.onAnswered(CameraCommand.ASK_QUESTION, answer) },
+            takingPicture = ::takingPicturePhrase,
         )
 
         hazardDetector = HazardDetector(
-            photoSource = camera,
+            photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
             client = HazardClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
         )
@@ -311,42 +318,51 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** The camera chosen on the Pair screen (or by voice), as of right now. */
+    private fun chosenCamera(): CameraChoice = viewModel.userProfile.value.camera
+
+    /** What VISOR says as a camera feature takes its picture: which camera, when it is the phone's. */
+    private fun takingPicturePhrase(): String = when (chosenCamera()) {
+        CameraChoice.GLASSES -> SpokenPhrases.TAKING_PICTURE
+        CameraChoice.PHONE -> SpokenPhrases.TAKING_PICTURE_WITH_PHONE
+    }
+
     /** The volumes Settings has set for each kind of sound, as of right now. */
     private fun audio(): AudioMix = viewModel.userProfile.value.audio
 
     /**
-     * Every camera feature sounds the same, whether a wake phrase or Home's
-     * capture button asked for it: "Taking picture", beeps while it thinks,
-     * then the answer. Home shows each step too (see VisorViewModel.capture),
-     * and keeps the answer on screen, for anyone who can't hear them.
+     * Every camera feature sounds the same, whether a wake phrase, a button
+     * on Home or one on the glasses asked for it: "Taking picture" ("with
+     * your phone", when that is the camera), beeps while it thinks, then the
+     * answer. Its button on Home shows each step too
+     * (see VisorViewModel.captures), and Home keeps the answer on screen, for
+     * anyone who can't hear them.
      */
-    private fun runCameraFeature(feature: ReadRequester) {
-        viewModel.onCaptureStarted()
-        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.SESSION_UPDATES)
-        thinkingBeeper.start()
-        feature.requestRead { text ->
-            thinkingBeeper.stop()
-            viewModel.onAnswered(text)
-            speaker.speak(text, VoiceCategory.ANSWERS)
-        }
-    }
-
-    /** Home's capture button: the camera feature for the session's mode. */
-    private fun captureForMode() {
-        val feature = when (viewModel.session.value.mode) {
-            SessionMode.HAZARD -> hazardDetector
-            SessionMode.SCENE -> sceneDescriber
-            SessionMode.READER -> textReader
-            SessionMode.IDENTIFY -> objectIdentifier
-            SessionMode.QUESTION -> {
+    private fun runCameraFeature(command: CameraCommand) {
+        val feature = when (command) {
+            CameraCommand.CHECK_HAZARDS -> hazardDetector
+            CameraCommand.READ_TEXT -> textReader
+            CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
+            CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+            // Asks what the wearer wants to know before it takes its picture,
+            // so it runs its own steps, and reports each to Home all the same.
+            CameraCommand.ASK_QUESTION -> {
                 sceneQuestion.activate()
                 return
             }
         }
-        runCameraFeature(feature)
+        viewModel.onCaptureStarted(command)
+        speaker.speak(takingPicturePhrase(), VoiceCategory.STATUS_UPDATES)
+        thinkingBeeper.start()
+        feature.requestRead { text ->
+            viewModel.onAnswered(command, text)
+            // Another picture may still be being worked on: its beeps go on.
+            if (viewModel.captures.value.isEmpty()) thinkingBeeper.stop()
+            speaker.speak(text, VoiceCategory.ANSWERS)
+        }
     }
 
-    /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
+    /** A camera wake phrase: its feature, unless Settings has turned it off or no one is logged in. */
     private fun onCameraCommand(command: CameraCommand) {
         if (command !in viewModel.userProfile.value.cameraCommands) {
             // Silent on purpose. A command is often turned off because it kept
@@ -354,74 +370,25 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "Wake phrase for $command ignored: turned off in Settings")
             return
         }
-        // A camera command needs a session running, as Home's capture button
-        // does. Said as voice navigation's own replies are, with the wake
-        // phrase listener paused (it says "VISOR GO"), and kept at the top of
-        // the screen as well, with the rejected buzz, for anyone who can't
+        // A camera command works the moment someone is logged in: nothing else
+        // to start first. Said as voice navigation's own replies are, with the
+        // wake phrase listener paused (it says "VISOR GO"), and kept at the top
+        // of the screen as well, with the rejected buzz, for anyone who can't
         // hear it.
-        val state = viewModel.uiState.value
-        if (!state.isSessionActive) {
-            val problem = getString(
-                when {
-                    !state.isAuthComplete -> R.string.camera_command_needs_login
-                    command == CameraCommand.READ_TEXT -> R.string.camera_command_needs_session_read_text
-                    command == CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_needs_session_identify_objects
-                    command == CameraCommand.CHECK_HAZARDS -> R.string.camera_command_needs_session_check_hazards
-                    else -> R.string.camera_command_needs_session_describe_scene
-                }
-            )
+        if (!viewModel.uiState.value.isAuthComplete) {
+            val problem = getString(R.string.camera_command_needs_login)
             haptics.rejected()
             voiceNav.speakGuarded(problem)
             viewModel.setRecentError(problem)
             return
         }
-        if (command == CameraCommand.ASK_QUESTION) {
-            sceneQuestion.activate()
-            return
-        }
-        runCameraFeature(
-            when (command) {
-                CameraCommand.READ_TEXT -> textReader
-                CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
-                CameraCommand.DESCRIBE_SCENE -> sceneDescriber
-                CameraCommand.CHECK_HAZARDS -> hazardDetector
-                CameraCommand.ASK_QUESTION -> sceneDescriber   // unreachable, handled above
-            }
-        )
-    }
-
-    /**
-     * Home's session button, "start session" by voice and the glasses' own
-     * button: starts or ends the session and says so, with a chime and then
-     * words, each at its own volume.
-     */
-    private fun toggleSession() = viewModel.toggleSession(::requestWearablesPermission) { change ->
-        when (change) {
-            SessionChange.Started -> {
-                chimes.play(Chime.SESSION_START)
-                haptics.sessionStarted()
-                speaker.speak(SpokenPhrases.STARTING_SESSION, VoiceCategory.SESSION_UPDATES)
-            }
-
-            SessionChange.Ended -> {
-                chimes.play(Chime.SESSION_END)
-                haptics.sessionEnded()
-                speaker.speak(SpokenPhrases.ENDING_SESSION, VoiceCategory.SESSION_UPDATES)
-            }
-
-            // Why the button did nothing is the answer to pressing it: too
-            // important to go quiet along with "Starting session".
-            is SessionChange.NotStarted -> {
-                haptics.rejected()
-                speaker.speak(change.problem, VoiceCategory.ANSWERS)
-            }
-        }
+        runCameraFeature(command)
     }
 
     /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> thinkingBeeper.beepOnce()
-        SoundCategory.SESSION_CHIMES -> chimes.play(Chime.SESSION_START)
+        SoundCategory.READY_CHIME -> chimes.play(Chime.READY)
     }
 
     /**
@@ -483,22 +450,24 @@ class MainActivity : ComponentActivity() {
 
     private fun performVoiceLaunch(): VisorViewModel.VoiceLaunchResult {
         lastVoiceLaunchAt = SystemClock.elapsedRealtime()
-        val result = viewModel.startSessionFromVoice()
-        if (result.startedSession) {
-            chimes.play(Chime.SESSION_START)
-            haptics.sessionStarted()
+        val result = viewModel.openFromVoice()
+        // Felt and heard before the words: VISOR is ready for a question.
+        if (result.success) {
+            chimes.play(Chime.READY)
+            haptics.ready()
         }
-        // As with Home's button, why a session did not start is an answer.
+        // Why VISOR isn't ready (not logged in) is an answer, too important to
+        // go quiet along with the status updates.
         speaker.speak(
             result.spoken,
-            if (result.success) VoiceCategory.SESSION_UPDATES else VoiceCategory.ANSWERS,
+            if (result.success) VoiceCategory.STATUS_UPDATES else VoiceCategory.ANSWERS,
         )
         return result
     }
 
     /** Registration begun in the Meta AI app: continue it here, and say so. */
     private fun onRegistrationRequest(request: RegistrationRequest) {
-        speaker.speak("Connecting VISOR to your glasses.", VoiceCategory.SESSION_UPDATES)
+        speaker.speak("Connecting VISOR to your glasses.", VoiceCategory.STATUS_UPDATES)
         request.continueRegistration(this)
             .onFailure { error, _ -> Log.w("VISOR", "Registration request: ${error.description}") }
     }
@@ -515,5 +484,6 @@ class MainActivity : ComponentActivity() {
         chimes.release()
         glassesCamera.close()
         commandRecognizer.shutdown()
+        phoneCamera.close()
     }
 }

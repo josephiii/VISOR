@@ -12,6 +12,7 @@ import com.meta.wearable.dat.core.types.PermissionStatus
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -38,8 +39,7 @@ fun VisorNavHost(
     playSample: (SoundCategory) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
-    onToggleSession: () -> Unit = {},
-    onCapture: () -> Unit = {},
+    onCapture: (CameraCommand) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -125,7 +125,6 @@ fun VisorNavHost(
             HomeScreen(
                 viewModel = viewModel,
                 talk = talk,
-                onToggleSession = onToggleSession,
                 onCapture = onCapture,
             )
         }

@@ -5,21 +5,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ucf.visor.tts.Chimes.Chime
 
-/** What tells the session chimes apart, and keeps them out of the way. */
+/** What makes the ready chime recognizable, and keeps it out of the way. */
 class ChimesTest {
 
     @Test
-    fun aSessionStartRisesAndItsEndFallsThroughTheSameNotes() {
-        val up = Chime.SESSION_START.notes.map { it.frequency }
-        val down = Chime.SESSION_END.notes.map { it.frequency }
+    fun theReadyChimeRises() {
+        val notes = Chime.READY.notes.map { it.frequency }
 
-        assertEquals("the start rises", up.sorted(), up)
-        assertEquals("the end falls back through the same notes", up.reversed(), down)
+        assertEquals(notes.sorted(), notes)
     }
 
     @Test
     fun chimesAreShortEnoughNotToHoldUpWhatIsSaidNext() {
-        // "Starting session" waits for its chime to end.
+        // "VISOR is ready." waits for its chime to end.
         Chime.entries.forEach { assertTrue("$it lasts ${it.durationMs} ms", it.durationMs <= 450) }
     }
 
