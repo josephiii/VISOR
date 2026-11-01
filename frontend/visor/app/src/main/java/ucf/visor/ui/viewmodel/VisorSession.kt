@@ -5,11 +5,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.ui.graphics.vector.ImageVector
 import ucf.visor.R
 
-enum class SessionMode { HAZARD, SCENE, READER, IDENTIFY }
+enum class SessionMode { HAZARD, SCENE, READER, IDENTIFY, QUESTION }
 
 /** The mode's name, as Home's mode choices and the session status bar show it. */
 @get:StringRes
@@ -19,6 +20,7 @@ val SessionMode.labelRes: Int
         SessionMode.SCENE -> R.string.scene_mode
         SessionMode.READER -> R.string.reader_mode
         SessionMode.IDENTIFY -> R.string.identify_mode
+        SessionMode.QUESTION -> R.string.question_mode
     }
 
 /**
@@ -26,7 +28,7 @@ val SessionMode.labelRes: Int
  * status bar when the name doesn't fit there. Always drawn with its name in
  * reach (or, for a screen reader, in place of it), never as the only sign of
  * the mode: a warning sign for hazards, a landscape for a scene, a book for
- * reading, shapes for identifying objects.
+ * reading, shapes for identifying objects, a speech bubble for questions.
  */
 val SessionMode.icon: ImageVector
     get() = when (this) {
@@ -34,6 +36,7 @@ val SessionMode.icon: ImageVector
         SessionMode.SCENE -> Icons.Filled.Landscape
         SessionMode.READER -> Icons.AutoMirrored.Filled.MenuBook
         SessionMode.IDENTIFY -> Icons.Filled.Category
+        SessionMode.QUESTION -> Icons.Filled.QuestionAnswer
     }
 
 /** What [VisorViewModel.toggleSession] did, for the caller to announce. */
@@ -50,11 +53,13 @@ data class VisorSession(
     val inSceneDescriptionMode: Boolean = false,
     val inReadingAssistanceMode: Boolean = false,
     val inObjectIdentificationMode: Boolean = false,
+    val inQuestionMode: Boolean = false,
 ) {
     val mode: SessionMode = when {
         inHazardAwarenessMode -> SessionMode.HAZARD
         inSceneDescriptionMode -> SessionMode.SCENE
         inObjectIdentificationMode -> SessionMode.IDENTIFY
+        inQuestionMode -> SessionMode.QUESTION
         else -> SessionMode.READER
     }
-}
+}

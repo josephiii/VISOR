@@ -831,6 +831,7 @@ private fun CameraCommand.titleRes(): Int = when (this) {
     CameraCommand.IDENTIFY_OBJECTS -> R.string.settings_command_identify_objects
     CameraCommand.DESCRIBE_SCENE -> R.string.settings_command_describe_scene
     CameraCommand.CHECK_HAZARDS -> R.string.settings_command_check_hazards
+    CameraCommand.ASK_QUESTION -> R.string.settings_command_ask_question
 }
 
 @StringRes

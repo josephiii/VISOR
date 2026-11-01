@@ -560,40 +560,25 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(atSettings = false) }
     }
 
-    fun toggleHazardAwarenessMode() {
-        _session.update { it.copy(inHazardAwarenessMode = true) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
+    fun toggleHazardAwarenessMode() = setMode(SessionMode.HAZARD)
 
-    fun toggleSceneDescriptionMode() {
-        _session.update { it.copy(inSceneDescriptionMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
+    fun toggleSceneDescriptionMode() = setMode(SessionMode.SCENE)
 
-    fun toggleReadingAssistanceMode() {
-        _session.update { it.copy(inReadingAssistanceMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inObjectIdentificationMode = false) }
-    }
+    fun toggleReadingAssistanceMode() = setMode(SessionMode.READER)
 
-    fun toggleObjectIdentificationMode() {
-        _session.update { it.copy(inObjectIdentificationMode = true) }
-        _session.update { it.copy(inHazardAwarenessMode = false) }
-        _session.update { it.copy(inSceneDescriptionMode = false) }
-        _session.update { it.copy(inReadingAssistanceMode = false) }
-    }
+    fun toggleQuestionMode() = setMode(SessionMode.QUESTION)
+
+    fun toggleObjectIdentificationMode() = setMode(SessionMode.IDENTIFY)
 
     fun setMode(newMode: SessionMode) {
-        when (newMode) {
-            SessionMode.HAZARD -> toggleHazardAwarenessMode()
-            SessionMode.SCENE -> toggleSceneDescriptionMode()
-            SessionMode.READER -> toggleReadingAssistanceMode()
-            SessionMode.IDENTIFY -> toggleObjectIdentificationMode()
+        _session.update {
+            VisorSession(
+                inHazardAwarenessMode = newMode == SessionMode.HAZARD,
+                inSceneDescriptionMode = newMode == SessionMode.SCENE,
+                inReadingAssistanceMode = newMode == SessionMode.READER,
+                inQuestionMode = newMode == SessionMode.QUESTION,
+                inObjectIdentificationMode = newMode == SessionMode.IDENTIFY,
+            )
         }
     }
 

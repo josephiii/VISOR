@@ -65,6 +65,7 @@ object SpokenPhrases {
         SessionMode.SCENE -> "Scene Description Mode Activated!"
         SessionMode.READER -> "Reading Assistance Mode Activated!"
         SessionMode.IDENTIFY -> "Object Identification Mode Activated!"
+        SessionMode.QUESTION -> "Question Mode Activated!"
     }
 
     // Home's capture button and modes are locked until a session starts; a tap
@@ -77,5 +78,6 @@ object SpokenPhrases {
         SessionMode.SCENE -> "Start a session first to describe the scene."
         SessionMode.READER -> "Start a session first to read text."
         SessionMode.IDENTIFY -> "Start a session first to identify objects."
+        SessionMode.QUESTION -> "Start a session first to ask a question."
     }
 }
