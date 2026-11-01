@@ -2,6 +2,7 @@ package ucf.visor.ui.glasses
 
 import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.IconName
+import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -65,9 +66,10 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * and [ucf.visor.ui.voice.VoiceCommandParser] (voice), so all three input
  * methods reach the same destinations. Kept as a pure function (route + state
  * in, screen out) so it needs no Compose/MWDAT session context to reason about
- * or test.
+ * or test. [mode] is Home's current mode, which decides what the capture
+ * button does.
  */
-fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
+fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: SessionMode): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
@@ -112,14 +114,10 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
 
     val items = mutableListOf<GlassesNavItem>()
 
-    // The session toggle is offered from every screen, not just Home:
-    // VisorLayout's StartSession and EndSession handlers navigate home on their
-    // own before starting/ending the session.
-    items += if (uiState.isSessionActive) {
-        GlassesNavItem("End session", IconName.X, VoiceCommand.EndSession)
-    } else {
-        GlassesNavItem("Start session", IconName.TRIANGLE_RIGHT, VoiceCommand.StartSession)
-    }
+    // Home's capture button, first and from every screen: what the wearer
+    // most often wants, without reaching for the phone. A viewfinder for every
+    // mode (the display has no still camera icon); the label says which.
+    items += GlassesNavItem(captureLabel(mode), IconName.FOUR_CORNER_FRAME, VoiceCommand.Capture)
 
     if (route != "home") {
         items += GlassesNavItem("Home", IconName.HOUSE, VoiceCommand.GoHome)
@@ -155,4 +153,12 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         else -> "VISOR"
     }
     return GlassesNavScreen(title = title, items = items)
+}
+
+/** The label on Home's capture button for [mode] (R.string.home_capture_*), for the glasses. */
+private fun captureLabel(mode: SessionMode): String = when (mode) {
+    SessionMode.HAZARD -> "Check for hazards"
+    SessionMode.SCENE -> "Describe the scene"
+    SessionMode.READER -> "Read text"
+    SessionMode.IDENTIFY -> "Identify objects"
 }

@@ -165,12 +165,10 @@ data class UserProfile(
     val glassesTapNavigationEnabled: Boolean = true,
     /** The camera features a wake phrase alone starts, such as "VISOR, read this". */
     val cameraCommands: Set<CameraCommand> = CameraCommand.entries.toSet(),
-    /** "Hey Meta, start VISOR" starts a session. VISOR opens either way: Meta AI opens it. */
-    val voiceLaunchEnabled: Boolean = true,
 
     /**
-     * VISOR's buzzes: as a session starts and ends, as it starts and stops
-     * listening, and as a button is pressed (see ui.feedback.Haptics). On until
+     * VISOR's buzzes: as "Hey Meta, start VISOR" opens it, as it starts and
+     * stops listening, and as a button is pressed (see ui.feedback.Haptics). On until
      * the user turns it off, like the sounds it goes with.
      */
     val vibrationEnabled: Boolean = true,

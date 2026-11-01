@@ -30,7 +30,7 @@ import ucf.visor.ui.components.scrollIndicator
 private data class HelpTopic(@StringRes val title: Int, @StringRes val description: Int)
 
 private val helpTopics = listOf(
-    HelpTopic(R.string.help_session_title, R.string.help_session_body),
+    HelpTopic(R.string.help_capture_title, R.string.help_capture_body),
     HelpTopic(R.string.help_pairing_title, R.string.help_pairing_body),
     HelpTopic(R.string.help_voice_launch_title, R.string.help_voice_launch_body),
     HelpTopic(R.string.help_camera_title, R.string.help_camera_body),

@@ -55,11 +55,7 @@ object SpokenPhrases {
             "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead."
         }
 
-    // A session starting or ending, from Home's button, by voice, or on the glasses.
-    const val STARTING_SESSION = "Starting session"
-    const val ENDING_SESSION = "Ending session"
-
-    /** Said when the session switches to [mode], from Home, by voice, or in Phase 1. */
+    /** Said when the mode switches to [mode], from Home, by voice, or in Phase 1. */
     fun modeActivated(mode: SessionMode): String = when (mode) {
         SessionMode.HAZARD -> "Hazard Awareness Mode Activated!"
         SessionMode.SCENE -> "Scene Description Mode Activated!"
@@ -67,15 +63,11 @@ object SpokenPhrases {
         SessionMode.IDENTIFY -> "Object Identification Mode Activated!"
     }
 
-    // Home's capture button and modes are locked until a session starts; a tap
-    // on one (or asking for a mode by voice) says what to do first.
-    const val START_SESSION_TO_SWITCH_MODES = "Start a session first to switch modes."
-
-    /** Said when Home's capture button, for [mode], is pressed before a session has started. */
-    fun startSessionToCapture(mode: SessionMode): String = when (mode) {
-        SessionMode.HAZARD -> "Start a session first to check for hazards."
-        SessionMode.SCENE -> "Start a session first to describe the scene."
-        SessionMode.READER -> "Start a session first to read text."
-        SessionMode.IDENTIFY -> "Start a session first to identify objects."
-    }
+    /**
+     * The reply to "VISOR GO, start session" (or "end session"). VISOR used to
+     * need a session started before its camera features worked; now they
+     * always do, and this says so to anyone still in that habit.
+     */
+    const val NO_SESSION_NEEDED =
+        "VISOR is always ready. Just say \"VISOR, read this\", or press the button on Home."
 }

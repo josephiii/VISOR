@@ -32,11 +32,9 @@ object VoiceCommandParser {
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
-            containsAny(text, "end session", "stop session", "end the session", "stop") ->
-                VoiceCommand.EndSession
-
-            containsAny(text, "start session", "begin session", "start a session", "start") ->
-                VoiceCommand.StartSession
+            // "Start session", "end the session"... Bare "start" and "stop" are
+            // no longer taken: "stop" is what anyone says to make speech stop.
+            containsWord(text, "session", "sessions") -> VoiceCommand.SessionNotNeeded
 
             containsAny(text, "hazard") -> VoiceCommand.SwitchMode(SessionMode.HAZARD)
             containsAny(text, "scene") -> VoiceCommand.SwitchMode(SessionMode.SCENE)
@@ -148,7 +146,7 @@ object VoiceCommandParser {
  */
 enum class VoiceCommandKind(val examples: List<String>) {
     GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
-    SESSIONS(listOf("start session", "end session", "hazard mode", "scene mode", "reading mode")),
+    MODES(listOf("hazard mode", "scene mode", "reading mode", "identify mode")),
     SETTINGS(
         listOf(
             "faster", "slower", "normal speed", "brief", "detailed",

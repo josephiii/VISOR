@@ -16,17 +16,17 @@ import kotlin.math.roundToLong
 import kotlin.math.sin
 
 /**
- * VISOR's chimes: a session starting or ending, confirmed the moment it
- * happens, before the words for it begin, and without words at all for a user
- * who has turned session updates off.
+ * VISOR's chime: "Hey Meta, start VISOR" has opened VISOR, ready for a
+ * question, confirmed before the words for it begin, and without words at all
+ * for a user who has turned status updates off.
  *
  * Synthesized on the phone the way the head-motion lab's cues are
- * (motionlab/CuePlayer), and played as media, like VISOR's voice, so they come
- * from the glasses when the glasses are the phone's audio device. The start
- * rises and the end falls: a difference of pitch contour, not just of
- * loudness, so it holds up for a listener who has lost some of their hearing
- * in one frequency band. Both stay between 500 and 1,000 Hz, below the high
- * frequencies age-related hearing loss takes first.
+ * (motionlab/CuePlayer), and played as media, like VISOR's voice, so it comes
+ * from the glasses when the glasses are the phone's audio device. It rises, a
+ * pitch contour rather than a loudness, so it holds up for a listener who has
+ * lost some of their hearing in one frequency band, and it stays between 500
+ * and 1,000 Hz, below the high frequencies age-related hearing loss takes
+ * first.
  *
  * @param loudness each sound category's volume, as a fraction of the media
  *   volume (0 is off). Read whenever a chime plays, so Settings changes apply at once.
@@ -37,16 +37,10 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
     data class Note(val frequency: Double, val offsetSec: Double, val durationSec: Double)
 
     enum class Chime(val category: SoundCategory, val notes: List<Note>) {
-        /** Three notes up: a session has started. */
-        SESSION_START(
+        /** Three notes up: VISOR is ready. */
+        READY(
             SoundCategory.SESSION_CHIMES,
             listOf(Note(C5, 0.0, 0.1), Note(E5, 0.12, 0.1), Note(G5, 0.24, 0.18)),
-        ),
-
-        /** The same three notes down: the session has ended. */
-        SESSION_END(
-            SoundCategory.SESSION_CHIMES,
-            listOf(Note(G5, 0.0, 0.1), Note(E5, 0.12, 0.1), Note(C5, 0.24, 0.18)),
         );
 
         /** How long it plays. Speech waits this long before starting ([Speaker]). */

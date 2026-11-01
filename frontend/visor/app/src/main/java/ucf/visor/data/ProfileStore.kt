@@ -40,7 +40,6 @@ class ProfileStore(context: Context) {
                 KEY_CAMERA_COMMANDS_OFF,
                 (CameraCommand.entries - p.cameraCommands).map { it.name }.toSet(),
             )
-            .putBoolean(KEY_VOICE_LAUNCH, p.voiceLaunchEnabled)
             .putBoolean(KEY_VIBRATION, p.vibrationEnabled)
         for (category in AudioCategory.all) editor.putFloat(category.key, p.audio.level(category))
         editor.apply()
@@ -77,7 +76,6 @@ class ProfileStore(context: Context) {
                 .orEmpty()
                 .mapNotNull { runCatching { CameraCommand.valueOf(it) }.getOrNull() }
                 .toSet(),
-            voiceLaunchEnabled = prefs.getBoolean(KEY_VOICE_LAUNCH, defaults.voiceLaunchEnabled),
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, defaults.vibrationEnabled),
         )
     }
@@ -158,7 +156,6 @@ class ProfileStore(context: Context) {
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
         const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
         const val KEY_CAMERA_COMMANDS_OFF = "cameraCommandsOff"
-        const val KEY_VOICE_LAUNCH = "voiceLaunchEnabled"
         const val KEY_VIBRATION = "vibrationEnabled"
     }
 }

@@ -30,10 +30,7 @@ class VoiceCommandKindTest {
             this == VoiceCommand.PairDevice ||
             this == VoiceCommand.GoBack
 
-        VoiceCommandKind.SESSIONS ->
-            this == VoiceCommand.StartSession ||
-                this == VoiceCommand.EndSession ||
-                this is VoiceCommand.SwitchMode
+        VoiceCommandKind.MODES -> this is VoiceCommand.SwitchMode
 
         VoiceCommandKind.SETTINGS -> this == VoiceCommand.ToggleHighContrast ||
             this is VoiceCommand.SetSpeechRate ||

@@ -710,14 +710,13 @@ private fun CommandSettings(profile: UserProfile, onProfileChange: (UserProfile)
         }
     }
 
+    // Nothing to switch: Meta AI opens VISOR either way. Listed so the phrase
+    // can be found where every other command is.
     SettingSubsection(stringResource(R.string.settings_voice_launch_title))
     Text(
         stringResource(R.string.settings_voice_launch_description),
         style = MaterialTheme.typography.bodyMedium,
     )
-    CommandSwitch(stringResource(R.string.settings_voice_launch_switch), profile.voiceLaunchEnabled) {
-        onProfileChange(profile.copy(voiceLaunchEnabled = !profile.voiceLaunchEnabled))
-    }
 
     SettingSubsection(stringResource(R.string.settings_section_tap_navigation))
     Text(
@@ -802,27 +801,27 @@ private fun SettingSubsection(title: String) {
 @StringRes
 private fun VoiceCategory.titleRes(): Int = when (this) {
     VoiceCategory.ANSWERS -> R.string.settings_volume_answers_title
-    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_session_updates_title
+    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_status_updates_title
     VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_title
 }
 
 @StringRes
 private fun VoiceCategory.descriptionRes(): Int = when (this) {
     VoiceCategory.ANSWERS -> R.string.settings_volume_answers_description
-    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_session_updates_description
+    VoiceCategory.SESSION_UPDATES -> R.string.settings_volume_status_updates_description
     VoiceCategory.VOICE_COMMANDS -> R.string.settings_volume_voice_commands_description
 }
 
 @StringRes
 private fun SoundCategory.titleRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_title
-    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_session_chimes_title
+    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_ready_chime_title
 }
 
 @StringRes
 private fun SoundCategory.descriptionRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_description
-    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_session_chimes_description
+    SoundCategory.SESSION_CHIMES -> R.string.settings_volume_ready_chime_description
 }
 
 @StringRes
@@ -836,7 +835,7 @@ private fun CameraCommand.titleRes(): Int = when (this) {
 @StringRes
 private fun VoiceCommandKind.titleRes(): Int = when (this) {
     VoiceCommandKind.GO_PLACES -> R.string.settings_voice_commands_go_places
-    VoiceCommandKind.SESSIONS -> R.string.settings_voice_commands_sessions
+    VoiceCommandKind.MODES -> R.string.settings_voice_commands_modes
     VoiceCommandKind.SETTINGS -> R.string.settings_voice_commands_settings
     VoiceCommandKind.ACCOUNT -> R.string.settings_voice_commands_account
     VoiceCommandKind.ANSWERING -> R.string.settings_voice_commands_answering

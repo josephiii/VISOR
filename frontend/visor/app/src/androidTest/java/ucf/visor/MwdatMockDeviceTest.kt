@@ -14,6 +14,7 @@ package ucf.visor
 
 import android.Manifest
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
@@ -307,19 +308,28 @@ class MwdatMockDeviceTest {
     }
 
     @Test
-    fun heyMetaStartVisorStartsASessionAndIsAnswered() {
+    fun heyMetaStartVisorOpensHomeAndIsAnswered() {
         val glasses = pairWornGlasses()
         val activity = composeTestRule.activity
-        composeTestRule.runOnUiThread { activity.viewModel.home() } // logged in
+        composeTestRule.runOnUiThread {
+            activity.viewModel.home() // logged in
+            activity.viewModel.settings() // somewhere other than Home
+        }
+        composeTestRule.waitUntil(10_000) { !onHome() }
         val voice = glasses.services.voiceInvocation
         composeTestRule.waitUntil(20_000) { voice.hasConnectedApps() }
 
         val requestId = voice.simulateLaunchAppAction()
         assertNotNull("VISOR was not listening for voice launches", requestId)
-        composeTestRule.waitUntil(10_000) { activity.viewModel.uiState.value.isSessionActive }
+        // Home, with its capture button ready: nothing to start first.
+        composeTestRule.waitUntil(10_000) { onHome() }
         // Answered exactly once: nothing left waiting.
         composeTestRule.waitUntil(10_000) { VoiceLaunches.get().pending.value.isEmpty() }
     }
+
+    /** Home's Last answer card is on screen: no other screen has one. */
+    private fun onHome(): Boolean =
+        composeTestRule.onAllNodesWithText("Last answer").fetchSemanticsNodes().isNotEmpty()
 
     private companion object {
         val SHORT_TRIAL = Trial(

@@ -39,7 +39,6 @@ fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> }
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val session by viewModel.session.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
@@ -81,7 +80,7 @@ fun Phase1ModeConfigurationScreen(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
                         // Switch modes when selecting a non-active mode
-                        if (!isSelected && uiState.isSessionActive) {
+                        if (!isSelected) {
                             viewModel.setMode(mode)
                             talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
                         }
@@ -101,10 +100,8 @@ fun Phase1ModeConfigurationScreen(
                     label = stringResource(R.string.p1_script, index + 1, scriptText),
                     onClick = {
                         // A demo script stands in for an answer, shown on Home as one is.
-                        if (uiState.isSessionActive) {
-                            viewModel.showAnswer(scriptText)
-                            talk(scriptText, VoiceCategory.ANSWERS)
-                        }
+                        viewModel.showAnswer(scriptText)
+                        talk(scriptText, VoiceCategory.ANSWERS)
                     },
                 )
             }

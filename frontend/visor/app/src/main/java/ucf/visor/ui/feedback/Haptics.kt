@@ -12,7 +12,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * Everything VISOR says by vibration, one pattern per meaning, so each can be
  * told apart without looking or listening:
  *
- *  - [sessionStarted]: two short pulses. [sessionEnded]: one long pulse.
+ *  - [ready]: two short pulses, as "Hey Meta, start VISOR" opens VISOR
+ *    ready for a question.
  *  - [listeningStarted]: one firm buzz as the microphone opens for a voice
  *    command. [listeningStopped]: a light tick as it closes.
  *  - [tick]: a light tap as a button or choice is pressed.
@@ -31,9 +32,7 @@ class Haptics(context: Context, private val enabled: () -> Boolean) {
 
     fun rejected() = touch(waveform(Pulse, Gap, Pulse, Gap, Pulse))
 
-    fun sessionStarted() = status(waveform(Pulse, Gap, Pulse))
-
-    fun sessionEnded() = status(waveform(LongPulse))
+    fun ready() = status(waveform(Pulse, Gap, Pulse))
 
     fun listeningStarted() = status(waveform(Buzz))
 
@@ -71,7 +70,6 @@ class Haptics(context: Context, private val enabled: () -> Boolean) {
     private companion object {
         const val Pulse = 60L
         const val Gap = 90L
-        const val LongPulse = 450L
         const val Buzz = 120L
     }
 }

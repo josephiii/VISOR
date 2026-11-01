@@ -27,13 +27,18 @@ sealed class VoiceCommand {
     object GoBack : VoiceCommand()
 
     /**
-     * "Start session" only ever starts one, and "end session" only ever ends
-     * one: said when a session is already on (or off), VISOR says so rather
-     * than doing the opposite of what was asked.
+     * Anything said about a session, such as "start session". VISOR no longer
+     * has sessions (its camera features work as soon as the user is logged
+     * in), so this only says so, for anyone still in the habit.
      */
-    object StartSession : VoiceCommand()
-    object EndSession : VoiceCommand()
+    object SessionNotNeeded : VoiceCommand()
     data class SwitchMode(val mode: SessionMode) : VoiceCommand()
+
+    /**
+     * Home's capture button: a picture, answered for the current mode, such as
+     * "Check for hazards". Offered on the glasses' own display.
+     */
+    object Capture : VoiceCommand()
 
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()

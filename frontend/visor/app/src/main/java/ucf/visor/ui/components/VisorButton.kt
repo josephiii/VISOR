@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,8 @@ import ucf.visor.ui.theme.VisorTheme
  *   logging in: a spinner beside [text] (which should say so, as in "Logging
  *   in…"), and no response to more presses. It keeps its colors rather than
  *   fading, so what it says stays readable.
+ * @param textStyle the label's style: [androidx.compose.material3.Typography.labelLarge]
+ *   unless the button is the one thing a screen is for, like Home's capture button.
  */
 @Composable
 fun VisorButton(
@@ -60,6 +63,7 @@ fun VisorButton(
     modifier: Modifier = Modifier,
     locked: Boolean = false,
     busy: Boolean = false,
+    textStyle: TextStyle = MaterialTheme.typography.labelLarge,
 ) {
     val lockedDescription = stringResource(R.string.state_locked)
     val haptics = LocalHaptics.current
@@ -108,7 +112,7 @@ fun VisorButton(
                 strokeWidth = 3.dp,
                 modifier = Modifier
                     .padding(end = 12.dp)
-                    .size(iconSizeFor(MaterialTheme.typography.labelLarge)),
+                    .size(iconSizeFor(textStyle)),
             )
         }
         if (locked) {
@@ -117,10 +121,10 @@ fun VisorButton(
                 contentDescription = null,
                 modifier = Modifier
                     .padding(end = 8.dp)
-                    .size(iconSizeFor(MaterialTheme.typography.labelLarge)),
+                    .size(iconSizeFor(textStyle)),
             )
         }
-        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+        Text(text, style = textStyle, textAlign = TextAlign.Center)
     }
 }
 

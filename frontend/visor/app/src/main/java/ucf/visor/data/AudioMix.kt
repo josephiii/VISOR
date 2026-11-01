@@ -5,8 +5,8 @@ import kotlin.math.roundToInt
 /**
  * One of the kinds of sound VISOR makes, each with its own volume slider in
  * Settings. They are split by what a sound is for, so a user can quiet what
- * they don't need (say, "Starting session", when they can feel the button
- * change) without losing what they do (the answers).
+ * they don't need (say, "Taking picture", when they can see Home working)
+ * without losing what they do (the answers).
  */
 sealed interface AudioCategory {
     /** Where its volume is saved. Fixed, so renaming a constant never loses a user's setting. */
@@ -25,11 +25,11 @@ sealed interface AudioCategory {
 enum class VoiceCategory(override val key: String) : AudioCategory {
     /**
      * What VISOR reads, identifies, describes and finds ahead, and what went
-     * wrong when it can't, including why a session could not start.
+     * wrong when it can't, including why a camera command couldn't run.
      */
     ANSWERS("answersVolume"),
 
-    /** "Starting session", "Ending session", switching modes, and "Taking picture". */
+    /** "Taking picture", switching modes, and "VISOR is ready". */
     SESSION_UPDATES("sessionUpdatesVolume"),
 
     /**
@@ -50,7 +50,7 @@ enum class SoundCategory(override val key: String) : AudioCategory {
     /** While VISOR works on an answer. */
     THINKING_BEEPS("thinkingBeepsVolume"),
 
-    /** As a session starts, and as it ends. */
+    /** As "Hey Meta, start VISOR" opens VISOR, ready for a question. */
     SESSION_CHIMES("sessionChimesVolume");
 
     override val defaultLevel: Float get() = Volumes.DefaultSoundEffects
@@ -94,7 +94,7 @@ object Volumes {
     /** The sliders' granularity: ten percent. */
     const val Step = 0.1f
 
-    /** The thinking beep's loudness from before it was adjustable; the session chimes start there too. */
+    /** The thinking beep's loudness from before it was adjustable; the ready chime starts there too. */
     const val DefaultSoundEffects = 0.6f
 
     /** Notches strictly between a slider's ends: Off, 10% … 100% is eleven positions, nine notches. */

@@ -39,7 +39,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.ui.components.ErrorBanner
-import ucf.visor.ui.components.SessionStatusBar
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
@@ -63,8 +62,8 @@ import ucf.visor.ui.voice.VoiceNavigationController
 // based on the current viewModel state (uiState) and is where we keep our debugging tools.
 //
 // talk says something at its kind's volume (see AudioMix); speakAt, at a given
-// volume, for Settings previews; onToggleSession starts or ends the session and
-// says so (MainActivity).
+// volume, for Settings previews; onCapture takes a picture and answers it for
+// the current mode (MainActivity).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -74,7 +73,6 @@ fun VisorLayout(
     speakAt: (String, Float) -> Unit = { _, _ -> },
     playSample: (SoundCategory) -> Unit = {},
     lastSpoken: () -> Speaker.Utterance? = { null },
-    onToggleSession: () -> Unit = {},
     onCapture: () -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
@@ -263,8 +261,8 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
+    LaunchedEffect(glassesNav, currentRoute, uiState, session.mode) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, session.mode))
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -279,7 +277,7 @@ fun VisorLayout(
             glassesNav?.commands ?: emptyFlow()
         ).collect { command ->
             when (command) {
-                // Home/Settings/Help/Pairing/sessions are all post-login-only —
+                // Home/Settings/Help/Pairing/camera are all post-login-only —
                 // none of them have a touch equivalent before uiState.isAuthComplete
                 // either (no bottom nav bar yet), so voice shouldn't uniquely
                 // unlock them from TitleScreen/Login/SignUp.
@@ -307,37 +305,25 @@ fun VisorLayout(
                     if (!navController.popBackStack()) reply("There's nowhere to go back to.")
                 }
 
-                // Each goes Home, where the session button shows what happened.
-                // Read the route now: currentRoute is from the composition that
-                // started this collector.
-                VoiceCommand.StartSession -> when {
-                    !uiState.isAuthComplete -> reply("Log in first to start a session.")
-                    uiState.isSessionActive -> reply("Your session is already running.")
-                    else -> {
-                        if (navController.currentDestination?.route != "home") viewModel.home()
-                        onToggleSession()
-                    }
-                }
-
-                VoiceCommand.EndSession -> when {
-                    !uiState.isAuthComplete || !uiState.isSessionActive ->
-                        reply("There's no session running.")
-                    else -> {
-                        if (navController.currentDestination?.route != "home") viewModel.home()
-                        onToggleSession()
-                    }
-                }
+                VoiceCommand.SessionNotNeeded ->
+                    if (uiState.isAuthComplete) reply(SpokenPhrases.NO_SESSION_NEEDED)
+                    else reply("Log in first to use VISOR.")
 
                 // Modes pick what Home's capture button does, so they switch
-                // whenever a session is running, not only in Phase 1.
-                is VoiceCommand.SwitchMode -> {
-                    if (uiState.isSessionActive) {
+                // any time, not only in Phase 1.
+                is VoiceCommand.SwitchMode ->
+                    if (uiState.isAuthComplete) {
                         viewModel.setMode(command.mode)
                         talk(SpokenPhrases.modeActivated(command.mode), VoiceCategory.SESSION_UPDATES)
                     } else {
-                        talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES, VoiceCategory.SESSION_UPDATES)
+                        reply("Log in first to switch modes.")
                     }
-                }
+
+                // From the glasses: Home's capture button, from wherever the
+                // phone is. The answer is said, and kept on Home's Last answer card.
+                VoiceCommand.Capture ->
+                    if (uiState.isAuthComplete) onCapture()
+                    else reply("Log in first to take a picture.")
 
                 VoiceCommand.GoToLogin -> viewModel.login()
                 VoiceCommand.GoToSignUp -> viewModel.signUp()
@@ -414,9 +400,8 @@ fun VisorLayout(
         Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
                 modifier = modifier,
-                // At the top of every screen: once logged in, whether a session
-                // is running; and anything that went wrong (uiState.recentError),
-                // until it is dismissed.
+                // At the top of every screen: anything that went wrong
+                // (uiState.recentError), until it is dismissed.
                 topBar = {
                     Column(
                         modifier = Modifier
@@ -424,18 +409,11 @@ fun VisorLayout(
                             .background(MaterialTheme.colorScheme.background)
                             .windowInsetsPadding(WindowInsets.statusBars),
                     ) {
-                        if (uiState.navigationBarEnabled && !uiState.phase1Initiated) {
-                            SessionStatusBar(
-                                active = uiState.isSessionActive,
-                                mode = session.mode,
-                                onClick = { viewModel.home() },
-                            )
-                        }
                         ErrorBanner(
                             message = uiState.recentError,
                             onDismiss = { viewModel.clearRecentError() },
                             // Not said again if VISOR has just said it, as it
-                            // does when a session can't start.
+                            // does when a camera command can't run.
                             talk = { text, category ->
                                 if (lastSpoken()?.text != uiState.recentError) talk(text, category)
                             },
@@ -509,7 +487,6 @@ fun VisorLayout(
                             playSample = playSample,
                             voiceNav = voiceNav,
                             onRequestWearablesPermission = onRequestWearablesPermission,
-                            onToggleSession = onToggleSession,
                             onCapture = onCapture,
                         )
                     }

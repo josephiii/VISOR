@@ -24,7 +24,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,7 +36,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
@@ -58,6 +56,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
@@ -68,7 +67,6 @@ import ucf.visor.data.VoiceCategory
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SelectableChip
-import ucf.visor.ui.components.SessionToggleButton
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
@@ -87,24 +85,14 @@ import java.util.Date
 fun HomeScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
-    // Starts or ends the session, and says so (MainActivity).
-    onToggleSession: () -> Unit = {},
-    // Takes a picture with the glasses and answers it for the session's mode (MainActivity).
+    // Takes a picture with the glasses and answers it for the current mode (MainActivity).
     onCapture: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val session by viewModel.session.collectAsStateWithLifecycle()
     val capture by viewModel.capture.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
-
-    // The capture button and the modes only work during a session, but they are
-    // on screen before one too, locked. That shows early what a session offers,
-    // and gives the screen the same layout either way, so the session button
-    // never jumps when a session starts. Locked controls stay full contrast
-    // (dashed, not faded) and still answer a tap, saying what to do first.
-    val locked = !uiState.isSessionActive
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
@@ -126,42 +114,13 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            SessionToggleButton(
-                isSessionActive = uiState.isSessionActive,
-                onToggle = onToggleSession,
-            )
-
-            // Both labels are laid out and only one is shown: at large text sizes
-            // "Start Session" can wrap where "End Session" does not, and a label
-            // that changed height would move the button above it.
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.start_session),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.shownOnlyIf(!uiState.isSessionActive),
-                )
-                Text(
-                    text = stringResource(R.string.end_session),
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.shownOnlyIf(uiState.isSessionActive),
-                )
-            }
-
-            // The capture button, what it last found, then the mode that
-            // decides what it does.
+            // What Home is for, first and largest: the capture button, ready
+            // the moment Home opens. Then what it last found, then the mode
+            // that decides what it does.
             CaptureControl(
                 label = stringResource(captureLabel(session.mode)),
                 status = capture,
-                locked = locked,
-                onClick = {
-                    if (locked) {
-                        talk(SpokenPhrases.startSessionToCapture(session.mode), VoiceCategory.SESSION_UPDATES)
-                    } else {
-                        onCapture()
-                    }
-                },
+                onClick = onCapture,
             )
 
             LastAnswerCard(
@@ -171,40 +130,14 @@ fun HomeScreen(
 
             ModePicker(
                 selected = session.mode,
-                locked = locked,
                 onSelect = { mode ->
                     viewModel.setMode(mode)
                     talk(SpokenPhrases.modeActivated(mode), VoiceCategory.SESSION_UPDATES)
                 },
-                onLockedClick = {
-                    talk(SpokenPhrases.START_SESSION_TO_SWITCH_MODES, VoiceCategory.SESSION_UPDATES)
-                },
             )
-
-            // What the locked controls are waiting for. Its space is kept during
-            // a session too, for the same reason as the label's above.
-            Row(
-                modifier = Modifier.shownOnlyIf(locked),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = null,
-                    modifier = Modifier.size(iconSizeFor(MaterialTheme.typography.bodyLarge)),
-                )
-                Text(
-                    text = stringResource(R.string.home_locked_hint),
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-            }
         }
     }
 }
-
-/** Keeps an element's space while hiding it from sight and from screen readers. */
-private fun Modifier.shownOnlyIf(shown: Boolean): Modifier =
-    if (shown) this else alpha(0f).clearAndSetSemantics {}
 
 /**
  * The capture button, which turns into a panel saying what VISOR is doing
@@ -217,16 +150,17 @@ private fun Modifier.shownOnlyIf(shown: Boolean): Modifier =
  * so a screen reader says it as it changes.
  *
  * The button and the panel take the same room, so nothing below moves as they
- * swap.
+ * swap. Both are taller than any other button, with larger text: the one
+ * thing Home is for should be the easiest thing on it to find and press.
  */
 @Composable
 private fun CaptureControl(
     label: String,
     status: CaptureStatus,
-    locked: Boolean,
     onClick: () -> Unit,
 ) {
     val working = status != CaptureStatus.IDLE
+    val style = MaterialTheme.typography.headlineSmall
     Box(modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }) {
         SwapInPlace(
             showSecond = working,
@@ -234,23 +168,24 @@ private fun CaptureControl(
                 VisorButton(
                     text = label,
                     width = 1f,
-                    locked = locked,
                     onClick = onClick,
-                    modifier = if (working) Modifier.clearAndSetSemantics {} else Modifier,
+                    textStyle = style,
+                    modifier = Modifier
+                        .heightIn(min = CaptureMinHeight)
+                        .then(if (working) Modifier.clearAndSetSemantics {} else Modifier),
                 )
             },
             second = {
                 // A new node for each step, so a screen reader hears each one.
-                key(status) { CaptureStatusPanel(status) }
+                key(status) { CaptureStatusPanel(status, style) }
             },
         )
     }
 }
 
 @Composable
-private fun CaptureStatusPanel(status: CaptureStatus) {
+private fun CaptureStatusPanel(status: CaptureStatus, style: TextStyle) {
     val colors = MaterialTheme.colorScheme
-    val style = MaterialTheme.typography.labelLarge
     val sweep: State<Float>? = if (animationsEnabled()) {
         rememberInfiniteTransition(label = "working").animateFloat(
             initialValue = 0f,
@@ -263,7 +198,7 @@ private fun CaptureStatusPanel(status: CaptureStatus) {
     }
     Row(
         modifier = Modifier
-            .heightIn(min = 56.dp)
+            .heightIn(min = CaptureMinHeight)
             .background(colors.surface, VisorShapes.Control)
             .sweepingRing(sweep, track = colors.outline, ring = colors.primary)
             .padding(horizontal = 24.dp, vertical = 8.dp),
@@ -428,6 +363,8 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
     }
 }
 
+// Over half again VisorButton's 56dp: Home's one main action.
+private val CaptureMinHeight = 96.dp
 private const val SweepMillis = 2_000
 private const val SweepFraction = 0.25f
 private val SweepWidth = 5.dp
@@ -437,9 +374,7 @@ private const val FreshAnswerMillis = 3_000L
 @Composable
 private fun ModePicker(
     selected: SessionMode,
-    locked: Boolean,
     onSelect: (SessionMode) -> Unit,
-    onLockedClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -456,13 +391,9 @@ private fun ModePicker(
             SelectableChip(
                 label = stringResource(mode.labelRes),
                 selected = mode == selected,
-                locked = locked,
                 icon = mode.icon,
                 modifier = Modifier.fillMaxWidth(),
-                onClick = {
-                    if (locked) onLockedClick()
-                    else if (mode != selected) onSelect(mode)
-                },
+                onClick = { if (mode != selected) onSelect(mode) },
             )
         }
     }

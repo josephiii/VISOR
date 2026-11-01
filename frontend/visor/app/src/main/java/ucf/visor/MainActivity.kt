@@ -65,7 +65,6 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.SessionChange
 import ucf.visor.ui.viewmodel.SessionMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavState
@@ -190,7 +189,6 @@ class MainActivity : ComponentActivity() {
                             lastSpoken = { speaker.lastUtterance },
                             viewModel = viewModel,
                             onRequestWearablesPermission = ::requestWearablesPermission,
-                            onToggleSession = ::toggleSession,
                             onCapture = ::captureForMode,
                             voiceNav = voiceNav,
                             glassesNav = glassesNav,
@@ -316,7 +314,7 @@ class MainActivity : ComponentActivity() {
         }
     )
 
-    /** A camera wake phrase: its feature, unless Settings has turned it off or no session is running. */
+    /** A camera wake phrase: its feature, unless Settings has turned it off or no one is logged in. */
     private fun onCameraCommand(command: CameraCommand) {
         if (command !in viewModel.userProfile.value.cameraCommands) {
             // Silent on purpose. A command is often turned off because it kept
@@ -324,22 +322,13 @@ class MainActivity : ComponentActivity() {
             Log.d("VISOR", "Wake phrase for $command ignored: turned off in Settings")
             return
         }
-        // A camera command needs a session running, as Home's capture button
-        // does. Said as voice navigation's own replies are, with the wake
-        // phrase listener paused (it says "VISOR GO"), and kept at the top of
-        // the screen as well, with the rejected buzz, for anyone who can't
+        // A camera command works the moment someone is logged in: nothing else
+        // to start first. Said as voice navigation's own replies are, with the
+        // wake phrase listener paused (it says "VISOR GO"), and kept at the top
+        // of the screen as well, with the rejected buzz, for anyone who can't
         // hear it.
-        val state = viewModel.uiState.value
-        if (!state.isSessionActive) {
-            val problem = getString(
-                when {
-                    !state.isAuthComplete -> R.string.camera_command_needs_login
-                    command == CameraCommand.READ_TEXT -> R.string.camera_command_needs_session_read_text
-                    command == CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_needs_session_identify_objects
-                    command == CameraCommand.CHECK_HAZARDS -> R.string.camera_command_needs_session_check_hazards
-                    else -> R.string.camera_command_needs_session_describe_scene
-                }
-            )
+        if (!viewModel.uiState.value.isAuthComplete) {
+            val problem = getString(R.string.camera_command_needs_login)
             haptics.rejected()
             voiceNav.speakGuarded(problem)
             viewModel.setRecentError(problem)
@@ -355,38 +344,10 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /**
-     * Home's session button, "start session" by voice and the glasses' own
-     * button: starts or ends the session and says so, with a chime and then
-     * words, each at its own volume.
-     */
-    private fun toggleSession() = viewModel.toggleSession(::requestWearablesPermission) { change ->
-        when (change) {
-            SessionChange.Started -> {
-                chimes.play(Chime.SESSION_START)
-                haptics.sessionStarted()
-                speaker.speak(SpokenPhrases.STARTING_SESSION, VoiceCategory.SESSION_UPDATES)
-            }
-
-            SessionChange.Ended -> {
-                chimes.play(Chime.SESSION_END)
-                haptics.sessionEnded()
-                speaker.speak(SpokenPhrases.ENDING_SESSION, VoiceCategory.SESSION_UPDATES)
-            }
-
-            // Why the button did nothing is the answer to pressing it: too
-            // important to go quiet along with "Starting session".
-            is SessionChange.NotStarted -> {
-                haptics.rejected()
-                speaker.speak(change.problem, VoiceCategory.ANSWERS)
-            }
-        }
-    }
-
     /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> thinkingBeeper.beepOnce()
-        SoundCategory.SESSION_CHIMES -> chimes.play(Chime.SESSION_START)
+        SoundCategory.SESSION_CHIMES -> chimes.play(Chime.READY)
     }
 
     /**
@@ -448,12 +409,14 @@ class MainActivity : ComponentActivity() {
 
     private fun performVoiceLaunch(): VisorViewModel.VoiceLaunchResult {
         lastVoiceLaunchAt = SystemClock.elapsedRealtime()
-        val result = viewModel.startSessionFromVoice()
-        if (result.startedSession) {
-            chimes.play(Chime.SESSION_START)
-            haptics.sessionStarted()
+        val result = viewModel.openFromVoice()
+        // Felt and heard before the words: VISOR is ready for a question.
+        if (result.success) {
+            chimes.play(Chime.READY)
+            haptics.ready()
         }
-        // As with Home's button, why a session did not start is an answer.
+        // Why VISOR isn't ready (not logged in) is an answer, too important to
+        // go quiet along with the status updates.
         speaker.speak(
             result.spoken,
             if (result.success) VoiceCategory.SESSION_UPDATES else VoiceCategory.ANSWERS,
