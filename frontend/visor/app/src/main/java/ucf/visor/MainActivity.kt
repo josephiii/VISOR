@@ -36,15 +36,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.ChosenPhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
+import ucf.visor.capture.PhoneCameraSource
 import ucf.visor.capture.PhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
 import ucf.visor.data.AudioMix
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.SessionStore
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
@@ -157,6 +160,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var chimes: Chimes
     private lateinit var haptics: Haptics
     private lateinit var glassesCamera: GlassesPhotoSource
+    private lateinit var phoneCamera: PhoneCameraSource
 
     private lateinit var commandRecognizer: CommandRecognizer
     private lateinit var sceneQuestion: SceneQuestionController
@@ -208,6 +212,7 @@ class MainActivity : ComponentActivity() {
         glassesCamera = GlassesPhotoSource(
             requestPermission = ::requestWearablesPermission,
         )
+        phoneCamera = PhoneCameraSource(this)
         textReaderOCR = TextReaderOCR()
         objectDetector = ObjectDetector()
         // Volumes are read from the profile as each sound plays, not pushed in a
@@ -225,14 +230,20 @@ class MainActivity : ComponentActivity() {
             volume = { audio().loudness(SoundCategory.THINKING_BEEPS) },
         )
 
-        // Without real glasses, pair mock glasses in the debug menu and pick
-        // the photo they should "take" (Select image).
+        // Each picture comes from the camera chosen on the Pair screen: the
+        // glasses, or the phone's own. Without real glasses, either choose the
+        // phone (the emulator's camera works too), or pair mock glasses in the
+        // debug menu and pick the photo they should "take" (Select image).
+        val chosenCamera = ChosenPhotoSource(glassesCamera, phoneCamera, ::chosenCamera)
+        val chosenReadingCamera =
+            ChosenPhotoSource(glassesCamera.forReading, phoneCamera.forReading, ::chosenCamera)
+
         // Each camera feature says when its picture is taken, so its button on
         // Home can show "Thinking…" in place of "Taking picture…".
-        fun cameraFor(command: CameraCommand, source: PhotoSource = glassesCamera) =
+        fun cameraFor(command: CameraCommand, source: PhotoSource = chosenCamera) =
             NotifyingPhotoSource(source) { viewModel.onPictureTaken(command) }
 
-        textReader = TextReader(cameraFor(CameraCommand.READ_TEXT, glassesCamera.forReading), textReaderOCR)
+        textReader = TextReader(cameraFor(CameraCommand.READ_TEXT, chosenReadingCamera), textReaderOCR)
 
         objectIdentifier = ObjectIdentifier(cameraFor(CameraCommand.IDENTIFY_OBJECTS), objectDetector)
 
@@ -261,6 +272,7 @@ class MainActivity : ComponentActivity() {
             resumeWakeListening = { if (wantsWakeListening()) listener.start() },
             onAsked = { viewModel.onCaptureStarted(CameraCommand.ASK_QUESTION) },
             onAnswered = { answer -> viewModel.onAnswered(CameraCommand.ASK_QUESTION, answer) },
+            takingPicture = ::takingPicturePhrase,
         )
 
         hazardDetector = HazardDetector(
@@ -306,13 +318,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** The camera chosen on the Pair screen (or by voice), as of right now. */
+    private fun chosenCamera(): CameraChoice = viewModel.userProfile.value.camera
+
+    /** What VISOR says as a camera feature takes its picture: which camera, when it is the phone's. */
+    private fun takingPicturePhrase(): String = when (chosenCamera()) {
+        CameraChoice.GLASSES -> SpokenPhrases.TAKING_PICTURE
+        CameraChoice.PHONE -> SpokenPhrases.TAKING_PICTURE_WITH_PHONE
+    }
+
     /** The volumes Settings has set for each kind of sound, as of right now. */
     private fun audio(): AudioMix = viewModel.userProfile.value.audio
 
     /**
      * Every camera feature sounds the same, whether a wake phrase, a button
-     * on Home or one on the glasses asked for it: "Taking picture", beeps
-     * while it thinks, then the answer. Its button on Home shows each step too
+     * on Home or one on the glasses asked for it: "Taking picture" ("with
+     * your phone", when that is the camera), beeps while it thinks, then the
+     * answer. Its button on Home shows each step too
      * (see VisorViewModel.captures), and Home keeps the answer on screen, for
      * anyone who can't hear them.
      */
@@ -330,7 +352,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         viewModel.onCaptureStarted(command)
-        speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.STATUS_UPDATES)
+        speaker.speak(takingPicturePhrase(), VoiceCategory.STATUS_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
             viewModel.onAnswered(command, text)
@@ -462,5 +484,6 @@ class MainActivity : ComponentActivity() {
         chimes.release()
         glassesCamera.close()
         commandRecognizer.shutdown()
+        phoneCamera.close()
     }
 }

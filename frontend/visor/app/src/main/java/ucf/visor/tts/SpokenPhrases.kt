@@ -14,8 +14,11 @@ import kotlin.math.roundToInt
  */
 object SpokenPhrases {
 
-    // A capture has started.
+    // A capture has started. With the phone's camera, VISOR says so every
+    // time: it is the cue to hold the phone up, and nobody has to remember
+    // which camera they chose.
     const val TAKING_PICTURE = "Taking picture"
+    const val TAKING_PICTURE_WITH_PHONE = "Taking picture with your phone"
     const val AWAITING_SCENE_DESCRIPTION = "Awaiting scene description"
 
     // Glasses camera.
@@ -23,6 +26,29 @@ object SpokenPhrases {
     const val GLASSES_CAMERA_UNAVAILABLE = "I couldn't connect to your glasses camera."
     const val GLASSES_PHOTO_FAILED = "I couldn't take a picture with your glasses."
     const val GLASSES_PHOTO_UNREADABLE = "I couldn't read the photo from your glasses."
+
+    /** No glasses to take the picture: what to check, and the way to carry on without them. */
+    const val NO_GLASSES_TRY_PHONE =
+        "No connected glasses were found. Make sure your glasses are on and connected, " +
+            "or switch to your phone's camera on the Pair screen."
+
+    // Phone camera.
+    const val NO_PHONE_CAMERA_PERMISSION =
+        "VISOR does not have access to your phone's camera. Allow it in your phone's settings."
+    const val PHONE_CAMERA_NEEDS_SCREEN = "Open VISOR on your phone to use its camera."
+    const val NO_PHONE_CAMERA = "I couldn't find a camera on the back of your phone."
+    const val PHONE_CAMERA_UNAVAILABLE =
+        "I couldn't use your phone's camera. Another app may be using it."
+    const val PHONE_PHOTO_FAILED = "I couldn't take a picture with your phone."
+
+    /** A black picture: most likely the phone is in a pocket, or face down. */
+    const val PHONE_PHOTO_TOO_DARK =
+        "The picture came out black. Make sure nothing is covering the camera on the back of your phone."
+
+    /** Said when the user switches cameras (Pair screen or "VISOR GO, use my phone camera"). */
+    const val USING_PHONE_CAMERA =
+        "Using your phone's camera. Point the back of your phone at what you want to know about."
+    const val USING_GLASSES_CAMERA = "Using your glasses' camera."
 
     // Reading text.
     const val NO_TEXT_FOUND = "No text found. Try moving closer."

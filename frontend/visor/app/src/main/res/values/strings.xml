@@ -144,7 +144,7 @@
     <string name="settings_section_commands" description="Settings section: every command and how to turn each off">Commands</string>
     <string name="settings_commands_description" description="What the commands section is">Ways to ask VISOR for something without touching your phone. Each one is on until you turn it off.</string>
     <string name="settings_camera_commands_title" description="Commands heading: wake phrases that start a camera feature">Camera commands</string>
-    <string name="settings_camera_commands_description" description="How camera commands work">Say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses and tells you what it finds.</string>
+    <string name="settings_camera_commands_description" description="How camera commands work">Say one of these any time, no \"VISOR GO\" needed. VISOR takes a picture with your glasses, or your phone if you chose it on the Pair screen, and tells you what it finds.</string>
     <!-- Each camera feature's name: its button on Home, its wake phrases in Settings, the Last answer card -->
     <string name="camera_command_check_hazards" description="Camera feature: takes a picture and says what is ahead and how far away">Check for hazards</string>
     <string name="camera_command_read_text" description="Camera feature: takes a picture and reads its text aloud">Read text</string>
@@ -183,13 +183,13 @@
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_capture_title" description="Help topic title">Taking a picture</string>
-    <string name="help_capture_body" description="Help topic">At the top of the Home screen are four large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app.\n\nFrom the top: Check for hazards says what\'s ahead and how far away, Read text reads the text, Identify objects names what\'s in front of you, and Describe the scene describes it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the same four buttons are on their display while your phone shows Home.</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are four large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead and how far away, Read text reads the text, Identify objects names what\'s in front of you, and Describe the scene describes it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the same four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
-    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.</string>
+    <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home, and chimes when it\'s ready for your first question — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses, and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
@@ -205,6 +205,8 @@
     <string name="home_screen_title" description="Title for the Home Screen">Home</string>
     <!-- A camera button on Home turns into these while VISOR works on it, so it can be seen working -->
     <string name="home_capture_taking_picture" description="In place of a camera button on Home while the glasses take its picture">Taking picture…</string>
+    <!-- Under Home's title while the phone's camera is chosen on the Pair screen -->
+    <string name="home_using_phone_camera" description="Home: the camera buttons use the phone's camera, not the glasses">Using your phone\'s camera</string>
     <string name="home_capture_thinking" description="In place of a camera button on Home while VISOR works out what is in its picture">Thinking…</string>
     <string name="home_last_answer_title" description="Heading of the card on Home that shows VISOR's last answer">Last answer</string>
     <string name="home_last_answer_from" description="Above the last answer: which camera feature gave it, and when">"<xliff:g id="feature">%1$s</xliff:g> · <xliff:g id="time">%2$s</xliff:g>"</string>
@@ -213,9 +215,15 @@
     <string name="home_read_again" description="Says the last answer again">Read again</string>
 
     <string name="glasses_camera_tip_title" description="Tip title on the Pair Glasses screen: how VISOR uses the glasses' camera">How VISOR uses your glasses</string>
-    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses your glasses\' camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home.</string>
+    <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses its camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home, and turns the camera off again straight after.</string>
 
     <string name="register_button_title" description="Connect App">Connect my glasses</string>
+    <!-- Pair screen: which camera VISOR takes its pictures with -->
+    <string name="camera_choice_title" description="Pair screen heading: which camera every camera feature uses">Which camera VISOR uses</string>
+    <string name="camera_choice_glasses" description="Camera choice: the Meta glasses' camera">My glasses</string>
+    <string name="camera_choice_phone" description="Camera choice: the phone's back camera">My phone</string>
+    <string name="camera_choice_glasses_description" description="Under the camera choice, with the glasses chosen">Pictures are taken with your glasses, of wherever you are looking. No glasses with you? Choose My phone.</string>
+    <string name="camera_choice_phone_description" description="Under the camera choice, with the phone chosen">Pictures are taken with the camera on the back of your phone. Hold your phone up and point its back at what you want to know about. VISOR needs to be open on your screen.</string>
     <string name="unregister_button_title" description="Disconnect App">Disconnect my glasses</string>
     <string name="update_firmware_button_title" description="Open firmware update">Update firmware</string>
     <string name="update_dat_app_button_title" description="Open DAT app update on glasses">Update app on glasses</string>

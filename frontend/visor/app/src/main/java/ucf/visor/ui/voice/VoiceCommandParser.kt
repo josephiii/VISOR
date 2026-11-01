@@ -1,5 +1,6 @@
 package ucf.visor.ui.voice
 
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
@@ -29,6 +30,13 @@ object VoiceCommandParser {
             containsAny(text, "help") -> VoiceCommand.OpenHelp
             containsAny(text, "pair", "hardware", "connect my glasses", "connect glasses") ->
                 VoiceCommand.PairDevice
+
+            // Which camera takes the pictures. Ahead of "back", for "switch back
+            // to my glasses camera", and of the camera features' own words.
+            containsAny(text, "phone camera", "phone's camera", "phones camera", "use my phone", "use the phone") ->
+                VoiceCommand.UseCamera(CameraChoice.PHONE)
+            containsAny(text, "glasses camera", "glasses' camera", "use my glasses", "use the glasses") ->
+                VoiceCommand.UseCamera(CameraChoice.GLASSES)
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
@@ -152,6 +160,7 @@ enum class VoiceCommandKind(val examples: List<String>) {
         listOf(
             "faster", "slower", "normal speed", "brief", "detailed",
             "large text", "extra large text", "high contrast",
+            "use my phone camera", "use my glasses camera",
         )
     ),
     ACCOUNT(listOf("log out", "delete my account")),

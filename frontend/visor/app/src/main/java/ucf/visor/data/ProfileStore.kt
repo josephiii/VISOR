@@ -41,6 +41,7 @@ class ProfileStore(context: Context) {
                 (CameraCommand.entries - p.cameraCommands).map { it.name }.toSet(),
             )
             .putBoolean(KEY_VIBRATION, p.vibrationEnabled)
+            .putString(KEY_CAMERA, p.camera.name)
         for (category in AudioCategory.all) editor.putFloat(category.key, p.audio.level(category))
         editor.apply()
     }
@@ -77,6 +78,7 @@ class ProfileStore(context: Context) {
                 .mapNotNull { runCatching { CameraCommand.valueOf(it) }.getOrNull() }
                 .toSet(),
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, defaults.vibrationEnabled),
+            camera = enumOrDefault(KEY_CAMERA, defaults.camera),
         )
     }
 
@@ -157,5 +159,6 @@ class ProfileStore(context: Context) {
         const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
         const val KEY_CAMERA_COMMANDS_OFF = "cameraCommandsOff"
         const val KEY_VIBRATION = "vibrationEnabled"
+        const val KEY_CAMERA = "camera"
     }
 }
