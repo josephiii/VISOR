@@ -47,6 +47,7 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.ui.screens.phase1.Phase1NavigationBar
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.VoiceCategory
@@ -347,6 +348,21 @@ fun VisorLayout(
 
                 VoiceCommand.ToggleHighContrast ->
                     viewModel.updateProfile(profile.copy(appHighContrast = !profile.appHighContrast))
+
+                // As the Pair screen's choice is, so post-login like it; said
+                // back, with how to hold the phone when that is the camera.
+                is VoiceCommand.UseCamera ->
+                    if (uiState.isAuthComplete) {
+                        viewModel.updateProfile(profile.copy(camera = command.camera))
+                        reply(
+                            when (command.camera) {
+                                CameraChoice.PHONE -> SpokenPhrases.USING_PHONE_CAMERA
+                                CameraChoice.GLASSES -> SpokenPhrases.USING_GLASSES_CAMERA
+                            }
+                        )
+                    } else {
+                        reply("Log in first to choose a camera.")
+                    }
 
                 is VoiceCommand.SetSpeechRate ->
                     viewModel.updateProfile(profile.copy(speechRate = command.rate))

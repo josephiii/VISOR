@@ -96,7 +96,7 @@ class GlassesPhotoSource(
         cameraPermissionProblem(requestPermission)?.let { return onError(it) }
 
         val deviceId = preferredDevice()?.first
-            ?: return onError(describeSessionError(DeviceSessionError.NO_ELIGIBLE_DEVICE))
+            ?: return onError(SpokenPhrases.NO_GLASSES_TRY_PHONE)
 
         if (!GlassesLease.acquire(LEASE_OWNER)) {
             onError(describeSessionError(DeviceSessionError.SESSION_ALREADY_EXISTS))

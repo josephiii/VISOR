@@ -1,5 +1,6 @@
 package ucf.visor.ui.voice
 
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
 import ucf.visor.stt.CameraCommand
@@ -54,6 +55,9 @@ sealed class VoiceCommand {
     object LogOut : VoiceCommand()
     object DeleteAccount : VoiceCommand()
     object ToggleHighContrast : VoiceCommand()
+
+    /** "Use my phone camera": the camera every camera feature uses, as on the Pair screen. */
+    data class UseCamera(val camera: CameraChoice) : VoiceCommand()
     data class SetSpeechRate(val rate: Float) : VoiceCommand()
     object SpeakFaster : VoiceCommand()
     object SpeakSlower : VoiceCommand()

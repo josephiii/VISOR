@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -63,6 +64,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.VoiceCategory
 import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ScreenTitle
@@ -89,6 +91,7 @@ fun HomeScreen(
 ) {
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
+    val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -105,11 +108,19 @@ fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
         ) {
-            ScreenTitle(
-                stringResource(R.string.home_screen_title),
-                textAlign = TextAlign.Center,
+            // Close under the title, so it costs the buttons below little room.
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-            )
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                ScreenTitle(
+                    stringResource(R.string.home_screen_title),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (profile.camera == CameraChoice.PHONE) PhoneCameraNotice()
+            }
 
             // What Home is for, first: a button for each camera feature, each
             // always in the same place and always doing the same thing, hazards
@@ -134,6 +145,34 @@ fun HomeScreen(
                 onReadAgain = { talk(it, VoiceCategory.ANSWERS) },
             )
         }
+    }
+}
+
+/**
+ * Shown on Home while the phone's camera is chosen (on the Pair screen): the
+ * buttons below take their pictures with the phone, not the glasses. Only
+ * then, as the glasses are what VISOR uses unless told otherwise.
+ */
+@Composable
+private fun PhoneCameraNotice() {
+    val style = MaterialTheme.typography.bodyLarge
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) {},
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Smartphone,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(iconSizeFor(style)),
+        )
+        Text(
+            stringResource(R.string.home_using_phone_camera),
+            style = style,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

@@ -2,7 +2,6 @@ package ucf.visor.wearables
 
 import android.util.Log
 import com.meta.wearable.dat.core.Wearables
-import com.meta.wearable.dat.core.types.DeviceSessionError
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionError
 import com.meta.wearable.dat.core.types.PermissionStatus
@@ -42,12 +41,13 @@ suspend fun cameraPermissionProblem(
     }
 }
 
+// No glasses (or no Meta AI app) to take the picture: these also say how to
+// carry on with the phone's camera instead.
 private fun describePermissionError(error: PermissionError): String = when (error) {
     PermissionError.NO_DEVICE,
-    PermissionError.NO_DEVICE_WITH_CONNECTION ->
-        describeSessionError(DeviceSessionError.NO_ELIGIBLE_DEVICE)
+    PermissionError.NO_DEVICE_WITH_CONNECTION -> SpokenPhrases.NO_GLASSES_TRY_PHONE
     PermissionError.META_AI_NOT_INSTALLED ->
-        "VISOR needs the Meta AI app to use your glasses. Please install it."
+        "VISOR needs the Meta AI app to use your glasses. Install it, or switch to your phone's camera on the Pair screen."
     PermissionError.REQUEST_IN_PROGRESS ->
         "VISOR is already asking for camera access. Answer it in the Meta AI app."
     PermissionError.CONNECTION_ERROR,

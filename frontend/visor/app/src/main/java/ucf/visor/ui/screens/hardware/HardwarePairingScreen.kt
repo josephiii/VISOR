@@ -37,8 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.types.RegistrationState
 import ucf.visor.R
+import ucf.visor.data.CameraChoice
 import ucf.visor.data.VoiceCategory
+import ucf.visor.ui.components.ChoiceRow
 import ucf.visor.ui.components.ScreenTitle
+import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.TipItem
 import ucf.visor.ui.components.iconSizeFor
@@ -49,8 +52,10 @@ import ucf.visor.wearables.GlassesStatus
 
 // This screen will prompt the user to register VISOR with their glasses, and —
 // once registered — shows the glasses' live state (MWDAT 1.0 device state).
-// It is also where VISOR's glasses can be disconnected, and where an update
-// the glasses need before VISOR can use them is offered.
+// It is also where VISOR's glasses can be disconnected, where an update the
+// glasses need before VISOR can use them is offered, and where the user picks
+// which camera VISOR takes its pictures with: the glasses, or the phone's own
+// for when the glasses aren't available.
 @Composable
 fun HardwarePairingScreen(
     viewModel: VisorViewModel,
@@ -58,6 +63,7 @@ fun HardwarePairingScreen(
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val activity = LocalActivity.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -125,6 +131,13 @@ fun HardwarePairingScreen(
                 },
             )
         }
+
+        // Right under Connect: someone without their glasses comes to this
+        // screen for this, and the error they heard sent them here.
+        CameraChoiceCard(
+            choice = profile.camera,
+            onChoose = { viewModel.updateProfile(profile.copy(camera = it)) },
+        )
 
         uiState.glassesStatus?.takeIf { uiState.isRegistered }?.let { status ->
             GlassesStatusCard(
@@ -213,6 +226,57 @@ private fun UpdateRequiredCard(
                     onClick = onUpdateGlassesApp,
                 )
             }
+        }
+    }
+}
+
+/**
+ * Which camera VISOR takes its pictures with. Two choices, side by side, or
+ * stacked at large text sizes, announced as radio buttons. What the chosen one
+ * means for how to hold things is spelled out under them, and is a polite live
+ * region, so a screen reader reads it as the choice changes.
+ */
+@Composable
+private fun CameraChoiceCard(choice: CameraChoice, onChoose: (CameraChoice) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = VisorShapes.Control,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                stringResource(R.string.camera_choice_title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            ChoiceRow {
+                CameraChoice.entries.forEach { option ->
+                    SelectableChip(
+                        label = stringResource(
+                            when (option) {
+                                CameraChoice.GLASSES -> R.string.camera_choice_glasses
+                                CameraChoice.PHONE -> R.string.camera_choice_phone
+                            }
+                        ),
+                        selected = choice == option,
+                    ) { onChoose(option) }
+                }
+            }
+            Text(
+                stringResource(
+                    when (choice) {
+                        CameraChoice.GLASSES -> R.string.camera_choice_glasses_description
+                        CameraChoice.PHONE -> R.string.camera_choice_phone_description
+                    }
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
     }
 }
