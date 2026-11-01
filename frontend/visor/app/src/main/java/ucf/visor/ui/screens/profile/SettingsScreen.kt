@@ -81,6 +81,7 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.feedback.PressedBorderWidth
 import ucf.visor.ui.feedback.controlFeedback
 import ucf.visor.ui.feedback.controlState
+import ucf.visor.ui.labelRes
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.SettingsSection
@@ -661,7 +662,7 @@ private fun CommandSettings(profile: UserProfile, onProfileChange: (UserProfile)
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(bottom = 10.dp),
         ) {
-            CommandSwitch(stringResource(command.titleRes()), on) {
+            CommandSwitch(stringResource(command.labelRes), on) {
                 onProfileChange(
                     profile.copy(
                         cameraCommands = if (on) profile.cameraCommands - command
@@ -825,17 +826,8 @@ private fun SoundCategory.descriptionRes(): Int = when (this) {
 }
 
 @StringRes
-private fun CameraCommand.titleRes(): Int = when (this) {
-    CameraCommand.READ_TEXT -> R.string.settings_command_read_text
-    CameraCommand.IDENTIFY_OBJECTS -> R.string.settings_command_identify_objects
-    CameraCommand.DESCRIBE_SCENE -> R.string.settings_command_describe_scene
-    CameraCommand.CHECK_HAZARDS -> R.string.settings_command_check_hazards
-}
-
-@StringRes
 private fun VoiceCommandKind.titleRes(): Int = when (this) {
     VoiceCommandKind.GO_PLACES -> R.string.settings_voice_commands_go_places
-    VoiceCommandKind.MODES -> R.string.settings_voice_commands_modes
     VoiceCommandKind.SETTINGS -> R.string.settings_voice_commands_settings
     VoiceCommandKind.ACCOUNT -> R.string.settings_voice_commands_account
     VoiceCommandKind.ANSWERING -> R.string.settings_voice_commands_answering

@@ -2,7 +2,7 @@ package ucf.visor.ui.voice
 
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.ui.viewmodel.CaptureMode
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -32,13 +32,19 @@ sealed class VoiceCommand {
      * in), so this only says so, for anyone still in the habit.
      */
     object SessionNotNeeded : VoiceCommand()
-    data class SwitchMode(val mode: CaptureMode) : VoiceCommand()
 
     /**
-     * Home's capture button: a picture, answered for the current mode, such as
-     * "Check for hazards". Offered on the glasses' own display.
+     * "Hazard mode", "reading mode"... VISOR no longer has modes: each camera
+     * feature has its own button and wake phrase. This says how to ask for
+     * [command] directly, rather than taking a picture nobody expected.
      */
-    object Capture : VoiceCommand()
+    data class ModeNotNeeded(val command: CameraCommand) : VoiceCommand()
+
+    /**
+     * One of Home's camera buttons, such as "Check for hazards": a picture,
+     * and [command]'s answer. Offered on the glasses' own display.
+     */
+    data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()

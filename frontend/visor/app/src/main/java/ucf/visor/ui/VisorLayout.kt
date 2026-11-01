@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -38,6 +39,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
+import ucf.visor.R
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ErrorBanner
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.feedback.LocalHaptics
@@ -63,7 +66,7 @@ import ucf.visor.ui.voice.VoiceNavigationController
 //
 // talk says something at its kind's volume (see AudioMix); speakAt, at a given
 // volume, for Settings previews; onCapture takes a picture and answers it for
-// the current mode (MainActivity).
+// one camera feature (MainActivity).
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -73,7 +76,7 @@ fun VisorLayout(
     speakAt: (String, Float) -> Unit = { _, _ -> },
     playSample: (SoundCategory) -> Unit = {},
     lastSpoken: () -> Speaker.Utterance? = { null },
-    onCapture: () -> Unit = {},
+    onCapture: (CameraCommand) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
     modifier: Modifier = Modifier,
@@ -81,7 +84,7 @@ fun VisorLayout(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
-    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val voiceState by (voiceNav?.state ?: remember { MutableStateFlow(VoiceNavState.IDLE) })
         .collectAsStateWithLifecycle()
 
@@ -261,8 +264,8 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState, currentMode) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, currentMode))
+    LaunchedEffect(glassesNav, currentRoute, uiState) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -309,20 +312,24 @@ fun VisorLayout(
                     if (uiState.isAuthComplete) reply(SpokenPhrases.NO_SESSION_NEEDED)
                     else reply("Log in first to use VISOR.")
 
-                // Modes pick what Home's capture button does, so they switch
-                // any time, not only in Phase 1.
-                is VoiceCommand.SwitchMode ->
-                    if (uiState.isAuthComplete) {
-                        viewModel.setMode(command.mode)
-                        talk(SpokenPhrases.modeActivated(command.mode), VoiceCategory.STATUS_UPDATES)
-                    } else {
-                        reply("Log in first to switch modes.")
-                    }
+                // "Hazard mode": how to ask for it now. Its wake phrase only
+                // if Settings hasn't turned that off; Home's button always.
+                is VoiceCommand.ModeNotNeeded -> {
+                    val button = context.getString(command.command.labelRes)
+                    reply(
+                        when {
+                            !uiState.isAuthComplete -> "Log in first to use VISOR."
+                            command.command in profile.cameraCommands ->
+                                context.getString(R.string.mode_not_needed, command.command.suggested, button)
+                            else -> context.getString(R.string.mode_not_needed_phrase_off, button)
+                        }
+                    )
+                }
 
-                // From the glasses: Home's capture button, from wherever the
-                // phone is. The answer is said, and kept on Home's Last answer card.
-                VoiceCommand.Capture ->
-                    if (uiState.isAuthComplete) onCapture()
+                // From the glasses: one of Home's camera buttons, from wherever
+                // the phone is. The answer is said, and kept on Home's Last answer card.
+                is VoiceCommand.RunCamera ->
+                    if (uiState.isAuthComplete) onCapture(command.command)
                     else reply("Log in first to take a picture.")
 
                 VoiceCommand.GoToLogin -> viewModel.login()

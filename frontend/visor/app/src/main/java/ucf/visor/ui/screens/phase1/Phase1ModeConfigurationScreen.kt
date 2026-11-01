@@ -11,42 +11,47 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
-import ucf.visor.tts.SpokenPhrases
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.scrollIndicator
-import ucf.visor.ui.viewmodel.CaptureMode
+import ucf.visor.ui.icon
+import ucf.visor.ui.labelRes
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.ui.viewmodel.labelRes
 
 /**
- * The Phase 1 demo: pick a mode, then a script stands in for VISOR's answer
- * to a photo. Its title and buttons follow VISOR's text size like every other
- * screen, and each script is shown whole, wrapping, rather than cut off after
- * 25 characters.
+ * The Phase 1 demo: pick a camera feature, then a script stands in for its
+ * answer to a photo. Which feature's scripts are shown is this screen's own
+ * choice, nothing the rest of VISOR depends on. Its title and buttons follow
+ * VISOR's text size like every other screen, and each script is shown whole,
+ * wrapping, rather than cut off after 25 characters.
  */
 @Composable
 fun Phase1ModeConfigurationScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> }
 ) {
-    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
+    var selected by rememberSaveable { mutableStateOf(CameraCommand.CHECK_HAZARDS) }
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val scriptsArrayRes = when (currentMode) {
-        CaptureMode.HAZARD -> R.array.hazard_awareness_scripts
-        CaptureMode.SCENE -> R.array.scene_description_scripts
-        CaptureMode.READER -> R.array.reading_assistance_scripts
-        CaptureMode.IDENTIFY -> R.array.object_identification_scripts
+    val scriptsArrayRes = when (selected) {
+        CameraCommand.CHECK_HAZARDS -> R.array.hazard_awareness_scripts
+        CameraCommand.READ_TEXT -> R.array.reading_assistance_scripts
+        CameraCommand.IDENTIFY_OBJECTS -> R.array.object_identification_scripts
+        CameraCommand.DESCRIBE_SCENE -> R.array.scene_description_scripts
     }
 
     val scripts = stringArrayResource(scriptsArrayRes)
@@ -72,17 +77,17 @@ fun Phase1ModeConfigurationScreen(
                 .selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            CaptureMode.entries.forEach { mode ->
-                val isSelected = mode == currentMode
+            CameraCommand.entries.forEach { command ->
+                val isSelected = command == selected
                 SelectableChip(
-                    label = stringResource(mode.labelRes),
+                    label = stringResource(command.labelRes),
                     selected = isSelected,
+                    icon = command.icon,
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        // Switch modes when selecting a non-active mode
                         if (!isSelected) {
-                            viewModel.setMode(mode)
-                            talk(SpokenPhrases.modeActivated(mode), VoiceCategory.STATUS_UPDATES)
+                            selected = command
+                            talk(context.getString(command.labelRes), VoiceCategory.STATUS_UPDATES)
                         }
                     },
                 )
@@ -100,7 +105,7 @@ fun Phase1ModeConfigurationScreen(
                     label = stringResource(R.string.p1_script, index + 1, scriptText),
                     onClick = {
                         // A demo script stands in for an answer, shown on Home as one is.
-                        viewModel.showAnswer(scriptText)
+                        viewModel.showAnswer(scriptText, selected)
                         talk(scriptText, VoiceCategory.ANSWERS)
                     },
                 )

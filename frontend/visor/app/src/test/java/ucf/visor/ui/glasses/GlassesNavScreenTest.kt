@@ -4,13 +4,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import ucf.visor.ui.viewmodel.CaptureMode
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
 /**
  * The glasses' display is about 20° across, so it shows at most four buttons
- * at once; the rest go on further pages behind More.
+ * at once; the rest go on further pages behind More. On Home, the four are
+ * Home's camera buttons.
  */
 class GlassesNavScreenTest {
 
@@ -20,7 +21,7 @@ class GlassesNavScreenTest {
     @Test
     fun noPageHasMoreThanFourButtonsCountingMore() {
         routes.forEach { route ->
-            val screen = glassesNavScreenFor(route, loggedIn, CaptureMode.HAZARD)
+            val screen = glassesNavScreenFor(route, loggedIn)
             val first = screen.page(0)
             repeat(first.count) { index ->
                 val page = screen.page(index)
@@ -32,46 +33,50 @@ class GlassesNavScreenTest {
 
     @Test
     fun everyButtonIsOnSomePageOnce() {
-        val screen = glassesNavScreenFor("settings", loggedIn, CaptureMode.HAZARD)
+        val screen = glassesNavScreenFor("motion_lab", loggedIn)
         val pages = (0 until screen.page(0).count).map { screen.page(it) }
         assertEquals(screen.items, pages.flatMap { it.items })
     }
 
     @Test
     fun moreGoesRoundFromTheLastPageToTheFirst() {
-        val screen = glassesNavScreenFor("settings", loggedIn, CaptureMode.HAZARD)
+        val screen = glassesNavScreenFor("motion_lab", loggedIn)
         val count = screen.page(0).count
-        assertTrue("Settings has more buttons than one page holds", count > 1)
+        assertTrue("the lab has more buttons than one page holds", count > 1)
         assertEquals(0, screen.page(count).index)
     }
 
     @Test
-    fun aScreenThatFitsHasNoMore() {
-        val home = glassesNavScreenFor("home", loggedIn, CaptureMode.HAZARD)
-        assertTrue(home.items.size <= MaxGlassesButtons)
-        assertFalse(home.page(0).hasMore)
+    fun homeShowsEveryCameraButtonInHomesOrderOnOnePage() {
+        val home = glassesNavScreenFor("home", loggedIn)
+
+        assertEquals(
+            CameraCommand.entries.map { VoiceCommand.RunCamera(it) },
+            home.items.map { it.command },
+        )
+        assertFalse("all four fit with no More", home.page(0).hasMore)
     }
 
     @Test
-    fun theFirstButtonEverywhereIsHomesCaptureButtonForTheMode() {
-        val labels = mapOf(
-            CaptureMode.HAZARD to "Check for hazards",
-            CaptureMode.SCENE to "Describe the scene",
-            CaptureMode.READER to "Read text",
-            CaptureMode.IDENTIFY to "Identify objects",
+    fun cameraButtonsAreNamedAsOnThePhone() {
+        assertEquals(
+            listOf("Check for hazards", "Read text", "Identify objects", "Describe the scene"),
+            glassesNavScreenFor("home", loggedIn).items.map { it.label },
         )
-        routes.forEach { route ->
-            labels.forEach { (mode, label) ->
-                val first = glassesNavScreenFor(route, loggedIn, mode).items.first()
-                assertEquals("$route, $mode", VoiceCommand.Capture, first.command)
-                assertEquals("$route, $mode", label, first.label)
-            }
+    }
+
+    @Test
+    fun everyOtherScreenLeadsHomeFirst() {
+        routes.filter { it != "home" }.forEach { route ->
+            val items = glassesNavScreenFor(route, loggedIn).items
+            assertEquals("$route", VoiceCommand.GoHome, items.first().command)
+            assertTrue("$route has no camera buttons", items.none { it.command is VoiceCommand.RunCamera })
         }
     }
 
     @Test
     fun nothingIsOfferedBeforeLoggingIn() {
-        val screen = glassesNavScreenFor("login", VisorUiState(isAuthComplete = false), CaptureMode.HAZARD)
+        val screen = glassesNavScreenFor("login", VisorUiState(isAuthComplete = false))
         assertTrue(screen.items.isEmpty())
     }
 }

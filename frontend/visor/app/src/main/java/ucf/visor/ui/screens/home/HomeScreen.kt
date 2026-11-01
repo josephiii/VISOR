@@ -1,6 +1,5 @@
 package ucf.visor.ui.screens.home
 
-import androidx.annotation.StringRes
 import android.text.format.DateFormat
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
@@ -48,11 +46,13 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -64,33 +64,30 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
-import ucf.visor.tts.SpokenPhrases
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ScreenTitle
-import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.feedback.animationsEnabled
+import ucf.visor.ui.icon
+import ucf.visor.ui.labelRes
 import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
-import ucf.visor.ui.viewmodel.CaptureMode
-import ucf.visor.ui.viewmodel.icon
 import ucf.visor.ui.viewmodel.VisorViewModel
-import ucf.visor.ui.viewmodel.labelRes
 import java.util.Date
 
 @Composable
 fun HomeScreen(
     viewModel: VisorViewModel,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
-    // Takes a picture with the glasses and answers it for the current mode (MainActivity).
-    onCapture: () -> Unit = {},
+    // Takes a picture with the glasses and answers it for one camera feature (MainActivity).
+    onCapture: (CameraCommand) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val currentMode by viewModel.mode.collectAsStateWithLifecycle()
-    val capture by viewModel.capture.collectAsStateWithLifecycle()
+    val captures by viewModel.captures.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
 
@@ -114,33 +111,34 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            // What Home is for, first and largest: the capture button, ready
-            // the moment Home opens. Then what it last found, then the mode
-            // that decides what it does.
-            CaptureControl(
-                label = stringResource(captureLabel(currentMode)),
-                status = capture,
-                onClick = onCapture,
-            )
+            // What Home is for, first: a button for each camera feature, each
+            // always in the same place and always doing the same thing, hazards
+            // at the top. Full width, one to a row, so a long name wraps at a
+            // large text size rather than shrinking. Then what VISOR last found.
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(CaptureGap),
+            ) {
+                CameraCommand.entries.forEach { command ->
+                    CaptureControl(
+                        label = stringResource(command.labelRes),
+                        icon = command.icon,
+                        status = captures[command] ?: CaptureStatus.IDLE,
+                        onClick = { onCapture(command) },
+                    )
+                }
+            }
 
             LastAnswerCard(
                 answer = lastAnswer,
                 onReadAgain = { talk(it, VoiceCategory.ANSWERS) },
-            )
-
-            ModePicker(
-                selected = currentMode,
-                onSelect = { mode ->
-                    viewModel.setMode(mode)
-                    talk(SpokenPhrases.modeActivated(mode), VoiceCategory.STATUS_UPDATES)
-                },
             )
         }
     }
 }
 
 /**
- * The capture button, which turns into a panel saying what VISOR is doing
+ * A camera feature's button, which turns into a panel saying what VISOR is doing
  * while it takes a picture and works out what is in it: "Taking picture…",
  * then "Thinking…". A user can see VISOR is working with its beeps turned off.
  *
@@ -150,12 +148,13 @@ fun HomeScreen(
  * so a screen reader says it as it changes.
  *
  * The button and the panel take the same room, so nothing below moves as they
- * swap. Both are taller than any other button, with larger text: the one
- * thing Home is for should be the easiest thing on it to find and press.
+ * swap. Both are taller than any other button, with larger text: what Home
+ * is for should be the easiest thing on it to find and press.
  */
 @Composable
 private fun CaptureControl(
     label: String,
+    icon: ImageVector,
     status: CaptureStatus,
     onClick: () -> Unit,
 ) {
@@ -170,6 +169,7 @@ private fun CaptureControl(
                     width = 1f,
                     onClick = onClick,
                     textStyle = style,
+                    icon = icon,
                     modifier = Modifier
                         .heightIn(min = CaptureMinHeight)
                         .then(if (working) Modifier.clearAndSetSemantics {} else Modifier),
@@ -292,8 +292,11 @@ private fun SwapInPlace(
  * live region, and the card's border flashes once as it arrives (not with
  * the system's animations off; the new text and time show it then).
  *
- * The card is on Home from the start, saying what it is for, so the first
- * answer doesn't push the modes below it down the screen.
+ * Above the answer, which feature gave it ("Read text · 1:09 PM"): four
+ * features feed the card, wake phrases among them, and "No text found" means
+ * more beside "Read text".
+ *
+ * The card is on Home from the start, saying what it is for.
  */
 @Composable
 private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
@@ -344,10 +347,15 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
                     )
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        val time = DateFormat.getTimeFormat(context).format(Date(answer.atMillis))
+                        val source = stringResource(answer.command.labelRes)
+                        // Read without the "·", which a screen reader would say aloud.
+                        val spoken = stringResource(R.string.home_last_answer_from_spoken, source, time)
                         Text(
-                            DateFormat.getTimeFormat(context).format(Date(answer.atMillis)),
+                            stringResource(R.string.home_last_answer_from, source, time),
                             style = MaterialTheme.typography.bodyLarge,
                             color = colors.onSurfaceVariant,
+                            modifier = Modifier.semantics { contentDescription = spoken },
                         )
                         Text(answer.text, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
                     }
@@ -363,46 +371,15 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
     }
 }
 
-// Over half again VisorButton's 56dp: Home's one main action.
-private val CaptureMinHeight = 96.dp
+// Half again VisorButton's 56dp, and at 200% text the top three still fit on
+// a phone's screen without scrolling.
+private val CaptureMinHeight = 88.dp
+
+// Between the camera buttons: room enough that a tap meant for one doesn't land on the next.
+private val CaptureGap = 16.dp
 private const val SweepMillis = 2_000
 private const val SweepFraction = 0.25f
 private val SweepWidth = 5.dp
 private const val FlashMillis = 900
 private const val FreshAnswerMillis = 3_000L
 
-@Composable
-private fun ModePicker(
-    selected: CaptureMode,
-    onSelect: (CaptureMode) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectableGroup(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            stringResource(R.string.home_mode_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.semantics { heading() },
-        )
-        CaptureMode.entries.forEach { mode ->
-            SelectableChip(
-                label = stringResource(mode.labelRes),
-                selected = mode == selected,
-                icon = mode.icon,
-                modifier = Modifier.fillMaxWidth(),
-                onClick = { if (mode != selected) onSelect(mode) },
-            )
-        }
-    }
-}
-
-@StringRes
-private fun captureLabel(mode: CaptureMode): Int = when (mode) {
-    CaptureMode.HAZARD -> R.string.home_capture_hazard
-    CaptureMode.SCENE -> R.string.home_capture_scene
-    CaptureMode.READER -> R.string.home_capture_reader
-    CaptureMode.IDENTIFY -> R.string.home_capture_identify
-}

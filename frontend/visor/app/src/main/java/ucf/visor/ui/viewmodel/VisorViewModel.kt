@@ -22,6 +22,7 @@ import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
+import ucf.visor.stt.CameraCommand
 import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
@@ -37,50 +38,57 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
-    private val _mode = MutableStateFlow(CaptureMode.HAZARD)
-    /** What Home's capture button does with its picture (see [setMode]). */
-    val mode: StateFlow<CaptureMode> = _mode.asStateFlow()
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
-    private val _capture = MutableStateFlow(CaptureStatus.IDLE)
-    /** What the camera feature asked for last is doing (see [onCaptureStarted]). */
-    val capture: StateFlow<CaptureStatus> = _capture.asStateFlow()
+    private val _captures = MutableStateFlow<Map<CameraCommand, CaptureStatus>>(emptyMap())
+    /**
+     * What each camera feature is doing (see [onCaptureStarted]), for its
+     * button on Home. A feature that isn't working isn't in it: it is idle.
+     */
+    val captures: StateFlow<Map<CameraCommand, CaptureStatus>> = _captures.asStateFlow()
 
     private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
     /** What a camera feature last answered, for Home's Last answer card. */
     val lastAnswer: StateFlow<LastAnswer?> = _lastAnswer.asStateFlow()
 
-    // Wake phrases and Home's button can ask for a second picture before the
-    // first is answered; VISOR is working until every one of them is.
-    private var capturesInFlight = 0
+    // A wake phrase and Home's button can ask the same feature for a second
+    // picture before the first is answered; it is working until each is.
+    private val capturesInFlight = mutableMapOf<CameraCommand, Int>()
 
     fun updateProfile(profile: UserProfile) {
         _userProfile.value = profile
         profileStore.save(profile)
     }
 
-    /** A camera feature has been asked for: VISOR is taking a picture. Call on the main thread. */
-    fun onCaptureStarted() {
-        capturesInFlight++
-        _capture.value = CaptureStatus.TAKING_PICTURE
+    /** [command] has been asked for: VISOR is taking its picture. Call on the main thread. */
+    fun onCaptureStarted(command: CameraCommand) {
+        capturesInFlight[command] = (capturesInFlight[command] ?: 0) + 1
+        _captures.update { it + (command to CaptureStatus.TAKING_PICTURE) }
     }
 
-    /** The glasses have taken the picture: VISOR is working out what is in it. */
-    fun onPictureTaken() {
-        if (_capture.value == CaptureStatus.TAKING_PICTURE) _capture.value = CaptureStatus.THINKING
+    /** The glasses have taken [command]'s picture: VISOR is working out what is in it. */
+    fun onPictureTaken(command: CameraCommand) {
+        _captures.update {
+            if (it[command] == CaptureStatus.TAKING_PICTURE) it + (command to CaptureStatus.THINKING) else it
+        }
     }
 
-    /** A camera feature has answered with [text], which VISOR is now saying. */
-    fun onAnswered(text: String) {
-        capturesInFlight = (capturesInFlight - 1).coerceAtLeast(0)
-        if (capturesInFlight == 0) _capture.value = CaptureStatus.IDLE
-        showAnswer(text)
+    /** [command] has answered with [text], which VISOR is now saying. */
+    fun onAnswered(command: CameraCommand, text: String) {
+        val left = ((capturesInFlight[command] ?: 0) - 1).coerceAtLeast(0)
+        if (left == 0) {
+            capturesInFlight.remove(command)
+            _captures.update { it - command }
+        } else {
+            capturesInFlight[command] = left
+        }
+        showAnswer(text, command)
     }
 
-    /** Shows [text] on Home's Last answer card, as an answer just given. */
-    fun showAnswer(text: String) {
-        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis())
+    /** Shows [text] on Home's Last answer card, as an answer [command] has just given. */
+    fun showAnswer(text: String, command: CameraCommand) {
+        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis(), command)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -506,11 +514,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isConfiguring = true) }
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(atSettings = false) }
-    }
-
-    /** Switches what Home's capture button does, from Home, by voice, or in Phase 1. */
-    fun setMode(newMode: CaptureMode) {
-        _mode.value = newMode
     }
 
     private companion object {

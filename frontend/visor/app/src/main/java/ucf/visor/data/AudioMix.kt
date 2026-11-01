@@ -29,7 +29,7 @@ enum class VoiceCategory(override val key: String) : AudioCategory {
      */
     ANSWERS("answersVolume"),
 
-    /** "Taking picture", switching modes, and "VISOR is ready". */
+    /** "Taking picture", "Awaiting scene description", and "VISOR is ready". */
     STATUS_UPDATES("sessionUpdatesVolume"),
 
     /**

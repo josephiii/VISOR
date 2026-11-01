@@ -23,14 +23,33 @@ object WakePhrases {
 }
 
 /**
- * A camera feature a wake phrase starts on its own, with no "VISOR GO" first.
- * Each can be turned off in Settings.
+ * One of VISOR's camera features: a picture with the glasses, and an answer.
+ * Home has a button for each, so do the glasses, and a wake phrase starts each
+ * on its own, with no "VISOR GO" first. Each wake phrase can be turned off in
+ * Settings.
+ *
+ * In the order every list of them shows them, Home's buttons first among
+ * them: safety first, then the likeliest to be used.
+ *
+ * [suggested] is the phrase VISOR suggests when it tells a user what to say.
  */
-enum class CameraCommand(val phrases: List<String>) {
-    READ_TEXT(listOf("VISOR, read this", "VISOR, what does this say", "VISOR, what is this")),
-    IDENTIFY_OBJECTS(listOf("VISOR, what am I holding", "VISOR, identify", "VISOR, what is in front of me")),
-    DESCRIBE_SCENE(listOf("VISOR, what do you see", "VISOR, describe scene", "VISOR, scene description")),
-    CHECK_HAZARDS(listOf("VISOR, are there hazards in my path", "VISOR, hazard detection", "VISOR, check for hazards"));
+enum class CameraCommand(val phrases: List<String>, val suggested: String) {
+    CHECK_HAZARDS(
+        listOf("VISOR, are there hazards in my path", "VISOR, hazard detection", "VISOR, check for hazards"),
+        suggested = "VISOR, check for hazards",
+    ),
+    READ_TEXT(
+        listOf("VISOR, read this", "VISOR, what does this say", "VISOR, what is this"),
+        suggested = "VISOR, read this",
+    ),
+    IDENTIFY_OBJECTS(
+        listOf("VISOR, what am I holding", "VISOR, identify", "VISOR, what is in front of me"),
+        suggested = "VISOR, what am I holding",
+    ),
+    DESCRIBE_SCENE(
+        listOf("VISOR, what do you see", "VISOR, describe scene", "VISOR, scene description"),
+        suggested = "VISOR, what do you see",
+    );
 
     companion object {
         /** The command a spotted [keyword] starts, or null (for "VISOR GO", say). */

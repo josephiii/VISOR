@@ -40,6 +40,7 @@ import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
+import ucf.visor.capture.PhotoSource
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
@@ -65,7 +66,6 @@ import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
-import ucf.visor.ui.viewmodel.CaptureMode
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
                             lastSpoken = { speaker.lastUtterance },
                             viewModel = viewModel,
                             onRequestWearablesPermission = ::requestWearablesPermission,
-                            onCapture = ::captureForMode,
+                            onCapture = ::runCameraFeature,
                             voiceNav = voiceNav,
                             glassesNav = glassesNav,
                         )
@@ -221,19 +221,18 @@ class MainActivity : ComponentActivity() {
 
         // Without real glasses, pair mock glasses in the debug menu and pick
         // the photo they should "take" (Select image).
-        // Each camera feature says when its picture is taken, so Home can show
-        // "Thinking…" in place of "Taking picture…".
-        val camera = NotifyingPhotoSource(glassesCamera) { viewModel.onPictureTaken() }
-        textReader = TextReader(
-            NotifyingPhotoSource(glassesCamera.forReading) { viewModel.onPictureTaken() },
-            textReaderOCR,
-        )
+        // Each camera feature says when its picture is taken, so its button on
+        // Home can show "Thinking…" in place of "Taking picture…".
+        fun cameraFor(command: CameraCommand, source: PhotoSource = glassesCamera) =
+            NotifyingPhotoSource(source) { viewModel.onPictureTaken(command) }
 
-        objectIdentifier = ObjectIdentifier(camera, objectDetector)
+        textReader = TextReader(cameraFor(CameraCommand.READ_TEXT, glassesCamera.forReading), textReaderOCR)
+
+        objectIdentifier = ObjectIdentifier(cameraFor(CameraCommand.IDENTIFY_OBJECTS), objectDetector)
 
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
-            photoSource = NotifyingPhotoSource(camera) {
+            photoSource = NotifyingPhotoSource(cameraFor(CameraCommand.DESCRIBE_SCENE)) {
                 speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.STATUS_UPDATES)
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
@@ -242,7 +241,7 @@ class MainActivity : ComponentActivity() {
         )
 
         hazardDetector = HazardDetector(
-            photoSource = camera,
+            photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
             client = HazardClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
         )
@@ -288,31 +287,29 @@ class MainActivity : ComponentActivity() {
     private fun audio(): AudioMix = viewModel.userProfile.value.audio
 
     /**
-     * Every camera feature sounds the same, whether a wake phrase or Home's
-     * capture button asked for it: "Taking picture", beeps while it thinks,
-     * then the answer. Home shows each step too (see VisorViewModel.capture),
-     * and keeps the answer on screen, for anyone who can't hear them.
+     * Every camera feature sounds the same, whether a wake phrase, a button
+     * on Home or one on the glasses asked for it: "Taking picture", beeps
+     * while it thinks, then the answer. Its button on Home shows each step too
+     * (see VisorViewModel.captures), and Home keeps the answer on screen, for
+     * anyone who can't hear them.
      */
-    private fun runCameraFeature(feature: ReadRequester) {
-        viewModel.onCaptureStarted()
+    private fun runCameraFeature(command: CameraCommand) {
+        val feature = when (command) {
+            CameraCommand.CHECK_HAZARDS -> hazardDetector
+            CameraCommand.READ_TEXT -> textReader
+            CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
+            CameraCommand.DESCRIBE_SCENE -> sceneDescriber
+        }
+        viewModel.onCaptureStarted(command)
         speaker.speak(SpokenPhrases.TAKING_PICTURE, VoiceCategory.STATUS_UPDATES)
         thinkingBeeper.start()
         feature.requestRead { text ->
-            thinkingBeeper.stop()
-            viewModel.onAnswered(text)
+            viewModel.onAnswered(command, text)
+            // Another picture may still be being worked on: its beeps go on.
+            if (viewModel.captures.value.isEmpty()) thinkingBeeper.stop()
             speaker.speak(text, VoiceCategory.ANSWERS)
         }
     }
-
-    /** Home's capture button: the camera feature for the session's mode. */
-    private fun captureForMode() = runCameraFeature(
-        when (viewModel.mode.value) {
-            CaptureMode.HAZARD -> hazardDetector
-            CaptureMode.SCENE -> sceneDescriber
-            CaptureMode.READER -> textReader
-            CaptureMode.IDENTIFY -> objectIdentifier
-        }
-    )
 
     /** A camera wake phrase: its feature, unless Settings has turned it off or no one is logged in. */
     private fun onCameraCommand(command: CameraCommand) {
@@ -334,14 +331,7 @@ class MainActivity : ComponentActivity() {
             viewModel.setRecentError(problem)
             return
         }
-        runCameraFeature(
-            when (command) {
-                CameraCommand.READ_TEXT -> textReader
-                CameraCommand.IDENTIFY_OBJECTS -> objectIdentifier
-                CameraCommand.DESCRIBE_SCENE -> sceneDescriber
-                CameraCommand.CHECK_HAZARDS -> hazardDetector
-            }
-        )
+        runCameraFeature(command)
     }
 
     /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */

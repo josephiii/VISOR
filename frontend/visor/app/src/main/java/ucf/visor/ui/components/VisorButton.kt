@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -53,7 +54,9 @@ import ucf.visor.ui.theme.VisorTheme
  *   in…"), and no response to more presses. It keeps its colors rather than
  *   fading, so what it says stays readable.
  * @param textStyle the label's style: [androidx.compose.material3.Typography.labelLarge]
- *   unless the button is the one thing a screen is for, like Home's capture button.
+ *   unless the button is what a screen is for, like Home's camera buttons.
+ * @param icon drawn before [text], sized to it, and never in place of it: a
+ *   screen reader hears only [text].
  */
 @Composable
 fun VisorButton(
@@ -64,6 +67,7 @@ fun VisorButton(
     locked: Boolean = false,
     busy: Boolean = false,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
+    icon: ImageVector? = null,
 ) {
     val lockedDescription = stringResource(R.string.state_locked)
     val haptics = LocalHaptics.current
@@ -121,6 +125,15 @@ fun VisorButton(
                 contentDescription = null,
                 modifier = Modifier
                     .padding(end = 8.dp)
+                    .size(iconSizeFor(textStyle)),
+            )
+        }
+        if (icon != null && !locked) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(end = 12.dp)
                     .size(iconSizeFor(textStyle)),
             )
         }

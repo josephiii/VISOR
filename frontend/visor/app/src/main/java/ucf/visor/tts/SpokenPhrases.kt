@@ -1,7 +1,6 @@
 package ucf.visor.tts
 
 import ucf.visor.network.Hazard
-import ucf.visor.ui.viewmodel.CaptureMode
 import kotlin.math.roundToInt
 
 /**
@@ -55,19 +54,11 @@ object SpokenPhrases {
             "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead."
         }
 
-    /** Said when the mode switches to [mode], from Home, by voice, or in Phase 1. */
-    fun modeActivated(mode: CaptureMode): String = when (mode) {
-        CaptureMode.HAZARD -> "Hazard Awareness Mode Activated!"
-        CaptureMode.SCENE -> "Scene Description Mode Activated!"
-        CaptureMode.READER -> "Reading Assistance Mode Activated!"
-        CaptureMode.IDENTIFY -> "Object Identification Mode Activated!"
-    }
-
     /**
      * The reply to "VISOR GO, start session" (or "end session"). VISOR used to
      * need a session started before its camera features worked; now they
      * always do, and this says so to anyone still in that habit.
      */
     const val NO_SESSION_NEEDED =
-        "VISOR is always ready. Just say \"VISOR, read this\", or press the button on Home."
+        "VISOR is always ready. Just say \"VISOR, read this\", or press a button on Home."
 }

@@ -2,7 +2,7 @@ package ucf.visor.ui.glasses
 
 import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.IconName
-import ucf.visor.ui.viewmodel.CaptureMode
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -66,10 +66,9 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * and [ucf.visor.ui.voice.VoiceCommandParser] (voice), so all three input
  * methods reach the same destinations. Kept as a pure function (route + state
  * in, screen out) so it needs no Compose/MWDAT session context to reason about
- * or test. [mode] is Home's current mode, which decides what the capture
- * button does.
+ * or test.
  */
-fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: CaptureMode): GlassesNavScreen {
+fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
@@ -112,16 +111,16 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: CaptureMode
         )
     }
 
+    // Home is for its four camera buttons, and so are the glasses there: the
+    // four fill the display exactly, with no More. The rest of the navigation
+    // is on every other screen, with a Home button back to these.
+    if (route == "home") {
+        return GlassesNavScreen(title = "Home", items = CameraCommand.entries.map(::cameraItem))
+    }
+
     val items = mutableListOf<GlassesNavItem>()
 
-    // Home's capture button, first and from every screen: what the wearer
-    // most often wants, without reaching for the phone. A viewfinder for every
-    // mode (the display has no still camera icon); the label says which.
-    items += GlassesNavItem(captureLabel(mode), IconName.FOUR_CORNER_FRAME, VoiceCommand.Capture)
-
-    if (route != "home") {
-        items += GlassesNavItem("Home", IconName.HOUSE, VoiceCommand.GoHome)
-    }
+    items += GlassesNavItem("Home", IconName.HOUSE, VoiceCommand.GoHome)
 
     if (route != "settings") {
         items += GlassesNavItem("Settings", IconName.GEAR, VoiceCommand.OpenSettings)
@@ -135,17 +134,14 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: CaptureMode
         items += GlassesNavItem("Help", IconName.I_CIRCLE, VoiceCommand.OpenHelp)
     }
 
-    if (route != "home") {
-        items += GlassesNavItem(
-            "Back",
-            IconName.ARROW_LEFT,
-            VoiceCommand.GoBack,
-            ButtonStyle.SECONDARY
-        )
-    }
+    items += GlassesNavItem(
+        "Back",
+        IconName.ARROW_LEFT,
+        VoiceCommand.GoBack,
+        ButtonStyle.SECONDARY
+    )
 
     val title = when (route) {
-        "home" -> "Home"
         "settings" -> "Settings"
         "hardware_pairing" -> "Pair glasses"
         "help" -> "Help"
@@ -155,10 +151,18 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState, mode: CaptureMode
     return GlassesNavScreen(title = title, items = items)
 }
 
-/** The label on Home's capture button for [mode] (R.string.home_capture_*), for the glasses. */
-private fun captureLabel(mode: CaptureMode): String = when (mode) {
-    CaptureMode.HAZARD -> "Check for hazards"
-    CaptureMode.SCENE -> "Describe the scene"
-    CaptureMode.READER -> "Read text"
-    CaptureMode.IDENTIFY -> "Identify objects"
+/**
+ * Home's button for [command], on the glasses. Its label matches the phone's
+ * (R.string.camera_command_*), and its icon is the display's nearest to the
+ * phone's: it has no book, so reading is a speech bubble, for being read to.
+ */
+private fun cameraItem(command: CameraCommand): GlassesNavItem = when (command) {
+    CameraCommand.CHECK_HAZARDS ->
+        GlassesNavItem("Check for hazards", IconName.EXCLAMATION_TRIANGLE, VoiceCommand.RunCamera(command))
+    CameraCommand.READ_TEXT ->
+        GlassesNavItem("Read text", IconName.SPEECH_BUBBLE, VoiceCommand.RunCamera(command))
+    CameraCommand.IDENTIFY_OBJECTS ->
+        GlassesNavItem("Identify objects", IconName.FOUR_CORNER_FRAME, VoiceCommand.RunCamera(command))
+    CameraCommand.DESCRIBE_SCENE ->
+        GlassesNavItem("Describe the scene", IconName.MOUNTAIN_SQUARE, VoiceCommand.RunCamera(command))
 }
