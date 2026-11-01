@@ -12,7 +12,7 @@ class AudioMixTest {
         val mix = AudioMix().withMaster(0.5f).with(VoiceCategory.ANSWERS, 0.8f)
 
         assertEquals(0.4f, mix.loudness(VoiceCategory.ANSWERS), TOLERANCE)
-        assertEquals(0.5f, mix.loudness(VoiceCategory.SESSION_UPDATES), TOLERANCE)
+        assertEquals(0.5f, mix.loudness(VoiceCategory.STATUS_UPDATES), TOLERANCE)
     }
 
     @Test
@@ -24,13 +24,13 @@ class AudioMixTest {
 
     @Test
     fun oneKindOfSoundCanBeSilencedOnItsOwn() {
-        val mix = AudioMix().with(VoiceCategory.SESSION_UPDATES, Volumes.Off)
+        val mix = AudioMix().with(VoiceCategory.STATUS_UPDATES, Volumes.Off)
 
-        assertTrue(Volumes.isOff(mix.loudness(VoiceCategory.SESSION_UPDATES)))
+        assertTrue(Volumes.isOff(mix.loudness(VoiceCategory.STATUS_UPDATES)))
         assertEquals(Volumes.Max, mix.loudness(VoiceCategory.ANSWERS), TOLERANCE)
         assertEquals(
             Volumes.DefaultSoundEffects,
-            mix.loudness(SoundCategory.SESSION_CHIMES),
+            mix.loudness(SoundCategory.READY_CHIME),
             TOLERANCE,
         )
     }

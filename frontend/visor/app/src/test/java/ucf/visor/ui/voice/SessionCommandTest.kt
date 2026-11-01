@@ -4,22 +4,32 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * "Start session" and "end session" each mean only what they say. They used
- * to be one toggle, so "start session" said during a session ended it.
+ * VISOR no longer has sessions: its camera features work as soon as the user
+ * is logged in. Anything said about a session gets a reply saying so, and the
+ * bare words "start" and "stop", which used to start and end one, no longer
+ * do anything.
  */
 class SessionCommandTest {
 
     @Test
-    fun startingPhrasesOnlyStart() {
-        listOf("start session", "start a session", "begin session", "Start").forEach { phrase ->
-            assertEquals(phrase, VoiceCommand.StartSession, VoiceCommandParser.parse(phrase))
+    fun anythingSaidAboutASessionSaysNoneIsNeeded() {
+        listOf(
+            "start session", "start a session", "begin session", "Start Session",
+            "end session", "stop session", "end the session", "how do sessions work",
+        ).forEach { phrase ->
+            assertEquals(phrase, VoiceCommand.SessionNotNeeded, VoiceCommandParser.parse(phrase))
         }
     }
 
     @Test
-    fun endingPhrasesOnlyEnd() {
-        listOf("end session", "stop session", "end the session", "stop").forEach { phrase ->
-            assertEquals(phrase, VoiceCommand.EndSession, VoiceCommandParser.parse(phrase))
+    fun startAndStopAloneNoLongerMeanAnything() {
+        listOf("start", "stop", "Stop").forEach { phrase ->
+            assertEquals(phrase, VoiceCommand.Unrecognized, VoiceCommandParser.parse(phrase))
         }
+    }
+
+    @Test
+    fun startingSomethingElseIsStillUnderstood() {
+        assertEquals(VoiceCommand.OpenHelp, VoiceCommandParser.parse("start help"))
     }
 }

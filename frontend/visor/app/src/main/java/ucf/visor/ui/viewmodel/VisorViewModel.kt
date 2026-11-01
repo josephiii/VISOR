@@ -10,8 +10,6 @@ import com.meta.wearable.dat.core.selectors.DeviceSelector
 import com.meta.wearable.dat.core.types.Device
 import com.meta.wearable.dat.core.types.DeviceCompatibility
 import com.meta.wearable.dat.core.types.DeviceIdentifier
-import com.meta.wearable.dat.core.types.Permission
-import com.meta.wearable.dat.core.types.PermissionStatus
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +22,8 @@ import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
+import ucf.visor.stt.CameraCommand
 import ucf.visor.wearables.GlassesAppUpdate
-import ucf.visor.wearables.cameraPermissionProblem
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
 
@@ -40,49 +38,57 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
-    private val _session = MutableStateFlow(VisorSession())
-    val session: StateFlow<VisorSession> = _session.asStateFlow()
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
 
-    private val _capture = MutableStateFlow(CaptureStatus.IDLE)
-    /** What the camera feature asked for last is doing (see [onCaptureStarted]). */
-    val capture: StateFlow<CaptureStatus> = _capture.asStateFlow()
+    private val _captures = MutableStateFlow<Map<CameraCommand, CaptureStatus>>(emptyMap())
+    /**
+     * What each camera feature is doing (see [onCaptureStarted]), for its
+     * button on Home. A feature that isn't working isn't in it: it is idle.
+     */
+    val captures: StateFlow<Map<CameraCommand, CaptureStatus>> = _captures.asStateFlow()
 
     private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
     /** What a camera feature last answered, for Home's Last answer card. */
     val lastAnswer: StateFlow<LastAnswer?> = _lastAnswer.asStateFlow()
 
-    // Wake phrases and Home's button can ask for a second picture before the
-    // first is answered; VISOR is working until every one of them is.
-    private var capturesInFlight = 0
+    // A wake phrase and Home's button can ask the same feature for a second
+    // picture before the first is answered; it is working until each is.
+    private val capturesInFlight = mutableMapOf<CameraCommand, Int>()
 
     fun updateProfile(profile: UserProfile) {
         _userProfile.value = profile
         profileStore.save(profile)
     }
 
-    /** A camera feature has been asked for: VISOR is taking a picture. Call on the main thread. */
-    fun onCaptureStarted() {
-        capturesInFlight++
-        _capture.value = CaptureStatus.TAKING_PICTURE
+    /** [command] has been asked for: VISOR is taking its picture. Call on the main thread. */
+    fun onCaptureStarted(command: CameraCommand) {
+        capturesInFlight[command] = (capturesInFlight[command] ?: 0) + 1
+        _captures.update { it + (command to CaptureStatus.TAKING_PICTURE) }
     }
 
-    /** The glasses have taken the picture: VISOR is working out what is in it. */
-    fun onPictureTaken() {
-        if (_capture.value == CaptureStatus.TAKING_PICTURE) _capture.value = CaptureStatus.THINKING
+    /** The glasses have taken [command]'s picture: VISOR is working out what is in it. */
+    fun onPictureTaken(command: CameraCommand) {
+        _captures.update {
+            if (it[command] == CaptureStatus.TAKING_PICTURE) it + (command to CaptureStatus.THINKING) else it
+        }
     }
 
-    /** A camera feature has answered with [text], which VISOR is now saying. */
-    fun onAnswered(text: String) {
-        capturesInFlight = (capturesInFlight - 1).coerceAtLeast(0)
-        if (capturesInFlight == 0) _capture.value = CaptureStatus.IDLE
-        showAnswer(text)
+    /** [command] has answered with [text], which VISOR is now saying. */
+    fun onAnswered(command: CameraCommand, text: String) {
+        val left = ((capturesInFlight[command] ?: 0) - 1).coerceAtLeast(0)
+        if (left == 0) {
+            capturesInFlight.remove(command)
+            _captures.update { it - command }
+        } else {
+            capturesInFlight[command] = left
+        }
+        showAnswer(text, command)
     }
 
-    /** Shows [text] on Home's Last answer card, as an answer just given. */
-    fun showAnswer(text: String) {
-        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis())
+    /** Shows [text] on Home's Last answer card, as an answer [command] has just given. */
+    fun showAnswer(text: String, command: CameraCommand) {
+        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis(), command)
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -428,62 +434,19 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isOnboarding = true) }
     }
 
-    /**
-     * Starts or ends the session (Home's button, or "start session" by voice
-     * or on the glasses), then tells [onChange] what happened, for it to
-     * announce.
-     *
-     * A session uses the glasses camera, so starting one first makes sure VISOR
-     * may use it, asking through the Meta AI app if needed ([requestPermission]).
-     * Without it the session does not start, and the wearer hears why rather
-     * than "Starting session".
-     */
-    fun toggleSession(
-        requestPermission: suspend (Permission) -> PermissionStatus,
-        onChange: (SessionChange) -> Unit,
-    ) {
-        if (_uiState.value.isSessionActive) {
-            _uiState.update { it.copy(isSessionActive = false) }
-            onChange(SessionChange.Ended)
-            return
-        }
-        viewModelScope.launch {
-            val problem = cameraPermissionProblem(requestPermission)
-            if (problem != null) {
-                setRecentError(problem)
-                onChange(SessionChange.NotStarted(problem))
-                return@launch
-            }
-            _uiState.update { it.copy(isSessionActive = true) }
-            onChange(SessionChange.Started)
-        }
-    }
-
-    /**
-     * What VISOR did for one "Hey Meta, start VISOR", and what to tell the
-     * wearer. [startedSession] is false when one was already running.
-     */
+    /** What VISOR did for one "Hey Meta, start VISOR", and what to tell the wearer. */
     data class VoiceLaunchResult(
         val success: Boolean,
         val spoken: String,
-        val startedSession: Boolean = false,
     )
 
     /**
-     * The action behind a voice launch: go Home and make sure a session is
-     * running. Idempotent on purpose — never a toggle — because a launch can
-     * reach VISOR twice (the launch intent and the voice-invocation stream),
-     * and a second "start" must not end the session the first one began.
+     * The action behind a voice launch: go Home, ready for the first question.
+     * Every camera feature works as soon as the wearer is logged in, so there
+     * is nothing else to start. Safe to repeat, because a launch can reach
+     * VISOR twice (the launch intent and the voice-invocation stream).
      */
-    fun startSessionFromVoice(): VoiceLaunchResult {
-        // Turned off in Settings. Meta AI has already opened VISOR, so say why
-        // that is all that happened.
-        if (!_userProfile.value.voiceLaunchEnabled) {
-            return VoiceLaunchResult(
-                success = false,
-                spoken = "VISOR is open. Starting a session by voice is turned off in Settings.",
-            )
-        }
+    fun openFromVoice(): VoiceLaunchResult {
         if (!_uiState.value.isAuthComplete) {
             return VoiceLaunchResult(
                 success = false,
@@ -491,14 +454,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         home()
-        val alreadyRunning = _uiState.value.isSessionActive
-        if (!alreadyRunning) _uiState.update { it.copy(isSessionActive = true) }
-        return VoiceLaunchResult(
-            success = true,
-            spoken = if (alreadyRunning) "VISOR is ready. Your session is already running."
-            else "VISOR is ready. Session started.",
-            startedSession = !alreadyRunning,
-        )
+        return VoiceLaunchResult(success = true, spoken = "VISOR is ready.")
     }
 
     fun toggleNavigationBar() {
@@ -558,28 +514,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isConfiguring = true) }
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(atSettings = false) }
-    }
-
-    fun toggleHazardAwarenessMode() = setMode(SessionMode.HAZARD)
-
-    fun toggleSceneDescriptionMode() = setMode(SessionMode.SCENE)
-
-    fun toggleReadingAssistanceMode() = setMode(SessionMode.READER)
-
-    fun toggleQuestionMode() = setMode(SessionMode.QUESTION)
-
-    fun toggleObjectIdentificationMode() = setMode(SessionMode.IDENTIFY)
-
-    fun setMode(newMode: SessionMode) {
-        _session.update {
-            VisorSession(
-                inHazardAwarenessMode = newMode == SessionMode.HAZARD,
-                inSceneDescriptionMode = newMode == SessionMode.SCENE,
-                inReadingAssistanceMode = newMode == SessionMode.READER,
-                inQuestionMode = newMode == SessionMode.QUESTION,
-                inObjectIdentificationMode = newMode == SessionMode.IDENTIFY,
-            )
-        }
     }
 
     private companion object {

@@ -2,7 +2,7 @@ package ucf.visor.ui.voice
 
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.ui.viewmodel.SessionMode
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -27,13 +27,24 @@ sealed class VoiceCommand {
     object GoBack : VoiceCommand()
 
     /**
-     * "Start session" only ever starts one, and "end session" only ever ends
-     * one: said when a session is already on (or off), VISOR says so rather
-     * than doing the opposite of what was asked.
+     * Anything said about a session, such as "start session". VISOR no longer
+     * has sessions (its camera features work as soon as the user is logged
+     * in), so this only says so, for anyone still in the habit.
      */
-    object StartSession : VoiceCommand()
-    object EndSession : VoiceCommand()
-    data class SwitchMode(val mode: SessionMode) : VoiceCommand()
+    object SessionNotNeeded : VoiceCommand()
+
+    /**
+     * "Hazard mode", "reading mode"... VISOR no longer has modes: each camera
+     * feature has its own button and wake phrase. This says how to ask for
+     * [command] directly, rather than taking a picture nobody expected.
+     */
+    data class ModeNotNeeded(val command: CameraCommand) : VoiceCommand()
+
+    /**
+     * One of Home's camera buttons, such as "Check for hazards": a picture,
+     * and [command]'s answer. Offered on the glasses' own display.
+     */
+    data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()

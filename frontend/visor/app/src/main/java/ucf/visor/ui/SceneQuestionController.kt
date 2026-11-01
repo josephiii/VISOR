@@ -8,6 +8,12 @@ import ucf.visor.capture.SceneDescriber
 import ucf.visor.stt.CommandRecognizer
 import ucf.visor.tts.ThinkingBeeper
 
+/**
+ * "Ask a question" (CameraCommand.ASK_QUESTION): asks the wearer what they want
+ * to know, takes a picture, and answers it. [onAsked] and [onAnswered] report
+ * the same steps every camera feature reports, so Home's button shows it
+ * working and the Last answer card keeps what it said.
+ */
 class SceneQuestionController(
     private val recognizer: CommandRecognizer,
     private val describer: SceneDescriber,
@@ -17,6 +23,8 @@ class SceneQuestionController(
     private val pauseWakeListening: () -> Unit,
     private val resumeWakeListening: () -> Unit,
     private val listenDelayMs: Long = 500L,
+    private val onAsked: () -> Unit = {},
+    private val onAnswered: (String) -> Unit = {},
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
@@ -41,10 +49,12 @@ class SceneQuestionController(
             return
         }
         Log.d("VISOR", "Scene question: $question")
+        onAsked()
         speak("Taking picture")
         beeper.start()
         describer.ask(question) { answer ->
             beeper.stop()
+            onAnswered(answer)
             speak(answer)
             finish()
         }

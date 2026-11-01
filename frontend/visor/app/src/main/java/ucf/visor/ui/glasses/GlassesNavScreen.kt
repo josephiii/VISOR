@@ -2,6 +2,7 @@ package ucf.visor.ui.glasses
 
 import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.IconName
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -110,20 +111,17 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         )
     }
 
+    // Home is for its camera buttons, and so are the glasses there: the four
+    // that take a picture straight away fill the display exactly, with no More.
+    // The rest of the navigation is on every other screen, with a Home button
+    // back to these.
+    if (route == "home") {
+        return GlassesNavScreen(title = "Home", items = CameraCommand.entries.mapNotNull(::cameraItem))
+    }
+
     val items = mutableListOf<GlassesNavItem>()
 
-    // The session toggle is offered from every screen, not just Home:
-    // VisorLayout's StartSession and EndSession handlers navigate home on their
-    // own before starting/ending the session.
-    items += if (uiState.isSessionActive) {
-        GlassesNavItem("End session", IconName.X, VoiceCommand.EndSession)
-    } else {
-        GlassesNavItem("Start session", IconName.TRIANGLE_RIGHT, VoiceCommand.StartSession)
-    }
-
-    if (route != "home") {
-        items += GlassesNavItem("Home", IconName.HOUSE, VoiceCommand.GoHome)
-    }
+    items += GlassesNavItem("Home", IconName.HOUSE, VoiceCommand.GoHome)
 
     if (route != "settings") {
         items += GlassesNavItem("Settings", IconName.GEAR, VoiceCommand.OpenSettings)
@@ -137,17 +135,14 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         items += GlassesNavItem("Help", IconName.I_CIRCLE, VoiceCommand.OpenHelp)
     }
 
-    if (route != "home") {
-        items += GlassesNavItem(
-            "Back",
-            IconName.ARROW_LEFT,
-            VoiceCommand.GoBack,
-            ButtonStyle.SECONDARY
-        )
-    }
+    items += GlassesNavItem(
+        "Back",
+        IconName.ARROW_LEFT,
+        VoiceCommand.GoBack,
+        ButtonStyle.SECONDARY
+    )
 
     val title = when (route) {
-        "home" -> "Home"
         "settings" -> "Settings"
         "hardware_pairing" -> "Pair glasses"
         "help" -> "Help"
@@ -155,4 +150,25 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         else -> "VISOR"
     }
     return GlassesNavScreen(title = title, items = items)
+}
+
+/**
+ * Home's button for [command], on the glasses. Its label matches the phone's
+ * (R.string.camera_command_*), and its icon is the display's nearest to the
+ * phone's: it has no book, so reading is a speech bubble, for being read to.
+ *
+ * Null for Ask a question, which has no button here: a fifth would push
+ * Describe the scene behind More, and asking means speaking anyway, where
+ * "VISOR, I have a question" is as quick as a tap.
+ */
+private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command) {
+    CameraCommand.CHECK_HAZARDS ->
+        GlassesNavItem("Check for hazards", IconName.EXCLAMATION_TRIANGLE, VoiceCommand.RunCamera(command))
+    CameraCommand.READ_TEXT ->
+        GlassesNavItem("Read text", IconName.SPEECH_BUBBLE, VoiceCommand.RunCamera(command))
+    CameraCommand.IDENTIFY_OBJECTS ->
+        GlassesNavItem("Identify objects", IconName.FOUR_CORNER_FRAME, VoiceCommand.RunCamera(command))
+    CameraCommand.DESCRIBE_SCENE ->
+        GlassesNavItem("Describe the scene", IconName.MOUNTAIN_SQUARE, VoiceCommand.RunCamera(command))
+    CameraCommand.ASK_QUESTION -> null
 }

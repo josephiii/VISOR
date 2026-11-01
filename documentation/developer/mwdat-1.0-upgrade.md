@@ -94,7 +94,7 @@ caused by the SDK change):
 | **Motion** (IMU: accel, gyro, magnetometer, fused quaternion; 5–60 Hz) *(experimental)* | IMU only through the Web Apps API; no camera | **Adopted**: head-motion lab |
 | **Camera + Motion in one session** | Impossible on the web path | **Adopted**: the lab's VOR tier (V1–V4) |
 | **Device state on `Device`** (battery, charging, worn, hinge, thermal) | Only firmware compatibility was read | **Adopted**: Pair Glasses status card (read aloud on request) and every recording's metadata |
-| **Voice invocations** ("Hey Meta, start VISOR") *(experimental)* | None; VISOR had to be opened on the phone | **Adopted**: opens VISOR, goes Home, starts a session, answers the glasses |
+| **Voice invocations** ("Hey Meta, start VISOR") *(experimental)* | None; VISOR had to be opened on the phone | **Adopted**: opens VISOR, goes Home ready for a question, answers the glasses |
 | **Registration requests from Meta AI** (`handleIntent`) | Not handled | **Adopted** |
 | Display (`mwdat-display`) | Glasses tap-navigation | **Kept**. It now hands the glasses' single session to the lab during a trial (`GlassesLease`) and reconnects after |
 | Camera stream + in-stream photo | `StreamViewModel` (from the CameraAccess sample, not routed) | **Kept**: the lab uses the stream, and reading text, identifying objects, describing scenes and checking for hazards each take one in-stream photo (`GlassesPhotoSource`). The unrouted `StreamViewModel` has since been removed |
@@ -214,10 +214,15 @@ doff, heat, battery steps) are marked in the data.
 step of using VISOR. Following VoiceInvocationsSample: a process-scoped stream
 (`wearables/VoiceLaunches.kt`) so a cold launch is not missed;
 `launchMode="singleTask"`; `isVoiceInvocationsIntent` in `onCreate` and
-`onNewIntent`. The action is **idempotent** (start a session if none, never
-toggle), because a launch can arrive both as an intent and on the stream. Every
-launch is answered exactly once: success with "VISOR is ready. Session started.",
-or failure with "Please log in on your phone" when logged out.
+`onNewIntent`. The action is **idempotent** (go Home, with the ready chime and
+buzz), because a launch can arrive both as an intent and on the stream. Every
+launch is answered exactly once: success with "VISOR is ready.", or failure with
+"Please log in on your phone" when logged out.
+
+VISOR used to start a "session" here, and required one before any camera
+feature worked. Sessions are gone: the glasses camera opens per picture
+anyway, so a session only added steps. Every feature works once the user is
+logged in, and there is no setting to turn the voice launch off.
 
 ### 5. Debug tools (debug builds, bug button)
 
