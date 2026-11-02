@@ -72,13 +72,46 @@ object SpokenPhrases {
         if (labels.isEmpty()) NOTHING_RECOGNIZED
         else "I see " + labels.joinToString(", ") + "."
 
-    /** "chair, 3 feet ahead. person, 6 feet ahead." Nearest first, in whole feet. */
-    fun hazardsAhead(hazards: List<Hazard>): String =
+    /**
+     * "chair, 3 feet ahead on your left. person, 6 feet ahead." Nearest first,
+     * in whole feet, and at most [limit] of them.
+     *
+     * Which side each one is on comes from where it is in the picture,
+     * [imageWidth] pixels across: the left third is on the wearer's left, the
+     * right third on their right, and the middle is straight ahead. Without a
+     * width (0), no side is said.
+     */
+    fun hazardsAhead(
+        hazards: List<Hazard>,
+        imageWidth: Int = 0,
+        limit: Int = Int.MAX_VALUE,
+    ): String =
         if (hazards.isEmpty()) NO_HAZARDS_FOUND
-        else hazards.sortedBy { it.depth }.joinToString(" ") { hazard ->
+        else hazards.sortedBy { it.depth }.take(limit.coerceAtLeast(1)).joinToString(" ") { hazard ->
             val feet = (hazard.depth * FEET_PER_METER).roundToInt().coerceAtLeast(1)
-            "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead."
+            val side = when (sideOf(hazard, imageWidth)) {
+                Side.LEFT -> " on your left"
+                Side.RIGHT -> " on your right"
+                Side.AHEAD, null -> ""
+            }
+            "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead$side."
         }
+
+    /** How many hazards a Brief answer names: the nearest, as the rest can wait. */
+    const val BRIEF_HAZARD_LIMIT = 3
+
+    private enum class Side { LEFT, AHEAD, RIGHT }
+
+    /** Which third of the picture [hazard]'s box is centered in, or null if that can't be told. */
+    private fun sideOf(hazard: Hazard, imageWidth: Int): Side? {
+        if (imageWidth <= 0 || hazard.coords.size < 4) return null
+        val center = (hazard.coords[0] + hazard.coords[2]) / 2 / imageWidth
+        return when {
+            center < 1f / 3 -> Side.LEFT
+            center > 2f / 3 -> Side.RIGHT
+            else -> Side.AHEAD
+        }
+    }
 
     /**
      * The reply to "VISOR GO, start session" (or "end session"). VISOR used to

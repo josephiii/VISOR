@@ -25,6 +25,8 @@
     <!-- Login Screen -->
     <string name="login_title" description="The login title">Log in</string>
     <string name="password_label" description="The password label">Password</string>
+    <string name="password_show" description="Button at the end of a password field: shows what was typed">Show password</string>
+    <string name="password_hide" description="Button at the end of a password field: hides what was typed again">Hide password</string>
     <string name="sign_up_title" descripion="The sign up title">Sign up</string>
     <string name="login_busy" description="The log in button while VISOR is logging in">Logging in…</string>
     <string name="login_trouble" description="Above the Forgot Password button">Trouble logging in?</string>
@@ -183,13 +185,13 @@
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_capture_title" description="Help topic title">Taking a picture</string>
-    <string name="help_capture_body" description="Help topic">At the top of the Home screen are four large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead and how far away, Read text reads the text, Identify objects names what\'s in front of you, and Describe the scene describes it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the same four buttons are on their display while your phone shows Home.</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
     <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home, and chimes when it\'s ready for your first question — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, check for hazards\" to hear what\'s in your path, \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. Say \"VISOR, I have a question\", and VISOR asks what you want to know, then takes a picture and answers it. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
@@ -250,12 +252,13 @@
 
     <!-- VISOR Onboarding Steps -->
     <string name="step_counter" description="Where the user is in setup, as in 'Step 2 of 8'">Step <xliff:g id="step">%1$d</xliff:g> of <xliff:g id="total">%2$d</xliff:g></string>
+    <string name="onboarding_title" description="Name of the setup screen, as a screen reader says it when the screen opens">Set up your profile</string>
     <string name="onboarding_continue" description="Setup button: on to the next question">Continue</string>
     <string name="onboarding_start" description="Setup button on the last step">Start using VISOR</string>
     <string name="onboarding_skip" description="Setup button: leave this question for now">Skip for now</string>
     <!-- NAME Step -->
     <string name="step_name_title">What should VISOR call you?</string>
-    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
+    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or say skip.</string>
 
     <!-- VOICE_NAV Step -->
     <string name="step_voice_nav_title">Navigate VISOR by voice?</string>
@@ -267,7 +270,7 @@
 
     <!-- DESCRIBE Step -->
     <string name="step_describe_title">Tell me about your vision, in your own words</string>
-    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or tap Skip.</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or say skip.</string>
 
     <!-- SEVERITY Step -->
     <string name="step_severity_title">How much does it affect daily life?</string>
@@ -283,7 +286,7 @@
 
     <!-- DONE Step -->
     <string name="step_done_title">You\'re all set!</string>
-    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
+    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me. Say start to begin using VISOR.</string>
 
     <!-- Hardware Pairing Screen: updates the glasses need -->
     <string name="update_required_title" description="Update required warning title">Update required</string>

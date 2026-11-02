@@ -50,6 +50,7 @@ import ucf.visor.data.AudioMix
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.SessionStore
 import ucf.visor.data.SoundCategory
+import ucf.visor.data.Verbosity
 import ucf.visor.data.VoiceCategory
 import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
@@ -255,6 +256,7 @@ class MainActivity : ComponentActivity() {
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
             fallback = objectDetector,
+            verbosity = ::verbosity,
         )
 
         commandRecognizer = CommandRecognizer(this)
@@ -264,6 +266,7 @@ class MainActivity : ComponentActivity() {
                 photoSource = cameraFor(CameraCommand.ASK_QUESTION),
                 vlm = VlmClient(accessToken = sessionStore::accessToken),
                 scope = lifecycleScope,
+                verbosity = ::verbosity,
             ),
             beeper = thinkingBeeper,
             speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
@@ -279,6 +282,7 @@ class MainActivity : ComponentActivity() {
             photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
             client = HazardClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
+            verbosity = ::verbosity,
         )
 
         voiceNav = VoiceNavigationController(
@@ -320,6 +324,9 @@ class MainActivity : ComponentActivity() {
 
     /** The camera chosen on the Pair screen (or by voice), as of right now. */
     private fun chosenCamera(): CameraChoice = viewModel.userProfile.value.camera
+
+    /** How much the camera features say: Settings > Speech > Detail. */
+    private fun verbosity(): Verbosity = viewModel.userProfile.value.verbosity
 
     /** What VISOR says as a camera feature takes its picture: which camera, when it is the phone's. */
     private fun takingPicturePhrase(): String = when (chosenCamera()) {

@@ -43,6 +43,7 @@ import ucf.visor.R
 import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ErrorBanner
 import ucf.visor.ui.components.VisorNavigationBar
+import ucf.visor.ui.components.isScreenReaderOn
 import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
@@ -60,6 +61,7 @@ import ucf.visor.ui.voice.VoiceCommand
 import ucf.visor.ui.voice.VoiceListeningGlow
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
+import ucf.visor.ui.voice.VoiceReplies
 
 
 // VisorLayout() will control the application screen state. It calls the separate screen functions
@@ -272,9 +274,13 @@ fun VisorLayout(
     ///////////////////////////////////////////////////////////////////////////
     // Voice + Glasses-Tap Navigation Observer
     LaunchedEffect(voiceNav, glassesNav) {
-        // What VISOR says back about a command itself. What a command changes,
-        // such as a mode, is announced the way it would be from a button.
+        // What VISOR says back about a command itself, and, once it has done
+        // what was asked, where it went or what it changed (VoiceReplies): a
+        // user who isn't looking at the screen would otherwise hear nothing.
         val reply: (String) -> Unit = { talk(it, VoiceCategory.VOICE_COMMANDS) }
+        // Where a command went. A screen reader already says each screen's
+        // name as it opens (VisorNavHost), so VISOR doesn't say it as well.
+        val announce: (String) -> Unit = { if (!context.isScreenReaderOn()) reply(it) }
 
         merge(
             voiceNav?.commands ?: emptyFlow(),
@@ -286,28 +292,48 @@ fun VisorLayout(
                 // either (no bottom nav bar yet), so voice shouldn't uniquely
                 // unlock them from TitleScreen/Login/SignUp.
                 VoiceCommand.GoHome ->
-                    if (uiState.isAuthComplete) viewModel.home()
-                    else reply("Log in first to go home.")
+                    if (uiState.isAuthComplete) {
+                        viewModel.home()
+                        announce(VoiceReplies.HOME)
+                    } else {
+                        reply("Log in first to go home.")
+                    }
 
                 VoiceCommand.OpenSettings ->
-                    if (uiState.isAuthComplete) viewModel.settings()
-                    else reply("Log in first to open settings.")
+                    if (uiState.isAuthComplete) {
+                        viewModel.settings()
+                        announce(VoiceReplies.SETTINGS)
+                    } else {
+                        reply("Log in first to open settings.")
+                    }
 
                 is VoiceCommand.OpenSettingsSection ->
-                    if (uiState.isAuthComplete) viewModel.settings(command.section)
-                    else reply("Log in first to open settings.")
+                    if (uiState.isAuthComplete) {
+                        viewModel.settings(command.section)
+                        announce(VoiceReplies.settingsSection(command.section))
+                    } else {
+                        reply("Log in first to open settings.")
+                    }
 
                 VoiceCommand.OpenHelp ->
-                    if (uiState.isAuthComplete) viewModel.help()
-                    else reply("Log in first for help.")
+                    if (uiState.isAuthComplete) {
+                        viewModel.help()
+                        announce(VoiceReplies.HELP)
+                    } else {
+                        reply("Log in first for help.")
+                    }
 
                 VoiceCommand.PairDevice ->
-                    if (uiState.isAuthComplete) viewModel.hardwarePairing()
-                    else reply("Log in first to pair your glasses.")
+                    if (uiState.isAuthComplete) {
+                        viewModel.hardwarePairing()
+                        announce(VoiceReplies.PAIR)
+                    } else {
+                        reply("Log in first to pair your glasses.")
+                    }
 
-                VoiceCommand.GoBack -> {
-                    if (!navController.popBackStack()) reply("There's nowhere to go back to.")
-                }
+                VoiceCommand.GoBack ->
+                    if (navController.popBackStack()) announce(VoiceReplies.BACK)
+                    else reply("There's nowhere to go back to.")
 
                 VoiceCommand.SessionNotNeeded ->
                     if (uiState.isAuthComplete) reply(SpokenPhrases.NO_SESSION_NEEDED)
@@ -333,9 +359,20 @@ fun VisorLayout(
                     if (uiState.isAuthComplete) onCapture(command.command)
                     else reply("Log in first to take a picture.")
 
-                VoiceCommand.GoToLogin -> viewModel.login()
-                VoiceCommand.GoToSignUp -> viewModel.signUp()
-                VoiceCommand.GoToForgotPassword -> viewModel.forgotPassword()
+                VoiceCommand.GoToLogin -> {
+                    viewModel.login()
+                    announce(VoiceReplies.LOG_IN)
+                }
+
+                VoiceCommand.GoToSignUp -> {
+                    viewModel.signUp()
+                    announce(VoiceReplies.SIGN_UP)
+                }
+
+                VoiceCommand.GoToForgotPassword -> {
+                    viewModel.forgotPassword()
+                    announce(VoiceReplies.FORGOT_PASSWORD)
+                }
                 VoiceCommand.ResendCode -> reply("Resend code isn't available yet.")
 
                 VoiceCommand.LogOut ->
@@ -346,8 +383,11 @@ fun VisorLayout(
                     if (uiState.isAuthComplete) viewModel.requestDeleteAccountConfirm()
                     else reply("You're not logged in.")
 
-                VoiceCommand.ToggleHighContrast ->
-                    viewModel.updateProfile(profile.copy(appHighContrast = !profile.appHighContrast))
+                VoiceCommand.ToggleHighContrast -> {
+                    val on = !profile.appHighContrast
+                    viewModel.updateProfile(profile.copy(appHighContrast = on))
+                    reply(VoiceReplies.highContrast(on))
+                }
 
                 // As the Pair screen's choice is, so post-login like it; said
                 // back, with how to hold the phone when that is the camera.
@@ -364,8 +404,10 @@ fun VisorLayout(
                         reply("Log in first to choose a camera.")
                     }
 
-                is VoiceCommand.SetSpeechRate ->
+                is VoiceCommand.SetSpeechRate -> {
                     viewModel.updateProfile(profile.copy(speechRate = command.rate))
+                    reply(VoiceReplies.speechRate(command.rate))
+                }
 
                 VoiceCommand.SpeakFaster -> {
                     val rate = SpeechRates.faster(profile.speechRate)
@@ -379,11 +421,15 @@ fun VisorLayout(
                     reply("Slower. ${SpeechRates.spokenLabel(rate)}.")
                 }
 
-                is VoiceCommand.SetVerbosity ->
+                is VoiceCommand.SetVerbosity -> {
                     viewModel.updateProfile(profile.copy(verbosity = command.verbosity))
+                    reply(VoiceReplies.detail(command.verbosity))
+                }
 
-                is VoiceCommand.SetTextScale ->
+                is VoiceCommand.SetTextScale -> {
                     viewModel.updateProfile(profile.copy(textScale = command.scale))
+                    reply(VoiceReplies.textSize(command.scale))
+                }
 
                 // logout()/confirmDeleteAccount() already clear their own
                 // confirm-dialog flag as part of the bigger session reset —
@@ -391,13 +437,21 @@ fun VisorLayout(
                 VoiceCommand.Confirm -> when {
                     uiState.isLogoutConfirmVisible -> viewModel.logout()
                     uiState.isDeleteAccountConfirmVisible -> viewModel.confirmDeleteAccount()
-                    else -> Unit
+                    else -> reply(VoiceReplies.NOTHING_TO_CONFIRM)
                 }
 
                 VoiceCommand.Cancel -> when {
-                    uiState.isLogoutConfirmVisible -> viewModel.cancelLogoutConfirm()
-                    uiState.isDeleteAccountConfirmVisible -> viewModel.cancelDeleteAccountConfirm()
-                    else -> Unit
+                    uiState.isLogoutConfirmVisible -> {
+                        viewModel.cancelLogoutConfirm()
+                        reply(VoiceReplies.CANCELLED)
+                    }
+
+                    uiState.isDeleteAccountConfirmVisible -> {
+                        viewModel.cancelDeleteAccountConfirm()
+                        reply(VoiceReplies.CANCELLED)
+                    }
+
+                    else -> reply(VoiceReplies.NOTHING_TO_CANCEL)
                 }
 
                 // "Next"/"repeat" only mean something inside the onboarding wizard's
