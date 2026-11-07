@@ -39,7 +39,10 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
+import ucf.visor.R
 import ucf.visor.stt.CameraCommand
+import androidx.compose.ui.unit.dp
+import ucf.visor.ui.components.ConnectivityNotice
 import ucf.visor.ui.components.ErrorBanner
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.components.isScreenReaderOn
@@ -367,9 +370,13 @@ fun VisorLayout(
                     if (uiState.isAuthComplete) viewModel.requestLogoutConfirm()
                     else reply("You're not logged in.")
 
-                VoiceCommand.DeleteAccount ->
-                    if (uiState.isAuthComplete) viewModel.requestDeleteAccountConfirm()
-                    else reply("You're not logged in.")
+                // Offline, as Settings' button is: no "Are you sure?" for
+                // something that can't happen.
+                VoiceCommand.DeleteAccount -> when {
+                    !uiState.isAuthComplete -> reply("You're not logged in.")
+                    !uiState.isOnline -> reply(context.getString(R.string.settings_delete_account_offline))
+                    else -> viewModel.requestDeleteAccountConfirm()
+                }
 
                 VoiceCommand.ToggleHighContrast -> {
                     val on = !profile.appHighContrast
@@ -474,6 +481,13 @@ fun VisorLayout(
                             .background(MaterialTheme.colorScheme.background)
                             .windowInsetsPadding(WindowInsets.statusBars),
                     ) {
+                        // Above any error: while offline, it says why a
+                        // feature is locked before anything is pressed.
+                        ConnectivityNotice(
+                            isOnline = uiState.isOnline,
+                            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
+                            talk = talk,
+                        )
                         ErrorBanner(
                             message = uiState.recentError,
                             onDismiss = { viewModel.clearRecentError() },

@@ -22,6 +22,9 @@ class SceneDescriber(
     private val fallback: ObjectDetector? = null,
     // Read at each capture, so a change in Settings applies to the very next one.
     private val verbosity: () -> Verbosity = { Verbosity.STANDARD },
+    // Read at each capture. Offline, a description goes straight to the
+    // on-device labels rather than waiting for a server it can't reach.
+    private val isOnline: () -> Boolean = { true },
 ) : ReadRequester {
 
     companion object {
@@ -53,6 +56,12 @@ class SceneDescriber(
         deliver: (String) -> Unit,
     ) {
         scope.launch {
+            if (!isOnline()) {
+                // Said first, so labels aren't mistaken for a description.
+                if (isQuestion) deliver(QUESTION_SERVER_DOWN)
+                else describeOnDevice(bitmap) { deliver(SpokenPhrases.offlineScene(it)) }
+                return@launch
+            }
             when (val result = vlm.ask(downscale(bitmap, MAX_IMAGE_SIDE), promptToUse)) {
                 is ApiResult.Success -> deliver(
                     result.body.ifBlank {

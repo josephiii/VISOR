@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
@@ -82,10 +83,17 @@ fun SignUpScreen(
     // What went wrong with the request itself, such as no connection.
     var requestError by remember { mutableStateOf<Int?>(null) }
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Offline, Sign up is locked, and pressing it says why (network/Connectivity).
+    val offline = !uiState.isOnline && !isLoading
 
     fun signUp() {
         if (isLoading) return
         requestError = null
+        if (offline) {
+            requestError = R.string.auth_error_offline_sign_up
+            return
+        }
         fieldErrors = checkSignUp(username, email, password, confirmedPassword)
         if (fieldErrors.any) {
             // Checked before the request. The first field with a problem takes
@@ -201,6 +209,8 @@ fun SignUpScreen(
                     text = stringResource(if (isLoading) R.string.sign_up_busy else R.string.sign_up_title),
                     width = 1f,
                     busy = isLoading,
+                    locked = offline,
+                    supportingText = if (offline) stringResource(R.string.offline_locked_reason) else null,
                     onClick = { signUp() },
                 )
                 ErrorMessage(

@@ -18,6 +18,21 @@
     <string name="switch_state_on" description="Visible state of an on/off setting that is on">ON</string>
     <string name="switch_state_off" description="Visible state of an on/off setting that is off">OFF</string>
 
+    <!-- Offline (network/Connectivity, capture/Availability). Shown at the top of every screen
+         while the phone is offline, starting with a word in bold so it never rests on its icon alone. -->
+    <string name="offline_notice_label" description="Bold first word of the notice shown while the phone is offline">Offline.</string>
+    <string name="offline_notice_body" description="Rest of the notice shown while the phone is offline">Features that need the internet are locked until you reconnect.</string>
+    <string name="offline_notice_spoken" description="Said aloud as the phone goes offline">You\'re offline. Features that need the internet are locked until you reconnect.</string>
+    <string name="online_again_label" description="Bold first words of the notice shown for a few seconds once the phone is back online">Back online.</string>
+    <string name="online_again_body" description="Rest of the notice shown for a few seconds once the phone is back online">Every feature is available again.</string>
+    <string name="online_again_spoken" description="Said aloud as the phone comes back online">Back online. Every feature is available again.</string>
+    <!-- Under the name of a button that is locked while offline -->
+    <string name="offline_locked_reason" description="Second line of a button locked while offline">Needs the internet</string>
+    <!-- Under Describe the scene while offline, when it names objects with the phone instead -->
+    <string name="offline_describe_limited" description="Second line of the Describe the scene button while offline">Offline: names objects only</string>
+    <!-- Said, and shown at the top of the screen, when a locked camera feature is asked for. The placeholder is the feature's name. -->
+    <string name="offline_feature_locked" description="A camera feature that needs the internet was asked for while offline">"<xliff:g id="feature">%1$s</xliff:g> needs the internet, and you\'re offline. Read text and Identify objects still work."</string>
+
     <!-- Title Screen -->
     <string name="title_welcome" description="Under the VISOR banner on the first screen">Welcome. Log in or sign up to get started.</string>
     <string name="title_voice_hint" description="Under the Log in and Sign up buttons on the first screen, while voice navigation is on">Say \"VISOR GO\" any time, then say a command, such as \"log in\" or \"sign up\".</string>
@@ -38,6 +53,9 @@
     <string name="auth_error_server" description="The VISOR server failed">VISOR\'s server ran into a problem. Try again in a few minutes.</string>
     <string name="auth_error_check_details" description="The server could not read the email or password">VISOR couldn\'t read that email or password. Check them, then try again.</string>
     <string name="auth_error_unknown" description="Something else went wrong with an account request">Something went wrong. Try again.</string>
+    <string name="auth_error_offline_log_in" description="Log in was pressed while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to log in.</string>
+    <string name="auth_error_offline_sign_up" description="Sign up was pressed while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to sign up.</string>
+    <string name="auth_error_offline_code" description="A code was entered, or a new one asked for, while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to check your code.</string>
     <string name="auth_error_email_missing" description="The email field is empty">Enter your email.</string>
     <string name="auth_error_email_invalid" description="The email field does not hold an email address">Enter your whole email address, such as name@example.com.</string>
     <string name="auth_error_password_missing" description="The password field is empty">Enter your password.</string>
@@ -171,6 +189,7 @@
     <string name="settings_section_account" description="Settings section: account">Account</string>
     <string name="settings_log_out" description="Log out button and confirm button">Log out</string>
     <string name="settings_delete_account" description="Delete account button">Delete my account</string>
+    <string name="settings_delete_account_offline" description="Under the Delete my account button while the phone is offline">Deleting your account needs the internet. Logging out works offline.</string>
     <string name="settings_log_out_confirm_title" description="Log out confirmation title">Log out?</string>
     <string name="settings_log_out_confirm_message" description="Log out confirmation message">You\'ll need to sign in again to use VISOR.</string>
     <string name="settings_delete_account_confirm_title" description="Delete account confirmation title">Delete your account?</string>
@@ -189,6 +208,8 @@
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home, and chimes when it\'s ready for your first question — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
     <string name="help_camera_body" description="Help topic">Say \"VISOR, check for hazards\" to hear what\'s in your path, \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. Say \"VISOR, I have a question\", and VISOR asks what you want to know, then takes a picture and answers it. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_offline_title" description="Help topic title">Using VISOR offline</string>
+    <string name="help_offline_body" description="Help topic">Without the internet, Read text and Identify objects work as usual, and so do your settings, voice commands, and your glasses. Describe the scene names the objects it sees instead of describing the whole scene.\n\nCheck for hazards and Ask a question need the internet, and so do logging in, signing up, and deleting your account. While you\'re offline, their buttons show a lock and say \"Needs the internet\", and a notice at the top of the screen says you\'re offline. VISOR says when you go offline, and when you\'re back online.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>

@@ -60,6 +60,12 @@ object SpokenPhrases {
     const val SCENE_NOT_DESCRIBED = "I couldn't describe that."
     const val SERVER_UNREACHABLE = "Sorry, I couldn't reach the server."
 
+    /** Before what Describe the scene finds offline, which is only the objects in it. */
+    const val OFFLINE_SCENE_LEAD = "You're offline, so I can only name objects."
+
+    /** [found], the on-device answer to Describe the scene offline, said as what it is. */
+    fun offlineScene(found: String): String = "$OFFLINE_SCENE_LEAD $found"
+
     // Checking for hazards. The detector only knows everyday objects, so an
     // empty answer must not sound like the way is clear.
     const val NO_HAZARDS_FOUND = "I didn't recognize any objects ahead."

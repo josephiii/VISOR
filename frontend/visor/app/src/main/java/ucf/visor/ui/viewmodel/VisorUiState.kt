@@ -25,6 +25,12 @@ data class VisorUiState(
     val isDatAppUpdateRequired: Boolean = false,
     val canRegister: Boolean = false,
 
+    /**
+     * Whether the phone is online (network/Connectivity). Offline, the
+     * features that need VISOR's server are shown locked (capture/Availability).
+     */
+    val isOnline: Boolean = true,
+
     // Interface Error Component.
     val recentError: String? = null,
 

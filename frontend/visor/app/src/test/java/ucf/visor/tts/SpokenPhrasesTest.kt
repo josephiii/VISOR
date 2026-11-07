@@ -7,6 +7,14 @@ import ucf.visor.network.Hazard
 /** What a wearer hears from hazard detection: the nearest first, in whole feet. */
 class SpokenPhrasesTest {
 
+    @Test
+    fun anOfflineSceneSaysItIsOnlyObjectsFirst() {
+        assertEquals(
+            "You're offline, so I can only name objects. I see cup, table.",
+            SpokenPhrases.offlineScene(SpokenPhrases.objectsSeen(listOf("cup", "table"))),
+        )
+    }
+
     private fun hazard(name: String, meters: Float) =
         Hazard(id = 0, coords = listOf(0f, 0f, 10f, 10f), depth = meters, name = name, conf = 0.9f)
 

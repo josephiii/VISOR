@@ -1,7 +1,9 @@
 package ucf.visor.ui.glasses
 
 import org.junit.Assert.assertEquals
+import com.meta.wearable.dat.display.views.IconName
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ucf.visor.stt.CameraCommand
@@ -78,5 +80,32 @@ class GlassesNavScreenTest {
     fun nothingIsOfferedBeforeLoggingIn() {
         val screen = glassesNavScreenFor("login", VisorUiState(isAuthComplete = false))
         assertTrue(screen.items.isEmpty())
+    }
+
+    private val offline = loggedIn.copy(isOnline = false)
+
+    @Test
+    fun offlineHomeKeepsEveryButtonInItsPlace() {
+        val online = glassesNavScreenFor("home", loggedIn)
+        val off = glassesNavScreenFor("home", offline)
+        assertEquals(online.items.map { it.command }, off.items.map { it.command })
+        assertEquals(online.items.map { it.label }, off.items.map { it.label })
+    }
+
+    @Test
+    fun offlineOnlyTheFeaturesThatNeedTheInternetShowAPadlock() {
+        val locked = glassesNavScreenFor("home", offline).items
+            .filter { it.icon == IconName.PADLOCK_CLOSED }
+            .map { (it.command as VoiceCommand.RunCamera).command }
+        assertEquals(listOf(CameraCommand.CHECK_HAZARDS), locked)
+        assertTrue(glassesNavScreenFor("home", loggedIn).items.none { it.icon == IconName.PADLOCK_CLOSED })
+    }
+
+    @Test
+    fun offlineEveryScreenSaysSo() {
+        routes.forEach { route ->
+            assertEquals("$route", OFFLINE_SUBTITLE, glassesNavScreenFor(route, offline).subtitle)
+            assertNull("$route", glassesNavScreenFor(route, loggedIn).subtitle)
+        }
     }
 }

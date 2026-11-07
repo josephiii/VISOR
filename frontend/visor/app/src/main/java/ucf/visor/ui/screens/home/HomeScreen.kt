@@ -64,6 +64,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ucf.visor.R
+import ucf.visor.capture.Availability
+import ucf.visor.capture.availability
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.VoiceCategory
 import ucf.visor.stt.CameraCommand
@@ -71,6 +73,7 @@ import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
+import ucf.visor.ui.components.isScreenReaderOn
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.feedback.animationsEnabled
 import ucf.visor.ui.icon
@@ -92,6 +95,8 @@ fun HomeScreen(
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -126,16 +131,32 @@ fun HomeScreen(
             // always in the same place and always doing the same thing, hazards
             // at the top. Full width, one to a row, so a long name wraps at a
             // large text size rather than shrinking. Then what VISOR last found.
+            //
+            // Offline, each stays in its place, so nothing moves under a finger
+            // or a magnifier: the ones that need the internet are locked, and
+            // say so (see capture/Availability).
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(CaptureGap),
             ) {
                 CameraCommand.entries.forEach { command ->
+                    val label = stringResource(command.labelRes)
+                    val availability = command.availability(uiState.isOnline)
                     CaptureControl(
-                        label = stringResource(command.labelRes),
+                        label = label,
                         icon = command.icon,
                         status = captures[command] ?: CaptureStatus.IDLE,
-                        onClick = { onCapture(command) },
+                        availability = availability,
+                        onClick = {
+                            if (availability != Availability.LOCKED) {
+                                onCapture(command)
+                            } else if (!context.isScreenReaderOn()) {
+                                // The button has buzzed; this says why, for a
+                                // user who isn't looking. A screen reader has
+                                // already read "Needs the internet, locked".
+                                talk(context.getString(R.string.offline_feature_locked, label), VoiceCategory.ANSWERS)
+                            }
+                        },
                     )
                 }
             }
@@ -189,12 +210,18 @@ private fun PhoneCameraNotice() {
  * The button and the panel take the same room, so nothing below moves as they
  * swap. Both are taller than any other button, with larger text: what Home
  * is for should be the easiest thing on it to find and press.
+ *
+ * Offline ([availability]), a feature that needs the internet is a locked
+ * button, with a lock, a dashed outline and "Needs the internet" under its
+ * name; pressed, it buzzes three times. One that does less offline (Describe
+ * the scene) says what it does instead, under its name.
  */
 @Composable
 private fun CaptureControl(
     label: String,
     icon: ImageVector,
     status: CaptureStatus,
+    availability: Availability,
     onClick: () -> Unit,
 ) {
     val working = status != CaptureStatus.IDLE
@@ -209,6 +236,12 @@ private fun CaptureControl(
                     onClick = onClick,
                     textStyle = style,
                     icon = icon,
+                    locked = availability == Availability.LOCKED,
+                    supportingText = when (availability) {
+                        Availability.AVAILABLE -> null
+                        Availability.LIMITED -> stringResource(R.string.offline_describe_limited)
+                        Availability.LOCKED -> stringResource(R.string.offline_locked_reason)
+                    },
                     modifier = Modifier
                         .heightIn(min = CaptureMinHeight)
                         .then(if (working) Modifier.clearAndSetSemantics {} else Modifier),

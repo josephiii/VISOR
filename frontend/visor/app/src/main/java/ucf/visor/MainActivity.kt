@@ -36,7 +36,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import ucf.visor.capture.Availability
 import ucf.visor.capture.ChosenPhotoSource
+import ucf.visor.capture.availability
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.NotifyingPhotoSource
@@ -69,6 +71,7 @@ import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.feedback.Haptics
 import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
+import ucf.visor.ui.labelRes
 import ucf.visor.ui.theme.AppTheme
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -251,12 +254,16 @@ class MainActivity : ComponentActivity() {
         val sessionStore = SessionStore(this)
         sceneDescriber = SceneDescriber(
             photoSource = NotifyingPhotoSource(cameraFor(CameraCommand.DESCRIBE_SCENE)) {
-                speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.STATUS_UPDATES)
+                // Offline, the answer is on-device labels, there in a moment.
+                if (isOnline()) {
+                    speaker.speak(SpokenPhrases.AWAITING_SCENE_DESCRIPTION, VoiceCategory.STATUS_UPDATES)
+                }
             },
             vlm = VlmClient(accessToken = sessionStore::accessToken),
             scope = lifecycleScope,
             fallback = objectDetector,
             verbosity = ::verbosity,
+            isOnline = ::isOnline,
         )
 
         commandRecognizer = CommandRecognizer(this)
@@ -346,6 +353,10 @@ class MainActivity : ComponentActivity() {
      * anyone who can't hear them.
      */
     private fun runCameraFeature(command: CameraCommand) {
+        if (command.availability(isOnline()) == Availability.LOCKED) {
+            refuseOffline(command)
+            return
+        }
         val feature = when (command) {
             CameraCommand.CHECK_HAZARDS -> hazardDetector
             CameraCommand.READ_TEXT -> textReader
@@ -390,6 +401,23 @@ class MainActivity : ComponentActivity() {
             return
         }
         runCameraFeature(command)
+    }
+
+    /** Whether the phone is online right now (network/Connectivity). */
+    private fun isOnline(): Boolean = viewModel.uiState.value.isOnline
+
+    /**
+     * A camera feature that needs the internet, asked for by its wake phrase
+     * or a button on the glasses while the phone is offline: why it can't run,
+     * and what still works, said as a camera command said before logging in
+     * is, with the rejected buzz, and kept at the top of the screen. Home's own
+     * button for it is locked and says so itself (HomeScreen).
+     */
+    private fun refuseOffline(command: CameraCommand) {
+        val problem = getString(R.string.offline_feature_locked, getString(command.labelRes))
+        haptics.rejected()
+        voiceNav.speakGuarded(problem)
+        viewModel.setRecentError(problem)
     }
 
     /** Settings' preview of a sound effect's volume: one of its sounds, at that volume. */

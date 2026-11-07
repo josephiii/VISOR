@@ -2,6 +2,7 @@ package ucf.visor.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -17,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -57,6 +59,9 @@ import ucf.visor.ui.theme.VisorTheme
  *   unless the button is what a screen is for, like Home's camera buttons.
  * @param icon drawn before [text], sized to it, and never in place of it: a
  *   screen reader hears only [text].
+ * @param supportingText a second, smaller line under [text], such as why the
+ *   button is [locked] ("Needs the internet"). Part of the button, so a
+ *   screen reader says it with [text].
  */
 @Composable
 fun VisorButton(
@@ -68,6 +73,7 @@ fun VisorButton(
     busy: Boolean = false,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     icon: ImageVector? = null,
+    supportingText: String? = null,
 ) {
     val lockedDescription = stringResource(R.string.state_locked)
     val haptics = LocalHaptics.current
@@ -137,7 +143,15 @@ fun VisorButton(
                     .size(iconSizeFor(textStyle)),
             )
         }
-        Text(text, style = textStyle, textAlign = TextAlign.Center)
+        if (supportingText == null) {
+            Text(text, style = textStyle, textAlign = TextAlign.Center)
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text, style = textStyle, textAlign = TextAlign.Center)
+                // In the button's own text color, at full contrast like its name.
+                Text(supportingText, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+            }
+        }
     }
 }
 

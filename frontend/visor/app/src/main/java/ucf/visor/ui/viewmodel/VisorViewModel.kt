@@ -22,6 +22,7 @@ import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
+import ucf.visor.network.Connectivity
 import ucf.visor.stt.CameraCommand
 import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.rankForSession
@@ -34,9 +35,25 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val profileStore = ProfileStore(application)
     val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
 
-    private val _uiState =
-        MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
+    private val connectivity = Connectivity(application)
+
+    // Online or not from the start, so a phone that is offline at launch
+    // shows its locked features at once, not after a callback.
+    private val _uiState = MutableStateFlow(
+        VisorUiState(
+            isAuthComplete = sessionStore.isLoggedIn(),
+            isOnline = connectivity.isOnlineNow(),
+        )
+    )
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            connectivity.changes().collect { online ->
+                _uiState.update { it.copy(isOnline = online) }
+            }
+        }
+    }
 
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -310,6 +327,11 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun confirmDeleteAccount() {
         _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
+        // Settings locks the button offline; this is for "delete my account" said aloud.
+        if (!_uiState.value.isOnline) {
+            setRecentError(DELETE_ACCOUNT_OFFLINE)
+            return
+        }
         val token = sessionStore.accessToken()
         if (token.isNullOrBlank()) {
             setRecentError(DELETE_ACCOUNT_LOG_IN_AGAIN)
@@ -514,5 +536,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private companion object {
         const val DELETE_ACCOUNT_LOG_IN_AGAIN =
             "Couldn't delete your account. Please log out, log back in, and try again."
+        const val DELETE_ACCOUNT_OFFLINE =
+            "Deleting your account needs the internet, and you're offline. Your account hasn't changed."
     }
 }
