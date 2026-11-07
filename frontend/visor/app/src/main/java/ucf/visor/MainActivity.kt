@@ -278,6 +278,7 @@ class MainActivity : ComponentActivity() {
             ),
             beeper = thinkingBeeper,
             speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
+            sayAnswer = { text -> speaker.speak(text, VoiceCategory.ANSWERS) },
             isSpeaking = { speaker.isSpeaking() },
             pauseWakeListening = { listener.stop() },
             resumeWakeListening = { if (wantsWakeListening()) listener.start() },

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
@@ -50,6 +53,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -63,12 +67,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
 import ucf.visor.R
 import ucf.visor.capture.Availability
 import ucf.visor.capture.availability
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.VoiceCategory
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingControls
+import ucf.visor.tts.ReadingState
+import ucf.visor.ui.components.ReadingButtons
+import ucf.visor.ui.components.ReadingControlHeight
 import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
@@ -90,10 +99,16 @@ fun HomeScreen(
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
     // Takes a picture with the glasses and answers it for one camera feature (MainActivity).
     onCapture: (CameraCommand) -> Unit = {},
+    // Pause, resume and stop for the last answer, while VISOR reads it (Speaker).
+    reading: ReadingControls? = null,
     modifier: Modifier = Modifier,
 ) {
     val captures by viewModel.captures.collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
+    val readingState by (reading?.reading ?: remember { MutableStateFlow(ReadingState.NONE) })
+        .collectAsStateWithLifecycle()
+    val readingText by (reading?.readingText ?: remember { MutableStateFlow<String?>(null) })
+        .collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -163,7 +178,13 @@ fun HomeScreen(
 
             LastAnswerCard(
                 answer = lastAnswer,
+                // Only a reading of this answer: anything else VISOR reads has
+                // its controls at the bottom of the screen (VisorLayout).
+                playback = if (readingText != null && readingText == lastAnswer?.text) readingState else ReadingState.NONE,
                 onReadAgain = { talk(it, VoiceCategory.ANSWERS) },
+                onPause = { reading?.pause() },
+                onResume = { reading?.resume() },
+                onStop = { reading?.stop() },
             )
         }
     }
@@ -358,20 +379,37 @@ private fun SwapInPlace(
 
 /**
  * What VISOR last answered, in large text that stays on screen, with the time
- * and a Read again button that says it again at the Answers volume. It is
- * there for whatever an answer said that a user didn't hear: a noisy street,
- * hearing loss, or Answers turned down in Settings. A new answer is a polite
- * live region, and the card's border flashes once as it arrives (not with
- * the system's animations off; the new text and time show it then).
+ * and the controls for hearing it. It is there for whatever an answer said
+ * that a user didn't hear: a noisy street, hearing loss, or Answers turned
+ * down in Settings. A new answer is a polite live region, and the card's
+ * border flashes once as it arrives (not with the system's animations off;
+ * the new text and time show it then).
  *
  * Above the answer, which feature gave it ("Read text · 1:09 PM"): five
  * features feed the card, wake phrases among them, and "No text found" means
  * more beside "Read text".
  *
+ * A long answer shows its first lines, and scrolls in place for the rest
+ * ([AnswerText]), so the controls under it stay in the same place, close to
+ * the camera buttons, however long the answer is.
+ *
+ * Under the answer, its controls ([playback]): Read again, which says it again
+ * at the Answers volume; while VISOR reads it, Pause (or Resume) and Stop in
+ * its place, Pause exactly where Read again was. All are the height of the
+ * controls at the bottom of other screens, which this card's take the place
+ * of on Home.
+ *
  * The card is on Home from the start, saying what it is for.
  */
 @Composable
-private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
+private fun LastAnswerCard(
+    answer: LastAnswer?,
+    playback: ReadingState,
+    onReadAgain: (String) -> Unit,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onStop: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     val flash = remember { Animatable(0f) }
@@ -429,16 +467,87 @@ private fun LastAnswerCard(answer: LastAnswer?, onReadAgain: (String) -> Unit) {
                             color = colors.onSurfaceVariant,
                             modifier = Modifier.semantics { contentDescription = spoken },
                         )
-                        Text(answer.text, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
+                        AnswerText(answer.text)
                     }
                 }
             }
         }
         if (answer != null) {
-            SwitchButton(
-                label = stringResource(R.string.home_read_again),
-                onClick = { onReadAgain(answer.text) },
-            )
+            if (playback == ReadingState.NONE) {
+                SwitchButton(
+                    label = stringResource(R.string.home_read_again),
+                    icon = Icons.Filled.PlayArrow,
+                    onClick = { onReadAgain(answer.text) },
+                    textStyle = MaterialTheme.typography.titleMedium,
+                    minHeight = ReadingControlHeight,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                ReadingButtons(
+                    paused = playback == ReadingState.PAUSED,
+                    onPause = onPause,
+                    onResume = onResume,
+                    onStop = onStop,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The text of an answer, at most [AnswerVisibleLines] lines tall: a longer one
+ * scrolls in place, with a scrollbar along its edge. While there is more
+ * below, its last line fades into the card under an ellipsis, so it reads as
+ * cut short rather than finished; scrolled to the end, both go.
+ *
+ * Its height is in lines of its own text, so it grows with Settings' text
+ * size and the system's font size, and always shows the same amount.
+ *
+ * A screen reader reads the whole answer, whatever has been scrolled to, and
+ * not the ellipsis.
+ */
+@Composable
+private fun AnswerText(text: String) {
+    val colors = MaterialTheme.colorScheme
+    val style = MaterialTheme.typography.titleLarge
+    val lineHeight = if (style.lineHeight.isSp) style.lineHeight else style.fontSize * 1.5f
+    val maxHeight = with(LocalDensity.current) { (lineHeight * AnswerVisibleLines).toDp() }
+    val scroll = rememberScrollState()
+
+    Box(modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight)) {
+        Text(
+            text,
+            style = style,
+            color = colors.onSurface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .scrollIndicator(scroll, colors.outline)
+                // Room for the scrollbar, so it never covers a letter.
+                .padding(end = AnswerScrollbarRoom)
+                .verticalScroll(scroll),
+        )
+        if (scroll.canScrollForward) {
+            val fadeHeight = with(LocalDensity.current) { lineHeight.toDp() }
+            Box(
+                contentAlignment = Alignment.BottomEnd,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(end = AnswerScrollbarRoom)
+                    .height(fadeHeight)
+                    .background(Brush.verticalGradient(listOf(colors.surface.copy(alpha = 0f), colors.surface)))
+                    .clearAndSetSemantics {},
+            ) {
+                Text(
+                    "…",
+                    style = style,
+                    fontWeight = FontWeight.Bold,
+                    color = colors.onSurface,
+                    modifier = Modifier
+                        .background(colors.surface)
+                        .padding(start = 8.dp),
+                )
+            }
         }
     }
 }
@@ -453,5 +562,12 @@ private const val SweepMillis = 2_000
 private const val SweepFraction = 0.25f
 private val SweepWidth = 5.dp
 private const val FlashMillis = 900
+
+// Enough of an answer to take in at a glance, and short enough that the
+// card's controls stay near the camera buttons, at any text size.
+private const val AnswerVisibleLines = 6
+
+// The scrollbar's 6dp, its 6dp inset from the edge, and a little air.
+private val AnswerScrollbarRoom = 16.dp
 private const val FreshAnswerMillis = 3_000L
 

@@ -16,12 +16,18 @@ import ucf.visor.tts.ThinkingBeeper
  * working and the Last answer card keeps what it said. [takingPicture] is
  * what it says as it takes the picture, which names the phone's camera when
  * that is the one in use, as every camera feature does.
+ *
+ * [speak] says its prompts ("What's your question?"); [sayAnswer] says the
+ * answer, which is an answer like any other camera feature's: at the Answers
+ * volume, what "repeat that" repeats, and, when it is long, a reading that can
+ * be paused and stopped.
  */
 class SceneQuestionController(
     private val recognizer: CommandRecognizer,
     private val describer: SceneDescriber,
     private val beeper: ThinkingBeeper,
     private val speak: (String) -> Unit,
+    private val sayAnswer: (String) -> Unit,
     private val isSpeaking: () -> Boolean,
     private val pauseWakeListening: () -> Unit,
     private val resumeWakeListening: () -> Unit,
@@ -59,8 +65,12 @@ class SceneQuestionController(
         describer.ask(question) { answer ->
             beeper.stop()
             onAnswered(answer)
-            speak(answer)
-            finish()
+            sayAnswer(answer)
+            // Listening for wake phrases again at once, as it is while any
+            // other camera feature's answer is said, so "VISOR GO, stop"
+            // works on a long answer from its first sentence.
+            busy = false
+            resumeWakeListening()
         }
     }
 

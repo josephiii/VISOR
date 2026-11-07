@@ -18,9 +18,11 @@ import java.util.Locale
  * Says everything VISOR says out loud.
  *
  * A long answer (see [Readings]) is a reading: it can be paused, resumed and
- * stopped ([ReadingControls]), and [reading] says where it is. Anything else
- * said over a reading pauses it rather than throwing it away, so "VISOR GO"
- * ("Listening.") or a status update never loses the user's place.
+ * stopped ([ReadingControls]), and [reading] says where it is. A reply or a
+ * status update said over a reading pauses it rather than throwing it away,
+ * so "VISOR GO" ("Listening.") never loses the user's place. A new answer,
+ * long or short, replaces it: Resume would otherwise bring back an answer
+ * the user has moved on from.
  *
  * @param loudness how loud each kind of speech plays, as a fraction of the
  *   media volume (0 is silent). Read each time something is spoken, so a
@@ -58,6 +60,9 @@ class Speaker(
 
     private val _reading = MutableStateFlow(ReadingState.NONE)
     override val reading: StateFlow<ReadingState> = _reading.asStateFlow()
+
+    private val _readingText = MutableStateFlow<String?>(null)
+    override val readingText: StateFlow<String?> = _readingText.asStateFlow()
 
     // The reading being read or paused: its pieces, the one being said (where
     // resume starts), and its volume, read again as it resumes.
@@ -98,7 +103,8 @@ class Speaker(
      * it says nothing, but still stops whatever VISOR was saying, as any new
      * words would have.
      *
-     * A long answer is a reading, which replaces any reading before it.
+     * A long answer is a reading, which replaces any reading before it. A
+     * short answer ends any reading, too, even a paused one.
      */
     fun speak(text: String, category: VoiceCategory) {
         if (text.isBlank()) return
@@ -106,10 +112,13 @@ class Speaker(
             lastUtterance = Utterance(text, category)
         }
         val volume = { loudness(category) }
-        if (category == VoiceCategory.ANSWERS && Readings.isLong(text)) {
-            whenReady { read(text, volume) }
-        } else {
-            whenReady { say(text, volume()) }
+        when {
+            category != VoiceCategory.ANSWERS -> whenReady { say(text, volume()) }
+            Readings.isLong(text) -> whenReady { read(text, volume) }
+            else -> whenReady {
+                endReading()
+                say(text, volume())
+            }
         }
     }
 
@@ -145,6 +154,8 @@ class Speaker(
         pieces = Readings.pieces(text)
         current = 0
         readingVolume = volume
+        // Before queueReading() says READING: see ReadingControls.readingText.
+        _readingText.value = text
         queueReading()
     }
 
@@ -191,6 +202,7 @@ class Speaker(
         pieces = emptyList()
         current = 0
         _reading.value = ReadingState.NONE
+        _readingText.value = null
     }
 
     override fun pause() {

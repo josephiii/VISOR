@@ -22,6 +22,7 @@ import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingControls
 import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -49,6 +50,7 @@ fun VisorNavHost(
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: (CameraCommand) -> Unit = {},
+    reading: ReadingControls? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -135,6 +137,7 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 talk = talk,
                 onCapture = onCapture,
+                reading = reading,
             )
         }
 

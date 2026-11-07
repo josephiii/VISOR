@@ -100,6 +100,9 @@ fun VisorLayout(
         .collectAsStateWithLifecycle()
     val readingState by (reading?.reading ?: remember { MutableStateFlow(ReadingState.NONE) })
         .collectAsStateWithLifecycle()
+    val readingText by (reading?.readingText ?: remember { MutableStateFlow<String?>(null) })
+        .collectAsStateWithLifecycle()
+    val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
 
     // DEBUG TOOL: Mock Device Kit Debug button
     val bottomSheetState =
@@ -542,11 +545,15 @@ fun VisorLayout(
                 bottomBar = {
                     Column {
                         // While VISOR reads a long answer aloud: Pause (or
-                        // Resume) and Stop, on every screen, above the tabs.
-                        // The navigation bar keeps clear of the system's own;
-                        // without it, the controls do.
+                        // Resume) and Stop, above the tabs. Not on Home while
+                        // it reads the last answer: the Last answer card has
+                        // them, under the answer itself. The navigation bar
+                        // keeps clear of the system's own; without it, the
+                        // controls do.
+                        val inLastAnswerCard = currentRoute == "home" &&
+                            readingText != null && readingText == lastAnswer?.text
                         ReadingControlsBar(
-                            state = readingState,
+                            state = if (inLastAnswerCard) ReadingState.NONE else readingState,
                             onPause = { reading?.pause() },
                             onResume = { reading?.resume() },
                             onStop = { reading?.stop() },
@@ -606,6 +613,7 @@ fun VisorLayout(
                             voiceNav = voiceNav,
                             onRequestWearablesPermission = onRequestWearablesPermission,
                             onCapture = onCapture,
+                            reading = reading,
                         )
                     }
                 }

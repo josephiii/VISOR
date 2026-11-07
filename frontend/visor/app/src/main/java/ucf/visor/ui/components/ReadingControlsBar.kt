@@ -33,16 +33,15 @@ import ucf.visor.ui.theme.VisorTheme
 
 /**
  * Pause (or Resume) and Stop for a long answer VISOR is reading aloud, along
- * the bottom of every screen, just above the navigation bar, from the moment
- * a reading starts until it ends or is stopped. Help's Read aloud, Home's Read
- * again and an answer to a wake phrase can all start one from any screen, so
- * the controls are always in the same place, within reach of a thumb.
+ * the bottom of the screen, just above the navigation bar, from the moment a
+ * reading starts until it ends or is stopped. Help's Read aloud, an answer
+ * to a wake phrase and the like can start one from any screen.
  *
- * Pause and Resume are one button, so a second tap where the first one landed
- * undoes it. Both buttons are as large as Home's other buttons, labeled in
- * words as well as icons, and say what they act on to a screen reader
- * ("Pause reading"). The line above them says whether VISOR is reading or
- * paused.
+ * The answer on Home's Last answer card has these same buttons in the card
+ * itself, under its text, so this bar isn't shown on Home for that one
+ * (VisorLayout): it is for a reading with no card of its own on screen.
+ *
+ * The line above the buttons says whether VISOR is reading or paused.
  *
  * Nothing here is a live region: VISOR is talking whenever this is shown, and
  * a screen reader talking over it would make both hard to follow.
@@ -59,10 +58,6 @@ fun ReadingControlsBar(
     val colors = MaterialTheme.colorScheme
     val paused = state == ReadingState.PAUSED
     val statusStyle = MaterialTheme.typography.titleMedium
-    val buttonStyle = MaterialTheme.typography.titleMedium
-
-    val pauseResumeName = stringResource(if (paused) R.string.reading_resume_named else R.string.reading_pause_named)
-    val stopName = stringResource(R.string.reading_stop_named)
 
     Surface(color = colors.surface, modifier = modifier.fillMaxWidth()) {
         Column {
@@ -90,36 +85,59 @@ fun ReadingControlsBar(
                         color = colors.onSurface,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SwitchButton(
-                        label = stringResource(if (paused) R.string.reading_resume else R.string.reading_pause),
-                        icon = if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                        onClick = if (paused) onResume else onPause,
-                        textStyle = buttonStyle,
-                        minHeight = ControlHeight,
-                        modifier = Modifier
-                            .weight(1f)
-                            .semantics { contentDescription = pauseResumeName },
-                    )
-                    SwitchButton(
-                        label = stringResource(R.string.reading_stop),
-                        icon = Icons.Filled.Stop,
-                        outlined = true,
-                        onClick = onStop,
-                        textStyle = buttonStyle,
-                        minHeight = ControlHeight,
-                        modifier = Modifier
-                            .weight(1f)
-                            .semantics { contentDescription = stopName },
-                    )
-                }
+                ReadingButtons(paused = paused, onPause = onPause, onResume = onResume, onStop = onStop)
             }
         }
     }
 }
 
-// Taller than the usual 56dp: these are pressed in a hurry, often without looking closely.
-private val ControlHeight = 64.dp
+/**
+ * Pause (or Resume, when [paused]) and Stop, side by side: the controls for a
+ * reading wherever they are shown, at the bottom of the screen
+ * ([ReadingControlsBar]) or in Home's Last answer card.
+ *
+ * Pause and Resume are one button, so a second tap where the first one landed
+ * undoes it. Both are labeled in words as well as icons, and say what they act
+ * on to a screen reader ("Pause reading").
+ */
+@Composable
+fun ReadingButtons(
+    paused: Boolean,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val style = MaterialTheme.typography.titleMedium
+    val pauseResumeName = stringResource(if (paused) R.string.reading_resume_named else R.string.reading_pause_named)
+    val stopName = stringResource(R.string.reading_stop_named)
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = modifier.fillMaxWidth()) {
+        SwitchButton(
+            label = stringResource(if (paused) R.string.reading_resume else R.string.reading_pause),
+            icon = if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+            onClick = if (paused) onResume else onPause,
+            textStyle = style,
+            minHeight = ReadingControlHeight,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { contentDescription = pauseResumeName },
+        )
+        SwitchButton(
+            label = stringResource(R.string.reading_stop),
+            icon = Icons.Filled.Stop,
+            outlined = true,
+            onClick = onStop,
+            textStyle = style,
+            minHeight = ReadingControlHeight,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { contentDescription = stopName },
+        )
+    }
+}
+
+/** Taller than the usual 56dp: these are pressed in a hurry, often without looking closely. */
+val ReadingControlHeight = 64.dp
 
 @Preview
 @Composable

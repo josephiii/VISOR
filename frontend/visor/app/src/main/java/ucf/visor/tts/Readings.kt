@@ -16,8 +16,9 @@ enum class ReadingState {
 
     /**
      * A long answer was stopped part way and can carry on from the sentence it
-     * was in: the user paused it, or VISOR said something else over it (such
-     * as "Listening." for "VISOR GO").
+     * was in: the user paused it, or VISOR said something other than an
+     * answer over it (such as "Listening." for "VISOR GO"). A new answer
+     * replaces it instead, so Resume never brings back an old one.
      */
     PAUSED,
 }
@@ -29,6 +30,15 @@ enum class ReadingState {
  */
 interface ReadingControls {
     val reading: StateFlow<ReadingState>
+
+    /**
+     * The whole text of the reading being read or paused, or null when there
+     * is none. Home's Last answer card holds its controls only while this is
+     * the answer it shows. It is set before [reading] says a reading has
+     * started, and cleared after it says one has ended, so the two never
+     * disagree about a reading that is under way.
+     */
+    val readingText: StateFlow<String?>
 
     /** Stops reading where it is, to carry on later with [resume]. */
     fun pause()
