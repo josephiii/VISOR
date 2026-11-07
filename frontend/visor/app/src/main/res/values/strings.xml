@@ -398,10 +398,10 @@
 
     <!-- PHASE 1 -->
     <string name="p1_test_title" description="Phase 1 test title in debug options">Phase 1 Test Environment</string>
-    <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
-    <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
-    <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
-    <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode configuration</string>
+    <string name="p1_test_description" description="Phase 1 test description in debug options">Demo scripts that stand in for each camera feature\'s answer to a photo. They open as a screen in VISOR, with its usual navigation bar.</string>
+    <string name="p1_initiate_button" description="The text for the button that opens the VISOR phase 1 scripts screen">OPEN PHASE 1 SCRIPTS</string>
+    <string name="p1_mode_config_screen_title" description="The title for the Phase 1 scripts screen">Phase 1 scripts</string>
+    <string name="p1_mode_config_description" description="How to use the Phase 1 scripts screen, under its title">Choose a camera feature, then one of its scripts. VISOR says the script as that feature\'s answer, and keeps it on Home\'s Last answer card.</string>
     <string name="p1_script" description="A Phase 1 demo script button: its number, then its whole text"><xliff:g id="number">%1$d</xliff:g>. <xliff:g id="script">%2$s</xliff:g></string>
 
     <!-- Script strings

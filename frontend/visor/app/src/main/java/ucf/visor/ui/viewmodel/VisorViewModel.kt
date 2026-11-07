@@ -245,7 +245,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
                 atHelp = false,
                 atMotionLab = false,
                 isOnboarding = false,
-                isConfiguring = false,
+                atPhase1 = false,
             )
         }
     }
@@ -375,7 +375,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isPairingHardware = false) }
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(goingHome = true) }
-        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
         _uiState.update { it.copy(isAuthComplete = true) }
         sessionStore.setLoggedIn(true)
     }
@@ -384,7 +383,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(isPairingHardware = true) }
-        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
     /** Opens Settings at [section], or at its hub of sections when null (the navigation bar's tab). */
@@ -410,6 +408,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     /** The head-motion lab (Debug menu → Test Suite): MWDAT 1.0 Motion + camera trials. */
     fun motionLab() {
         _uiState.update { it.copy(atMotionLab = true) }
+    }
+
+    /**
+     * Phase 1's demo scripts (Debug menu → Test Suite): each stands in for a
+     * camera feature's answer to a photo. Opened as one more screen in VISOR's
+     * own navigation, so what a tester sees around it is what a user sees.
+     */
+    fun phase1() {
+        _uiState.update { it.copy(atPhase1 = true) }
     }
 
     fun requestLogoutConfirm() {
@@ -502,18 +509,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private fun updateGlassesStatus() {
         val best = deviceSnapshots.values.minByOrNull(::rankForSession)
         _uiState.update { it.copy(glassesStatus = best?.toGlassesStatus()) }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // PHASE 1
-    fun initiatePhase1() {
-        _uiState.update { it.copy(phase1Initiated = true) }
-    }
-
-    fun configure() {
-        _uiState.update { it.copy(isConfiguring = true) }
-        _uiState.update { it.copy(goingHome = false) }
-        _uiState.update { it.copy(atSettings = false) }
     }
 
     private companion object {

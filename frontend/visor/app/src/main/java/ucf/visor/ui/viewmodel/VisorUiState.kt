@@ -41,6 +41,8 @@ data class VisorUiState(
     val atSettings: Boolean = false,
     val atHelp: Boolean = false,
     val atMotionLab: Boolean = false,
+    /** Phase 1's demo scripts (Debug menu → Test Suite), a screen like any other. */
+    val atPhase1: Boolean = false,
     val isOnboarding: Boolean = false,
 
     // Email awaiting verification (set at sign-up, or when login finds it unverified).
@@ -52,10 +54,6 @@ data class VisorUiState(
     val isDeleteAccountConfirmVisible: Boolean = false,
     /** Which part of Settings is open, or null for the Settings hub. */
     val settingsSection: SettingsSection? = null,
-
-    // PHASE 1 States.
-    val phase1Initiated: Boolean = false,
-    val isConfiguring: Boolean = false,
 ) {
     val isRegistered: Boolean =
         registrationState == RegistrationState.REGISTERED ||

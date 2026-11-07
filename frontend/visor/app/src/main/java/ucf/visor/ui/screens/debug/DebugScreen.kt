@@ -146,8 +146,7 @@ fun DebugScreen(
                     buttonText = stringResource(R.string.p1_initiate_button),
                     onClick = {
                         onDismiss()
-                        visorViewModel.initiatePhase1()
-                        visorViewModel.home()
+                        visorViewModel.phase1()
                     },
                 )
 

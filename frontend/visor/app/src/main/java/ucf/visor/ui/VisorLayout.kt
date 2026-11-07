@@ -46,7 +46,6 @@ import ucf.visor.ui.components.isScreenReaderOn
 import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.glasses.glassesNavScreenFor
-import ucf.visor.ui.screens.phase1.Phase1NavigationBar
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
@@ -180,15 +179,11 @@ fun VisorLayout(
 
     // Observe HomeScreen
     LaunchedEffect(uiState.goingHome) {
-        if (uiState.goingHome) { // FIXME: for PHASE 1, remove "&& uiState.isAuthComplete"
+        if (uiState.goingHome) {
             navController.navigate("home") {
                 launchSingleTop = true
-                if (uiState.phase1Initiated) {
-                    popUpTo(0) { inclusive = true }
-                } else {
-                    popUpTo(navController.graph.startDestinationId) { saveState = true }
-                    restoreState = true
-                }
+                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                restoreState = true
             }
             viewModel.onNavigationHandled()
         }
@@ -250,11 +245,11 @@ fun VisorLayout(
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Phase 1 Observers
-
-    LaunchedEffect(uiState.isConfiguring) {
-        if (uiState.isConfiguring) {
+    // Observe Phase1ModeConfigurationScreen (Debug menu → Test Suite). Opened
+    // like the head-motion lab: one more screen in VISOR's own navigation, with
+    // the same navigation bar, so Home's Last answer card is a tap away.
+    LaunchedEffect(uiState.atPhase1) {
+        if (uiState.atPhase1) {
             navController.navigate("p1_test_mode_config") {
                 launchSingleTop = true
                 popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -499,14 +494,8 @@ fun VisorLayout(
                 // that height was added twice: the second time as a blank band
                 // between each screen and the navigation bar.
                 bottomBar = {
-                    // Exactly one bottom bar, never both: initiating Phase 1 (see
-                    // DebugScreen's "P1 Initiate" button) also calls home(), which
-                    // sets navigationBarEnabled.
-                    if (uiState.phase1Initiated) {
-                        // FOR PHASE 1
-                        Phase1NavigationBar(currentRoute, viewModel)
-                    } else if (uiState.navigationBarEnabled) {
-                        // Once the user is fully logged in...
+                    // Once the user is fully logged in...
+                    if (uiState.navigationBarEnabled) {
                         VisorNavigationBar(currentRoute, viewModel)
                     }
                 },
@@ -515,7 +504,7 @@ fun VisorLayout(
                     // The debug menu can hide this button until VISOR restarts.
                     // Small, so it covers less of the screen in demos and tester
                     // sessions.
-                    if (BuildConfig.DEBUG && !uiState.phase1Initiated && !uiState.isDebugButtonHidden) {
+                    if (BuildConfig.DEBUG && !uiState.isDebugButtonHidden) {
                         SmallFloatingActionButton(
                             onClick = { viewModel.showDebugMenu() },
                         ) {
