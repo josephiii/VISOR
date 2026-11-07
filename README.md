@@ -56,6 +56,7 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.
 - The [phone camera fallback](./documentation/research/phone-camera-fallback.md): why VISOR can use the phone's camera, how users choose it, and how to test without glasses.
 - [Offline features](./documentation/developer/offline-features.md): what works without the internet, how locked features are shown and said, and how to test it.
+- [Ambient hazard detection](./documentation/research/ambient-hazard-detection.md): whether VISOR can keep watching for hazards while the user walks, the tools weighed for it, and the design and phased plan for a hazard watch.
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout

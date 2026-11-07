@@ -37,6 +37,7 @@ frontend/visor/local.properties
 **/*.tar.bz2
 backend/**/depth_out.png
 backend/**/yolo_out.jpg
+backend/**/bench_out/
 
 # IMU session data — raw recordings and generated analysis artifacts.
 # Synthetic sessions are reproducible from analysis/make_synthetic.py (fixed seed).

@@ -43,7 +43,7 @@ the app uses the hosted server.
 | `routes/` | HTTP endpoints, one file per feature. `UserRoutes.py` (profile sync) is kept but **not mounted** yet; see the note in it. |
 | `schemas/` | Request bodies (Pydantic). |
 | `services/` | The logic behind each route; `vision_language_models/` holds one class per VLM. |
-| `scripts/` | Try a model without the server: `python -m scripts.try_vlm`, `python -m scripts.try_depth`, `python -m scripts.try_yolo` (hazard detection). |
+| `scripts/` | Try a model without the server: `python -m scripts.try_vlm`, `python -m scripts.try_depth`, `python -m scripts.try_yolo` (hazard detection). `python -m scripts.bench_hazard_watch` times hazard detection and the candidate models for the [hazard watch](../documentation/research/ambient-hazard-detection.md). |
 | `samples/` | Test images for the scripts. |
 | `notebooks/` | Exploratory notebooks (the earlier Qwen2-VL test). |
 | `weights/` | YOLO weights: `yolo11n.pt` is the hazard detector (`services/YoloService.py`); `yolo11_indoor.pt` is kept for planned custom object recognition. |
