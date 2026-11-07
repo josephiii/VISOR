@@ -845,4 +845,5 @@ private fun VoiceCommandKind.titleRes(): Int = when (this) {
     VoiceCommandKind.SETTINGS -> R.string.settings_voice_commands_settings
     VoiceCommandKind.ACCOUNT -> R.string.settings_voice_commands_account
     VoiceCommandKind.ANSWERING -> R.string.settings_voice_commands_answering
+    VoiceCommandKind.READING -> R.string.settings_voice_commands_reading
 }

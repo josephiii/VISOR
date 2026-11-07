@@ -95,6 +95,20 @@ object VoiceCommandParser {
                 "normal text"
             ) -> VoiceCommand.SetTextScale(TextScale.STANDARD)
 
+            // A long answer being read aloud (see VoiceCommand.StopReading).
+            // "Stop" and "continue" alone, or about the reading: "stop session"
+            // and "end session" are not commands any more (RetiredCommandTest).
+            isOnly(text, "stop", "stop it", "be quiet", "quiet", "shush") ||
+                containsAny(text, "stop reading", "stop talking", "stop speaking") ->
+                VoiceCommand.StopReading
+
+            containsWord(text, "pause") -> VoiceCommand.PauseReading
+
+            isOnly(text, "continue", "go on", "play") ||
+                containsWord(text, "resume", "unpause") ||
+                containsAny(text, "keep reading", "keep going", "carry on", "continue reading") ->
+                VoiceCommand.ResumeReading
+
             containsAny(text, "confirm", "okay") || containsWord(
                 text,
                 "yes",
@@ -125,6 +139,10 @@ object VoiceCommandParser {
         else -> null
     }
 
+    /** Whether all that was said is one of [phrases], give or take a full stop. */
+    private fun isOnly(text: String, vararg phrases: String): Boolean =
+        text.trimEnd('.', '!', '?', ' ') in phrases
+
     private fun containsAny(text: String, vararg phrases: String): Boolean =
         phrases.any { text.contains(it) }
 
@@ -149,4 +167,5 @@ enum class VoiceCommandKind(val examples: List<String>) {
     ),
     ACCOUNT(listOf("log out", "delete my account")),
     ANSWERING(listOf("yes", "no", "repeat that")),
+    READING(listOf("stop", "pause", "resume")),
 }

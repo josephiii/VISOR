@@ -5,6 +5,7 @@ import com.meta.wearable.dat.display.views.IconName
 import ucf.visor.capture.Availability
 import ucf.visor.capture.availability
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingState
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -69,8 +70,37 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * methods reach the same destinations. Kept as a pure function (route + state
  * in, screen out) so it needs no Compose/MWDAT session context to reason about
  * or test.
+ *
+ * While VISOR reads a long answer aloud ([reading]), Pause (or Resume) and
+ * Stop come first, as they do along the bottom of the phone's screen
+ * (ReadingControlsBar): the wearer can stop a page of text without reaching
+ * for the phone. The screen's own buttons follow, behind More where they
+ * don't fit, so nothing is out of reach while a reading is paused. Not over
+ * an "Are you sure?", which is answered first.
  */
-fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
+fun glassesNavScreenFor(
+    route: String?,
+    uiState: VisorUiState,
+    reading: ReadingState = ReadingState.NONE,
+): GlassesNavScreen {
+    val screen = navScreenFor(route, uiState)
+    val asking = uiState.isLogoutConfirmVisible || uiState.isDeleteAccountConfirmVisible
+    if (reading == ReadingState.NONE || asking) return screen
+    val paused = reading == ReadingState.PAUSED
+    return screen.copy(
+        title = if (paused) "Paused" else "Reading aloud",
+        items = listOf(
+            if (paused) GlassesNavItem("Resume", IconName.TRIANGLE_RIGHT, VoiceCommand.ResumeReading)
+            else GlassesNavItem("Pause", IconName.TWO_LINES_PARALLEL, VoiceCommand.PauseReading),
+            GlassesNavItem("Stop", IconName.SPEAKER_OFF, VoiceCommand.StopReading, ButtonStyle.SECONDARY),
+        ) + screen.items,
+        // The screen's own status line ("Log in on your phone") still matters.
+        subtitle = screen.subtitle,
+    )
+}
+
+/** The glasses' buttons for [route], with nothing being read aloud. */
+private fun navScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.

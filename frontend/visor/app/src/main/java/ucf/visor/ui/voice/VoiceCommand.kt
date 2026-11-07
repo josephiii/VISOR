@@ -53,5 +53,16 @@ sealed class VoiceCommand {
     object Cancel : VoiceCommand()
     object RepeatLast : VoiceCommand()
 
+    /**
+     * For a long answer VISOR is reading aloud (tts/Readings): "stop" ends it,
+     * "pause" keeps it paused, and "resume" carries on from the start of the
+     * sentence it stopped in. Saying "VISOR GO" over a reading already pauses
+     * it, so the reading is never lost to the "Listening." before these.
+     * Offered on the glasses' display while VISOR reads.
+     */
+    object StopReading : VoiceCommand()
+    object PauseReading : VoiceCommand()
+    object ResumeReading : VoiceCommand()
+
     object Unrecognized : VoiceCommand()
 }

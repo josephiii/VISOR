@@ -206,6 +206,7 @@ class MainActivity : ComponentActivity() {
                             onCapture = ::runCameraFeature,
                             voiceNav = voiceNav,
                             glassesNav = glassesNav,
+                            reading = speaker,
                         )
                     }
                 }

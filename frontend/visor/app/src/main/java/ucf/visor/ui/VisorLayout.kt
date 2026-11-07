@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -44,6 +45,7 @@ import ucf.visor.stt.CameraCommand
 import androidx.compose.ui.unit.dp
 import ucf.visor.ui.components.ConnectivityNotice
 import ucf.visor.ui.components.ErrorBanner
+import ucf.visor.ui.components.ReadingControlsBar
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.components.isScreenReaderOn
 import ucf.visor.ui.feedback.LocalHaptics
@@ -53,6 +55,8 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.VoiceCategory
+import ucf.visor.tts.ReadingControls
+import ucf.visor.tts.ReadingState
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.ui.screens.debug.DebugScreen
@@ -70,7 +74,9 @@ import ucf.visor.ui.voice.VoiceReplies
 //
 // talk says something at its kind's volume (see AudioMix); speakAt, at a given
 // volume, for Settings previews; onCapture takes a picture and answers it for
-// one camera feature (MainActivity).
+// one camera feature (MainActivity). reading pauses, resumes and stops a long
+// answer being read aloud (tts/Readings), from the bar along the bottom of
+// every screen, the glasses, or "VISOR GO, stop".
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -83,6 +89,7 @@ fun VisorLayout(
     onCapture: (CameraCommand) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
+    reading: ReadingControls? = null,
     modifier: Modifier = Modifier,
 ) {
 
@@ -90,6 +97,8 @@ fun VisorLayout(
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val voiceState by (voiceNav?.state ?: remember { MutableStateFlow(VoiceNavState.IDLE) })
+        .collectAsStateWithLifecycle()
+    val readingState by (reading?.reading ?: remember { MutableStateFlow(ReadingState.NONE) })
         .collectAsStateWithLifecycle()
 
     // DEBUG TOOL: Mock Device Kit Debug button
@@ -264,8 +273,8 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState))
+    LaunchedEffect(glassesNav, currentRoute, uiState, readingState) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, readingState))
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -457,6 +466,29 @@ fun VisorLayout(
                 VoiceCommand.RepeatLast -> lastSpoken()?.let { talk(it.text, it.category) }
                     ?: reply("I haven't said anything yet.")
 
+                // "VISOR GO" itself paused the reading ("Listening." was said
+                // over it), so by now a reading being read is a paused one.
+                // Resuming says nothing first: the reading carrying on is the reply.
+                VoiceCommand.StopReading ->
+                    if (reading != null && reading.reading.value != ReadingState.NONE) {
+                        reading.stop()
+                        reply(VoiceReplies.READING_STOPPED)
+                    } else {
+                        reply(VoiceReplies.NOTHING_BEING_READ)
+                    }
+
+                VoiceCommand.PauseReading ->
+                    if (reading != null && reading.reading.value != ReadingState.NONE) {
+                        reading.pause()
+                        reply(VoiceReplies.READING_PAUSED)
+                    } else {
+                        reply(VoiceReplies.NOTHING_BEING_READ)
+                    }
+
+                VoiceCommand.ResumeReading ->
+                    if (reading != null && reading.reading.value == ReadingState.PAUSED) reading.resume()
+                    else reply(VoiceReplies.NOTHING_TO_RESUME)
+
                 VoiceCommand.Unrecognized -> Unit // already told the user via VoiceNavigationController
             }
         }
@@ -508,9 +540,22 @@ fun VisorLayout(
                 // that height was added twice: the second time as a blank band
                 // between each screen and the navigation bar.
                 bottomBar = {
-                    // Once the user is fully logged in...
-                    if (uiState.navigationBarEnabled) {
-                        VisorNavigationBar(currentRoute, viewModel)
+                    Column {
+                        // While VISOR reads a long answer aloud: Pause (or
+                        // Resume) and Stop, on every screen, above the tabs.
+                        // The navigation bar keeps clear of the system's own;
+                        // without it, the controls do.
+                        ReadingControlsBar(
+                            state = readingState,
+                            onPause = { reading?.pause() },
+                            onResume = { reading?.resume() },
+                            onStop = { reading?.stop() },
+                            modifier = if (uiState.navigationBarEnabled) Modifier else Modifier.navigationBarsPadding(),
+                        )
+                        // Once the user is fully logged in...
+                        if (uiState.navigationBarEnabled) {
+                            VisorNavigationBar(currentRoute, viewModel)
+                        }
                     }
                 },
                 floatingActionButton = {

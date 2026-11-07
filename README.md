@@ -85,7 +85,7 @@ VISOR/
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. Also `Connectivity`, which says whether the phone is online. Offline, `capture/Availability` locks the features that need the server (see [Offline features](./documentation/developer/offline-features.md)). |
 | `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). |
 | `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
-| `tts/` | Speaking: `Speaker`, the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). |
+| `tts/` | Speaking: `Speaker`, the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). `Readings` reads a long answer a sentence at a time, so it can be paused, resumed and stopped (`ui/components/ReadingControlsBar`, "VISOR GO, stop", and the glasses). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |

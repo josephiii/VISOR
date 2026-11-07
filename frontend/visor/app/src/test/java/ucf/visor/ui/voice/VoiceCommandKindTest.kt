@@ -57,5 +57,9 @@ class VoiceCommandKindTest {
         VoiceCommandKind.ANSWERING -> this == VoiceCommand.Confirm ||
             this == VoiceCommand.Cancel ||
             this == VoiceCommand.RepeatLast
+
+        VoiceCommandKind.READING -> this == VoiceCommand.StopReading ||
+            this == VoiceCommand.PauseReading ||
+            this == VoiceCommand.ResumeReading
     }
 }

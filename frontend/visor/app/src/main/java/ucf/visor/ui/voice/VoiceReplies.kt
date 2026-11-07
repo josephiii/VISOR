@@ -24,6 +24,10 @@ object VoiceReplies {
     const val CANCELLED = "Cancelled."
     const val NOTHING_TO_CONFIRM = "There's nothing to confirm right now."
     const val NOTHING_TO_CANCEL = "There's nothing to cancel right now."
+    const val READING_STOPPED = "Stopped."
+    const val READING_PAUSED = "Paused."
+    const val NOTHING_BEING_READ = "I'm not reading anything right now."
+    const val NOTHING_TO_RESUME = "There's nothing to resume."
 
     fun settingsSection(section: SettingsSection): String = when (section) {
         SettingsSection.ABOUT_YOU -> "About you settings."

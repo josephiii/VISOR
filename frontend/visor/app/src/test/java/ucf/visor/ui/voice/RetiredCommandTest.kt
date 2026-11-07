@@ -22,10 +22,11 @@ class RetiredCommandTest {
             "start session", "start a session", "begin session", "Start Session",
             "end session", "stop session", "end the session", "how do sessions work",
             // Only ever replied that they did nothing
-            "resend code", "resend the code", "send code again", "next", "skip", "continue",
-            // Bare "start" and "stop" used to start and end a session. "Stop"
-            // is what anyone says to make speech stop.
-            "start", "stop", "Stop",
+            "resend code", "resend the code", "send code again", "next", "skip",
+            // Bare "start" used to start a session. ("Stop" and "continue" are
+            // commands again, for a long answer being read aloud: see
+            // ReadingCommandTest.)
+            "start",
         ).forEach { phrase ->
             assertEquals(phrase, VoiceCommand.Unrecognized, VoiceCommandParser.parse(phrase))
         }
