@@ -20,6 +20,7 @@ object VoiceReplies {
     const val LOG_IN = "Log in."
     const val SIGN_UP = "Sign up."
     const val FORGOT_PASSWORD = "Forgot password."
+    const val ALREADY_LOGGED_IN = "You're already logged in. To log out, say \"log out\"."
     const val CANCELLED = "Cancelled."
     const val NOTHING_TO_CONFIRM = "There's nothing to confirm right now."
     const val NOTHING_TO_CANCEL = "There's nothing to cancel right now."

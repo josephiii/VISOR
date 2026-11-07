@@ -156,9 +156,6 @@
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
-    <!-- VISOR's reply to "VISOR GO, hazard mode" and the like: VISOR has no modes, so it says how to ask directly -->
-    <string name="mode_not_needed" description="Reply to an old mode command. First placeholder: a wake phrase; second: a Home button's name">Just say \"<xliff:g id="phrase">%1$s</xliff:g>\", or press <xliff:g id="button">%2$s</xliff:g> on Home.</string>
-    <string name="mode_not_needed_phrase_off" description="Reply to an old mode command when that wake phrase is off in Settings. The placeholder is a Home button's name">Press <xliff:g id="button">%1$s</xliff:g> on Home.</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
     <string name="settings_voice_navigation_examples_title" description="Heading over the list of voice navigation commands">What you can say after \"VISOR GO\"</string>

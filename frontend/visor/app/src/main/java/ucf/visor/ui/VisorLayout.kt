@@ -39,7 +39,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
-import ucf.visor.R
 import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.components.ErrorBanner
 import ucf.visor.ui.components.VisorNavigationBar
@@ -335,45 +334,39 @@ fun VisorLayout(
                     if (navController.popBackStack()) announce(VoiceReplies.BACK)
                     else reply("There's nowhere to go back to.")
 
-                VoiceCommand.SessionNotNeeded ->
-                    if (uiState.isAuthComplete) reply(SpokenPhrases.NO_SESSION_NEEDED)
-                    else reply("Log in first to use VISOR.")
-
-                // "Hazard mode": how to ask for it now. Its wake phrase only
-                // if Settings hasn't turned that off; Home's button always.
-                is VoiceCommand.ModeNotNeeded -> {
-                    val button = context.getString(command.command.labelRes)
-                    reply(
-                        when {
-                            !uiState.isAuthComplete -> "Log in first to use VISOR."
-                            command.command in profile.cameraCommands ->
-                                context.getString(R.string.mode_not_needed, command.command.suggested, button)
-                            else -> context.getString(R.string.mode_not_needed_phrase_off, button)
-                        }
-                    )
-                }
-
                 // From the glasses: one of Home's camera buttons, from wherever
                 // the phone is. The answer is said, and kept on Home's Last answer card.
                 is VoiceCommand.RunCamera ->
                     if (uiState.isAuthComplete) onCapture(command.command)
                     else reply("Log in first to take a picture.")
 
-                VoiceCommand.GoToLogin -> {
-                    viewModel.login()
-                    announce(VoiceReplies.LOG_IN)
-                }
+                // Before login only, as their buttons are. viewModel.login()
+                // also ends the saved login, so once logged in "log in" (or a
+                // misheard "logging") would log the user out with no "Are you
+                // sure?". Logging out is "log out", which asks first.
+                VoiceCommand.GoToLogin ->
+                    if (uiState.isAuthComplete) {
+                        reply(VoiceReplies.ALREADY_LOGGED_IN)
+                    } else {
+                        viewModel.login()
+                        announce(VoiceReplies.LOG_IN)
+                    }
 
-                VoiceCommand.GoToSignUp -> {
-                    viewModel.signUp()
-                    announce(VoiceReplies.SIGN_UP)
-                }
+                VoiceCommand.GoToSignUp ->
+                    if (uiState.isAuthComplete) {
+                        reply(VoiceReplies.ALREADY_LOGGED_IN)
+                    } else {
+                        viewModel.signUp()
+                        announce(VoiceReplies.SIGN_UP)
+                    }
 
-                VoiceCommand.GoToForgotPassword -> {
-                    viewModel.forgotPassword()
-                    announce(VoiceReplies.FORGOT_PASSWORD)
-                }
-                VoiceCommand.ResendCode -> reply("Resend code isn't available yet.")
+                VoiceCommand.GoToForgotPassword ->
+                    if (uiState.isAuthComplete) {
+                        reply(VoiceReplies.ALREADY_LOGGED_IN)
+                    } else {
+                        viewModel.forgotPassword()
+                        announce(VoiceReplies.FORGOT_PASSWORD)
+                    }
 
                 VoiceCommand.LogOut ->
                     if (uiState.isAuthComplete) viewModel.requestLogoutConfirm()
@@ -454,10 +447,10 @@ fun VisorLayout(
                     else -> reply(VoiceReplies.NOTHING_TO_CANCEL)
                 }
 
-                // "Next"/"repeat" only mean something inside the onboarding wizard's
-                // own voice-first flow, which listens directly (no "VISOR GO" needed)
-                // and doesn't go through this dispatcher — see ProfileCreationScreen.
-                VoiceCommand.Next -> reply("There's nothing to move to next here.")
+                // "Next" and "skip" are not commands here: they only mean
+                // something inside the onboarding wizard's own voice-first flow,
+                // which listens directly (no "VISOR GO" needed) and doesn't go
+                // through this dispatcher — see ProfileCreationScreen.
                 // Said again as the kind of speech it was, at that kind's volume.
                 VoiceCommand.RepeatLast -> lastSpoken()?.let { talk(it.text, it.category) }
                     ?: reply("I haven't said anything yet.")

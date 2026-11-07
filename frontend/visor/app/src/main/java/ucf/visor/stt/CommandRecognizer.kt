@@ -13,7 +13,7 @@ import android.util.Log
  *
  * This is the "what did they say" half of voice navigation: [Listener] only spots a
  * handful of fixed wake phrases baked into a tiny on-device model, so it can't
- * understand arbitrary commands like "open settings" or "hazard mode". Once a wake
+ * understand arbitrary commands like "open settings" or "go home". Once a wake
  * phrase hands off here, this class listens for a single utterance, with no fixed
  * vocabulary, and returns the recognized text (or null on error/timeout/silence)
  * for a caller to interpret.

@@ -4,7 +4,6 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
-import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -40,16 +39,9 @@ object VoiceCommandParser {
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
-            // "Start session", "end the session"... Bare "start" and "stop" are
-            // no longer taken: "stop" is what anyone says to make speech stop.
-            containsWord(text, "session", "sessions") -> VoiceCommand.SessionNotNeeded
-
-            // What used to pick a mode ("hazard mode"): answered with how to ask
-            // for that feature directly, never with a picture.
-            containsAny(text, "hazard") -> VoiceCommand.ModeNotNeeded(CameraCommand.CHECK_HAZARDS)
-            containsAny(text, "scene") -> VoiceCommand.ModeNotNeeded(CameraCommand.DESCRIBE_SCENE)
-            containsAny(text, "reader", "reading") -> VoiceCommand.ModeNotNeeded(CameraCommand.READ_TEXT)
-            containsAny(text, "identify", "object") -> VoiceCommand.ModeNotNeeded(CameraCommand.IDENTIFY_OBJECTS)
+            // Nothing here takes a picture or picks a "mode" ("hazard mode"):
+            // VISOR has no modes or sessions any more. Pictures come from the
+            // camera wake phrases ("VISOR, read this") and Home's buttons.
 
             containsAny(
                 text,
@@ -65,13 +57,6 @@ object VoiceCommandParser {
                 "forgot password",
                 "forgot my password"
             ) -> VoiceCommand.GoToForgotPassword
-
-            containsAny(
-                text,
-                "resend code",
-                "resend the code",
-                "send code again"
-            ) -> VoiceCommand.ResendCode
 
             containsAny(text, "log out", "sign out", "logout") -> VoiceCommand.LogOut
             containsAny(text, "delete my account", "delete account") -> VoiceCommand.DeleteAccount
@@ -119,7 +104,6 @@ object VoiceCommandParser {
             containsAny(text, "cancel", "never mind", "nevermind") || containsWord(text, "no") ->
                 VoiceCommand.Cancel
 
-            containsAny(text, "continue", "skip") || containsWord(text, "next") -> VoiceCommand.Next
             containsAny(text, "say that again", "what did you say") || containsWord(
                 text,
                 "repeat"
@@ -158,8 +142,8 @@ enum class VoiceCommandKind(val examples: List<String>) {
     GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
     SETTINGS(
         listOf(
-            "faster", "slower", "normal speed", "brief", "detailed",
-            "large text", "extra large text", "high contrast",
+            "faster", "slower", "normal speed", "brief", "detailed", "standard detail",
+            "large text", "extra large text", "normal text", "high contrast",
             "use my phone camera", "use my glasses camera",
         )
     ),

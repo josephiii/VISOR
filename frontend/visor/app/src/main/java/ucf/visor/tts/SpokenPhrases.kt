@@ -112,12 +112,4 @@ object SpokenPhrases {
             else -> Side.AHEAD
         }
     }
-
-    /**
-     * The reply to "VISOR GO, start session" (or "end session"). VISOR used to
-     * need a session started before its camera features worked; now they
-     * always do, and this says so to anyone still in that habit.
-     */
-    const val NO_SESSION_NEEDED =
-        "VISOR is always ready. Just say \"VISOR, read this\", or press a button on Home."
 }

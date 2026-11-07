@@ -1,7 +1,10 @@
 package ucf.visor.ui.voice
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ucf.visor.data.TextScale
+import ucf.visor.data.Verbosity
 
 /**
  * Settings lists what can be said after "VISOR GO". Every phrase it lists must
@@ -20,6 +23,16 @@ class VoiceCommandKindTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun settingsCanBeSetBackToStandardFromWhatIsListed() {
+        // "Brief" and "large text" are listed, so the way back must be too.
+        val listed = VoiceCommandKind.SETTINGS.examples.map(VoiceCommandParser::parse)
+        assertTrue(VoiceCommand.SetVerbosity(Verbosity.STANDARD) in listed)
+        assertTrue(VoiceCommand.SetTextScale(TextScale.STANDARD) in listed)
+        assertEquals(VoiceCommand.SetVerbosity(Verbosity.STANDARD), VoiceCommandParser.parse("standard detail"))
+        assertEquals(VoiceCommand.SetTextScale(TextScale.STANDARD), VoiceCommandParser.parse("normal text"))
     }
 
     private fun VoiceCommand.isOfKind(kind: VoiceCommandKind): Boolean = when (kind) {
