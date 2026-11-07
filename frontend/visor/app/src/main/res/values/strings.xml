@@ -214,7 +214,7 @@
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
     <string name="help_reading_title" description="Help topic title">Pausing or stopping a long answer</string>
-    <string name="help_reading_body" description="Help topic">While VISOR reads a long answer aloud, such as a page of text, Pause and Stop buttons show under the answer in Home\'s Last answer card, where Read again is. On other screens, they show at the bottom, just above the tabs. Pause stops where VISOR is, and the same button, now Resume, carries on from the start of that sentence. Stop ends the answer, and Read again starts it from the beginning. A long answer in the card shows its first few lines: scroll the card for the rest.\n\nBy voice, say \"VISOR GO\": VISOR pauses to listen. Then say \"stop\", \"pause\", or \"resume\". With your glasses connected, their display shows Pause or Resume, and Stop, while VISOR reads.</string>
+    <string name="help_reading_body" description="Help topic">While VISOR reads a long answer aloud, such as a page of text, Pause and Stop buttons show under the answer in Home\'s Last answer card, where Read again is. On other screens, they show at the bottom, just above the tabs. Pause stops where VISOR is, and the same button, now Resume, carries on from the start of that sentence. Stop ends the answer, and Read again starts it from the beginning. A long answer in the card shows its first few lines: scroll the card for the rest, or press the three dots at the end to show it all.\n\nBy voice, say \"VISOR GO\": VISOR pauses to listen. Then say \"stop\", \"pause\", or \"resume\". With your glasses connected, their display shows Pause or Resume, and Stop, while VISOR reads.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
@@ -236,10 +236,10 @@
     <string name="home_last_answer_from_spoken" description="What a screen reader says for which camera feature gave the last answer, and when">"<xliff:g id="feature">%1$s</xliff:g>, <xliff:g id="time">%2$s</xliff:g>"</string>
     <string name="home_last_answer_empty" description="The Last answer card before VISOR has answered anything">When VISOR answers, its answer stays here too, to read or hear again.</string>
     <string name="home_read_again" description="Says the last answer again">Read again</string>
+    <string name="home_answer_show_all_named" description="Screen reader name of the ellipsis at the end of a long answer on Home, which shows all of it">Show the whole answer</string>
+    <string name="home_answer_show_less" description="Under a long answer on Home shown in full: shows only its first lines again">Show less</string>
 
     <!-- Reading controls: along the bottom of every screen while VISOR reads a long answer aloud -->
-    <string name="reading_status_reading" description="Above the reading controls while VISOR reads a long answer aloud">Reading aloud</string>
-    <string name="reading_status_paused" description="Above the reading controls while a long answer is paused">Paused</string>
     <string name="reading_pause" description="Pauses the long answer VISOR is reading aloud">Pause</string>
     <string name="reading_resume" description="Carries on reading a paused answer from the start of its sentence">Resume</string>
     <string name="reading_stop" description="Stops reading the long answer aloud">Stop</string>

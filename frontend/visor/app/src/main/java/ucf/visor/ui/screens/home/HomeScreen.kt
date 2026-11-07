@@ -92,6 +92,19 @@ import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
 import ucf.visor.ui.viewmodel.VisorViewModel
 import java.util.Date
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.Role
+import ucf.visor.ui.feedback.LocalHaptics
+import ucf.visor.ui.feedback.PressedBorderWidth
+import ucf.visor.ui.feedback.controlFeedback
+import ucf.visor.ui.feedback.controlState
+import ucf.visor.ui.theme.VisorTheme
 
 @Composable
 fun HomeScreen(
@@ -497,14 +510,18 @@ private fun LastAnswerCard(
 /**
  * The text of an answer, at most [AnswerVisibleLines] lines tall: a longer one
  * scrolls in place, with a scrollbar along its edge. While there is more
- * below, its last line fades into the card under an ellipsis, so it reads as
- * cut short rather than finished; scrolled to the end, both go.
+ * below, its last line fades into the card under an ellipsis button, so it
+ * reads as cut short rather than finished; scrolled to the end, both go.
+ *
+ * Pressed, the ellipsis shows the whole answer at once, the card growing to
+ * fit it and Home scrolling as it always does, with Show less under it to go
+ * back. Each new answer starts short again.
  *
  * Its height is in lines of its own text, so it grows with Settings' text
  * size and the system's font size, and always shows the same amount.
  *
  * A screen reader reads the whole answer, whatever has been scrolled to, and
- * not the ellipsis.
+ * names the ellipsis "Show the whole answer".
  */
 @Composable
 private fun AnswerText(text: String) {
@@ -513,6 +530,23 @@ private fun AnswerText(text: String) {
     val lineHeight = if (style.lineHeight.isSp) style.lineHeight else style.fontSize * 1.5f
     val maxHeight = with(LocalDensity.current) { (lineHeight * AnswerVisibleLines).toDp() }
     val scroll = rememberScrollState()
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    if (expanded) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(text, style = style, color = colors.onSurface)
+            AnswerSizeButton(
+                text = stringResource(R.string.home_answer_show_less),
+                name = null,
+                onClick = { expanded = false },
+                modifier = Modifier.align(Alignment.End),
+            )
+        }
+        return
+    }
 
     Box(modifier = Modifier.fillMaxWidth().heightIn(max = maxHeight)) {
         Text(
@@ -529,7 +563,6 @@ private fun AnswerText(text: String) {
         if (scroll.canScrollForward) {
             val fadeHeight = with(LocalDensity.current) { lineHeight.toDp() }
             Box(
-                contentAlignment = Alignment.BottomEnd,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
@@ -537,18 +570,62 @@ private fun AnswerText(text: String) {
                     .height(fadeHeight)
                     .background(Brush.verticalGradient(listOf(colors.surface.copy(alpha = 0f), colors.surface)))
                     .clearAndSetSemantics {},
-            ) {
-                Text(
-                    "…",
-                    style = style,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onSurface,
-                    modifier = Modifier
-                        .background(colors.surface)
-                        .padding(start = 8.dp),
-                )
-            }
+            )
+            AnswerSizeButton(
+                text = "…",
+                name = stringResource(R.string.home_answer_show_all_named),
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = AnswerScrollbarRoom),
+            )
         }
+    }
+}
+
+/**
+ * The ellipsis that shows a whole answer, and Show less that shortens it
+ * again: small outlined buttons, at least 48dp each way, pressed and focused
+ * like every other VISOR control. [name] is what a screen reader says in
+ * place of [text], for the ellipsis.
+ */
+@Composable
+private fun AnswerSizeButton(
+    text: String,
+    name: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    val haptics = LocalHaptics.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val state = interactionSource.controlState()
+    val fill = if (state.pressed) colors.onSurface else colors.surface
+    val ink = if (state.pressed) colors.surface else colors.onSurface
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .controlFeedback(state, VisorShapes.Control, VisorTheme.focusRing)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+            .background(fill, VisorShapes.Control)
+            .border(
+                if (state.pressed) PressedBorderWidth else 2.dp,
+                colors.outline,
+                VisorShapes.Control,
+            )
+            .clickable(interactionSource = interactionSource, indication = null, role = Role.Button) {
+                haptics?.tick()
+                onClick()
+            }
+            .then(if (name != null) Modifier.semantics { contentDescription = name } else Modifier)
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = ink,
+        )
     }
 }
 
