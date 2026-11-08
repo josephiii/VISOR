@@ -1,18 +1,28 @@
 package ucf.visor.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import ucf.visor.R
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingControls
 import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -40,6 +50,7 @@ fun VisorNavHost(
     voiceNav: VoiceNavigationController? = null,
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: (CameraCommand) -> Unit = {},
+    reading: ReadingControls? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -51,7 +62,7 @@ fun VisorNavHost(
         startDestination = viewModel.startDestination
     ) {
 
-        composable("title") {
+        screen("title", R.string.app_name) {
             TitleScreen(
                 viewModel = viewModel,
                 onLoginClick = { viewModel.login() },
@@ -59,7 +70,7 @@ fun VisorNavHost(
             )
         }
 
-        composable("login") {
+        screen("login", R.string.login_title) {
             LoginScreen(
                 viewModel = viewModel,
                 talk = talk,
@@ -71,7 +82,7 @@ fun VisorNavHost(
             )
         }
 
-        composable("sign_up") {
+        screen("sign_up", R.string.sign_up_title) {
             SignUpScreen(
                 viewModel = viewModel,
                 talk = talk,
@@ -82,7 +93,7 @@ fun VisorNavHost(
             )
         }
 
-        composable("forgot_password") {
+        screen("forgot_password", R.string.forgot_password_title) {
             ForgotPasswordScreen(
                 viewModel = viewModel,
                 onSendCodeClick = { viewModel.enterCode() },
@@ -90,21 +101,21 @@ fun VisorNavHost(
             )
         }
 
-        composable("verify_account") {
+        screen("verify_account", R.string.verify_account_title) {
             VerifyAccountScreen(
                 viewModel = viewModel,
                 onSendCodeClick = { viewModel.enterCode() }
             )
         }
 
-        composable("reset_password") {
+        screen("reset_password", R.string.reset_password_title) {
             ResetPasswordScreen(
                 viewModel = viewModel,
                 onSaveNewPassword = { viewModel.login() }
             )
         }
 
-        composable("enter_code") {
+        screen("enter_code", R.string.enter_code_title) {
             // enter_code is reached from verify_account (email verification) or
             // forgot_password; only the former checks the code with the backend.
             val fromVerify = remember {
@@ -121,22 +132,23 @@ fun VisorNavHost(
             )
         }
 
-        composable("home") {
+        screen("home", R.string.home_screen_title) {
             HomeScreen(
                 viewModel = viewModel,
                 talk = talk,
                 onCapture = onCapture,
+                reading = reading,
             )
         }
 
-        composable("hardware_pairing") {
+        screen("hardware_pairing", R.string.hardware_pairing_title) {
             HardwarePairingScreen(
                 viewModel = viewModel,
                 talk = talk,
             );
         }
 
-        composable("settings") {
+        screen("settings", R.string.settings_title) {
             SettingsScreen(
                 viewModel = viewModel,
                 talk = talk,
@@ -149,7 +161,7 @@ fun VisorNavHost(
             );
         }
 
-        composable("motion_lab") {
+        screen("motion_lab", R.string.motion_lab_title) {
             MotionLabScreen(
                 wearablesReady = uiState.canRegister,
                 // The lab's spoken cues are part of its research protocol, like
@@ -161,7 +173,7 @@ fun VisorNavHost(
             )
         }
 
-        composable("help") {
+        screen("help", R.string.help_title) {
             HelpScreen(
                 talk = talk,
                 // Back to Settings, which Help belongs to (its tab stays
@@ -173,7 +185,7 @@ fun VisorNavHost(
             )
         }
 
-        composable("onboarding") {
+        screen("onboarding", R.string.onboarding_title) {
             ProfileFlowHost(
                 viewModel = viewModel,
                 speak = talk,
@@ -184,11 +196,32 @@ fun VisorNavHost(
 
         ///////////////////////////////////////////////////////////////////////
         // PHASE 1
-        composable("p1_test_mode_config") {
+        screen("p1_test_mode_config", R.string.p1_mode_config_screen_title) {
             Phase1ModeConfigurationScreen(
                 viewModel = viewModel,
                 talk = talk
             )
         }
+    }
+}
+
+/**
+ * One of VISOR's screens at [route], named [title] for accessibility services:
+ * a screen reader such as TalkBack says the name as the screen appears, so a
+ * user knows where they are, however they got there (a tap, a voice command,
+ * or a button on the glasses).
+ */
+private fun NavGraphBuilder.screen(
+    route: String,
+    @StringRes title: Int,
+    content: @Composable () -> Unit,
+) = composable(route) {
+    val name = stringResource(title)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics { paneTitle = name },
+    ) {
+        content()
     }
 }

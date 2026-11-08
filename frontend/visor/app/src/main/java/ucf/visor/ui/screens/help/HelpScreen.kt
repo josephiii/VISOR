@@ -34,7 +34,9 @@ private val helpTopics = listOf(
     HelpTopic(R.string.help_pairing_title, R.string.help_pairing_body),
     HelpTopic(R.string.help_voice_launch_title, R.string.help_voice_launch_body),
     HelpTopic(R.string.help_camera_title, R.string.help_camera_body),
+    HelpTopic(R.string.help_offline_title, R.string.help_offline_body),
     HelpTopic(R.string.help_voice_nav_title, R.string.help_voice_nav_body),
+    HelpTopic(R.string.help_reading_title, R.string.help_reading_body),
     HelpTopic(R.string.help_profile_title, R.string.help_profile_body),
     HelpTopic(R.string.help_personalize_title, R.string.help_personalize_body),
 )
@@ -89,7 +91,7 @@ fun HelpScreen(
                     outlined = true,
                     icon = Icons.AutoMirrored.Filled.VolumeUp,
                     onClick = { talk("$title. $body", VoiceCategory.ANSWERS) },
-                    // Seven buttons say "Read aloud"; each is named for its topic.
+                    // Nine buttons say "Read aloud"; each is named for its topic.
                     modifier = Modifier.semantics { contentDescription = readAloudName },
                 )
             }

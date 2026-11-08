@@ -43,6 +43,10 @@ import ucf.visor.ui.theme.VisorTheme
  * @param enabled false while the action can't be taken. It is then drawn with
  *   a dashed outline, as a locked control is, rather than faded, so its label
  *   stays readable.
+ * @param showLabel false to show [icon] alone, half as large again, where
+ *   the label would wrap and the symbol says as much (Play, Pause, Stop).
+ *   Name the button in words for a screen reader then, with a
+ *   contentDescription on [modifier]: [label] is not shown or read.
  */
 @Composable
 fun SwitchButton(
@@ -55,6 +59,7 @@ fun SwitchButton(
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     minHeight: Dp = 56.dp,
     enabled: Boolean = true,
+    showLabel: Boolean = true,
 ) {
     val haptics = LocalHaptics.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -104,18 +109,29 @@ fun SwitchButton(
             disabledContentColor = colors.onSurfaceVariant,
         ),
     ) {
+        if (icon != null && !showLabel) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(iconSizeFor(style) * 1.5f),
+            )
+            return@Button
+        }
         if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier
-                    .padding(end = 10.dp)
+                    .padding(end = SwitchButtonIconGap)
                     .size(iconSizeFor(style)),
             )
         }
         Text(label, style = style, textAlign = TextAlign.Center)
     }
 }
+
+/** Between a [SwitchButton]'s icon and its label. */
+internal val SwitchButtonIconGap = 10.dp
 
 @Preview
 @Composable

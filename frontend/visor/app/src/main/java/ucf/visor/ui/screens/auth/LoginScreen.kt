@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.data.VoiceCategory
@@ -76,10 +77,17 @@ fun LoginScreen(
     // What went wrong with the request itself, such as no connection.
     var requestError by remember { mutableStateOf<Int?>(null) }
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Offline, Log in is locked, and pressing it says why (network/Connectivity).
+    val offline = !uiState.isOnline && !isLoading
 
     fun logIn() {
         if (isLoading) return
         requestError = null
+        if (offline) {
+            requestError = R.string.auth_error_offline_log_in
+            return
+        }
         fieldErrors = checkLogin(email, password)
         if (fieldErrors.any) {
             // Checked before the request, not after a wait for the server. The
@@ -174,6 +182,8 @@ fun LoginScreen(
                     text = stringResource(if (isLoading) R.string.login_busy else R.string.login_title),
                     width = 1f,
                     busy = isLoading,
+                    locked = offline,
+                    supportingText = if (offline) stringResource(R.string.offline_locked_reason) else null,
                     onClick = { logIn() },
                 )
                 ErrorMessage(

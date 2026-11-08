@@ -18,6 +18,21 @@
     <string name="switch_state_on" description="Visible state of an on/off setting that is on">ON</string>
     <string name="switch_state_off" description="Visible state of an on/off setting that is off">OFF</string>
 
+    <!-- Offline (network/Connectivity, capture/Availability). Shown at the top of every screen
+         while the phone is offline, starting with a word in bold so it never rests on its icon alone. -->
+    <string name="offline_notice_label" description="Bold first word of the notice shown while the phone is offline">Offline.</string>
+    <string name="offline_notice_body" description="Rest of the notice shown while the phone is offline">Features that need the internet are locked until you reconnect.</string>
+    <string name="offline_notice_spoken" description="Said aloud as the phone goes offline">You\'re offline. Features that need the internet are locked until you reconnect.</string>
+    <string name="online_again_label" description="Bold first words of the notice shown for a few seconds once the phone is back online">Back online.</string>
+    <string name="online_again_body" description="Rest of the notice shown for a few seconds once the phone is back online">Every feature is available again.</string>
+    <string name="online_again_spoken" description="Said aloud as the phone comes back online">Back online. Every feature is available again.</string>
+    <!-- Under the name of a button that is locked while offline -->
+    <string name="offline_locked_reason" description="Second line of a button locked while offline">Needs the internet</string>
+    <!-- Under Describe the scene while offline, when it names objects with the phone instead -->
+    <string name="offline_describe_limited" description="Second line of the Describe the scene button while offline">Offline: names objects only</string>
+    <!-- Said, and shown at the top of the screen, when a locked camera feature is asked for. The placeholder is the feature's name. -->
+    <string name="offline_feature_locked" description="A camera feature that needs the internet was asked for while offline">"<xliff:g id="feature">%1$s</xliff:g> needs the internet, and you\'re offline. Read text and Identify objects still work."</string>
+
     <!-- Title Screen -->
     <string name="title_welcome" description="Under the VISOR banner on the first screen">Welcome. Log in or sign up to get started.</string>
     <string name="title_voice_hint" description="Under the Log in and Sign up buttons on the first screen, while voice navigation is on">Say \"VISOR GO\" any time, then say a command, such as \"log in\" or \"sign up\".</string>
@@ -25,6 +40,8 @@
     <!-- Login Screen -->
     <string name="login_title" description="The login title">Log in</string>
     <string name="password_label" description="The password label">Password</string>
+    <string name="password_show" description="Button at the end of a password field: shows what was typed">Show password</string>
+    <string name="password_hide" description="Button at the end of a password field: hides what was typed again">Hide password</string>
     <string name="sign_up_title" descripion="The sign up title">Sign up</string>
     <string name="login_busy" description="The log in button while VISOR is logging in">Logging in…</string>
     <string name="login_trouble" description="Above the Forgot Password button">Trouble logging in?</string>
@@ -36,6 +53,9 @@
     <string name="auth_error_server" description="The VISOR server failed">VISOR\'s server ran into a problem. Try again in a few minutes.</string>
     <string name="auth_error_check_details" description="The server could not read the email or password">VISOR couldn\'t read that email or password. Check them, then try again.</string>
     <string name="auth_error_unknown" description="Something else went wrong with an account request">Something went wrong. Try again.</string>
+    <string name="auth_error_offline_log_in" description="Log in was pressed while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to log in.</string>
+    <string name="auth_error_offline_sign_up" description="Sign up was pressed while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to sign up.</string>
+    <string name="auth_error_offline_code" description="A code was entered, or a new one asked for, while the phone is offline">You\'re offline. Connect to Wi-Fi or mobile data to check your code.</string>
     <string name="auth_error_email_missing" description="The email field is empty">Enter your email.</string>
     <string name="auth_error_email_invalid" description="The email field does not hold an email address">Enter your whole email address, such as name@example.com.</string>
     <string name="auth_error_password_missing" description="The password field is empty">Enter your password.</string>
@@ -154,9 +174,6 @@
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
-    <!-- VISOR's reply to "VISOR GO, hazard mode" and the like: VISOR has no modes, so it says how to ask directly -->
-    <string name="mode_not_needed" description="Reply to an old mode command. First placeholder: a wake phrase; second: a Home button's name">Just say \"<xliff:g id="phrase">%1$s</xliff:g>\", or press <xliff:g id="button">%2$s</xliff:g> on Home.</string>
-    <string name="mode_not_needed_phrase_off" description="Reply to an old mode command when that wake phrase is off in Settings. The placeholder is a Home button's name">Press <xliff:g id="button">%1$s</xliff:g> on Home.</string>
     <string name="settings_section_voice_navigation" description="Commands heading: voice navigation">Voice navigation</string>
     <string name="settings_voice_navigation_description" description="How voice navigation works">Say \"VISOR GO\" any time, then a command, such as \"open settings\" or \"go home\". While VISOR is listening, the edges of the screen glow.</string>
     <string name="settings_voice_navigation_examples_title" description="Heading over the list of voice navigation commands">What you can say after \"VISOR GO\"</string>
@@ -164,6 +181,7 @@
     <string name="settings_voice_commands_settings" description="Kind of voice command: changing settings">Change settings</string>
     <string name="settings_voice_commands_account" description="Kind of voice command: the user's account">Your account</string>
     <string name="settings_voice_commands_answering" description="Kind of voice command: answering VISOR's questions">Answering VISOR</string>
+    <string name="settings_voice_commands_reading" description="Kind of voice command: pausing, resuming or stopping a long answer VISOR is reading aloud">While VISOR reads aloud</string>
     <string name="settings_voice_launch_title" description="Commands heading: Hey Meta voice launch. Keep the quoted phrase as is">\"Hey Meta, start VISOR\"</string>
     <string name="settings_voice_launch_description" description="How the Hey Meta voice launch works">With your glasses on, say it to open VISOR on your phone, ready for your first question.</string>
     <string name="settings_section_tap_navigation" description="Commands heading: glasses tap navigation">Glasses tap navigation</string>
@@ -172,6 +190,7 @@
     <string name="settings_section_account" description="Settings section: account">Account</string>
     <string name="settings_log_out" description="Log out button and confirm button">Log out</string>
     <string name="settings_delete_account" description="Delete account button">Delete my account</string>
+    <string name="settings_delete_account_offline" description="Under the Delete my account button while the phone is offline">Deleting your account needs the internet. Logging out works offline.</string>
     <string name="settings_log_out_confirm_title" description="Log out confirmation title">Log out?</string>
     <string name="settings_log_out_confirm_message" description="Log out confirmation message">You\'ll need to sign in again to use VISOR.</string>
     <string name="settings_delete_account_confirm_title" description="Delete account confirmation title">Delete your account?</string>
@@ -183,15 +202,19 @@
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_capture_title" description="Help topic title">Taking a picture</string>
-    <string name="help_capture_body" description="Help topic">At the top of the Home screen are four large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead and how far away, Read text reads the text, Identify objects names what\'s in front of you, and Describe the scene describes it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the same four buttons are on their display while your phone shows Home.</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
     <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
     <string name="help_voice_launch_body" description="Help topic">With your glasses on, say \"Hey Meta, start VISOR\". VISOR opens on your phone, goes to Home, and chimes when it\'s ready for your first question — no need to find or unlock your phone.</string>
     <string name="help_camera_title" description="Help topic title">Asking about what\'s in front of you</string>
-    <string name="help_camera_body" description="Help topic">Say \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_camera_body" description="Help topic">Say \"VISOR, check for hazards\" to hear what\'s in your path, \"VISOR, read this\" to hear the text in front of you, \"VISOR, what am I holding\" to hear what an object is, or \"VISOR, what do you see\" to hear the scene described. Say \"VISOR, I have a question\", and VISOR asks what you want to know, then takes a picture and answers it. These work any time you\'re logged in.\n\nVISOR says \"Taking picture\", takes a photo with your glasses (or says \"Taking picture with your phone\" when you\'ve chosen your phone\'s camera), and beeps while it thinks. Home shows each step, and the answer, too. Settings lists every phrase, and can turn off any of these commands.</string>
+    <string name="help_offline_title" description="Help topic title">Using VISOR offline</string>
+    <string name="help_offline_body" description="Help topic">Without the internet, Read text and Identify objects work as usual, and so do your settings, voice commands, and your glasses. Describe the scene names the objects it sees instead of describing the whole scene.\n\nCheck for hazards and Ask a question need the internet, and so do logging in, signing up, and deleting your account. While you\'re offline, their buttons show a lock and say \"Needs the internet\", and a notice at the top of the screen says you\'re offline. VISOR says when you go offline, and when you\'re back online.</string>
     <string name="help_voice_nav_title" description="Help topic title">Navigating by voice</string>
     <string name="help_voice_nav_body" description="Help topic">Say \"VISOR GO\". VISOR says \"Listening\", and the edges of the screen light up. When the light starts to pulse and your phone buzzes, say where to go or what to do, such as \"go home\", \"open sound settings\", \"repeat that\" or \"faster\".\n\nSettings lists everything you can say, and can turn voice navigation off.</string>
+    <string name="help_reading_title" description="Help topic title">Pausing or stopping a long answer</string>
+    <string name="help_reading_body" description="Help topic">While VISOR reads a long answer aloud, such as a page of text, Pause and Stop buttons show under the answer in Home\'s Last answer card, where Read again is. On other screens, they show at the bottom, just above the tabs. Pause stops where VISOR is, and the same button, now Resume, carries on from the start of that sentence. Stop ends the answer, and Read again starts it from the beginning. A long answer in the card shows its first few lines: scroll the card for the rest, or press the three dots at the end to show it all.\n\nBy voice, say \"VISOR GO\": VISOR pauses to listen. Then say \"stop\", \"pause\", or \"resume\". With your glasses connected, their display shows Pause or Resume, and Stop, while VISOR reads.</string>
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
@@ -213,6 +236,16 @@
     <string name="home_last_answer_from_spoken" description="What a screen reader says for which camera feature gave the last answer, and when">"<xliff:g id="feature">%1$s</xliff:g>, <xliff:g id="time">%2$s</xliff:g>"</string>
     <string name="home_last_answer_empty" description="The Last answer card before VISOR has answered anything">When VISOR answers, its answer stays here too, to read or hear again.</string>
     <string name="home_read_again" description="Says the last answer again">Read again</string>
+    <string name="home_answer_show_all_named" description="Screen reader name of the ellipsis at the end of a long answer on Home, which shows all of it">Show the whole answer</string>
+    <string name="home_answer_show_less" description="Under a long answer on Home shown in full: shows only its first lines again">Show less</string>
+
+    <!-- Reading controls: along the bottom of every screen while VISOR reads a long answer aloud -->
+    <string name="reading_pause" description="Pauses the long answer VISOR is reading aloud">Pause</string>
+    <string name="reading_resume" description="Carries on reading a paused answer from the start of its sentence">Resume</string>
+    <string name="reading_stop" description="Stops reading the long answer aloud">Stop</string>
+    <string name="reading_pause_named" description="Screen reader name of the Pause button">Pause reading</string>
+    <string name="reading_resume_named" description="Screen reader name of the Resume button">Resume reading</string>
+    <string name="reading_stop_named" description="Screen reader name of the Stop button">Stop reading</string>
 
     <string name="glasses_camera_tip_title" description="Tip title on the Pair Glasses screen: how VISOR uses the glasses' camera">How VISOR uses your glasses</string>
     <string name="glasses_camera_tip" description="Tip on the Pair Glasses screen: how VISOR uses the glasses' camera">VISOR uses its camera only when you ask it to. It takes one picture each time you say a camera command, such as \"VISOR, read this\", or press the button on Home, and turns the camera off again straight after.</string>
@@ -250,12 +283,13 @@
 
     <!-- VISOR Onboarding Steps -->
     <string name="step_counter" description="Where the user is in setup, as in 'Step 2 of 8'">Step <xliff:g id="step">%1$d</xliff:g> of <xliff:g id="total">%2$d</xliff:g></string>
+    <string name="onboarding_title" description="Name of the setup screen, as a screen reader says it when the screen opens">Set up your profile</string>
     <string name="onboarding_continue" description="Setup button: on to the next question">Continue</string>
     <string name="onboarding_start" description="Setup button on the last step">Start using VISOR</string>
     <string name="onboarding_skip" description="Setup button: leave this question for now">Skip for now</string>
     <!-- NAME Step -->
     <string name="step_name_title">What should VISOR call you?</string>
-    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or tap Skip.</string>
+    <string name="step_name_spoken_prompt">Welcome to VISOR. What should I call you? Say your name, or say skip.</string>
 
     <!-- VOICE_NAV Step -->
     <string name="step_voice_nav_title">Navigate VISOR by voice?</string>
@@ -267,7 +301,7 @@
 
     <!-- DESCRIBE Step -->
     <string name="step_describe_title">Tell me about your vision, in your own words</string>
-    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or tap Skip.</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or say skip.</string>
 
     <!-- SEVERITY Step -->
     <string name="step_severity_title">How much does it affect daily life?</string>
@@ -283,7 +317,7 @@
 
     <!-- DONE Step -->
     <string name="step_done_title">You\'re all set!</string>
-    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me.</string>
+    <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me. Say start to begin using VISOR.</string>
 
     <!-- Hardware Pairing Screen: updates the glasses need -->
     <string name="update_required_title" description="Update required warning title">Update required</string>
@@ -398,10 +432,10 @@
 
     <!-- PHASE 1 -->
     <string name="p1_test_title" description="Phase 1 test title in debug options">Phase 1 Test Environment</string>
-    <string name="p1_test_description" description="Phase 1 test description in debug options">Select the button below to initiate the VISOR phase 1 test environment.</string>
-    <string name="p1_initiate_button" description="The text for the button that will initiate the VISOR phase 1 test environment">INITIATE PHASE 1</string>
-    <string name="p1_mode_navbar_title" description="The text for the button on the navbar for modes in VISOR phase 1 test environment">Mode</string>
-    <string name="p1_mode_config_screen_title" description="The title for the Mode Configuration Screen">Mode configuration</string>
+    <string name="p1_test_description" description="Phase 1 test description in debug options">Demo scripts that stand in for each camera feature\'s answer to a photo. They open as a screen in VISOR, with its usual navigation bar.</string>
+    <string name="p1_initiate_button" description="The text for the button that opens the VISOR phase 1 scripts screen">OPEN PHASE 1 SCRIPTS</string>
+    <string name="p1_mode_config_screen_title" description="The title for the Phase 1 scripts screen">Phase 1 scripts</string>
+    <string name="p1_mode_config_description" description="How to use the Phase 1 scripts screen, under its title">Choose a camera feature, then one of its scripts. VISOR says the script as that feature\'s answer, and keeps it on Home\'s Last answer card.</string>
     <string name="p1_script" description="A Phase 1 demo script button: its number, then its whole text"><xliff:g id="number">%1$d</xliff:g>. <xliff:g id="script">%2$s</xliff:g></string>
 
     <!-- Script strings

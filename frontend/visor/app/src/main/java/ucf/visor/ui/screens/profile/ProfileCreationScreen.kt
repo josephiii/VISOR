@@ -96,83 +96,44 @@ fun ProfileCreationScreen(
         speak(context.getString(step.spokenPrompt), VoiceCategory.VOICE_COMMANDS)
         val askedStep = step
         voiceNav?.captureUtterance { text ->
-            val heard = text?.trim()?.lowercase()
+            val heard = text?.trim()
             if (heard.isNullOrEmpty()) return@captureUtterance
+            // "Skip", "next"... on any question, as the Skip button: so a name
+            // is never saved as "Skip". See OnboardingAnswers.
+            if (askedStep != Step.DONE && OnboardingAnswers.isSkip(heard)) {
+                next()
+                return@captureUtterance
+            }
             when (askedStep) {
-                Step.NAME -> {
-                    profile = profile.copy(displayName = text.trim())
-                    next()
+                Step.NAME -> OnboardingAnswers.name(heard)?.let {
+                    profile = profile.copy(displayName = it); next()
                 }
 
-                Step.VOICE_NAV -> when {
-                    heard.contains("no") -> {
-                        profile = profile.copy(voiceNavigationEnabled = false); next()
-                    }
-
-                    heard.contains("yes") -> {
-                        profile = profile.copy(voiceNavigationEnabled = true); next()
-                    }
-
-                    else -> Unit
+                Step.VOICE_NAV -> OnboardingAnswers.yesNo(heard)?.let {
+                    profile = profile.copy(voiceNavigationEnabled = it); next()
                 }
 
-                Step.VISION -> {
-                    val match = when {
-                        heard.contains("center") -> VisionType.CENTRAL_LOSS
-                        heard.contains("side") || heard.contains("peripheral") -> VisionType.PERIPHERAL_LOSS
-                        heard.contains("blur") -> VisionType.BLUR_LOW_ACUITY
-                        heard.contains("light") || heard.contains("contrast") -> VisionType.CONTRAST_LIGHT
-                        heard.contains("not sure") -> VisionType.NOT_SURE
-                        else -> null
-                    }
-                    if (match != null) {
-                        profile = profile.copy(visionTypes = setOf(match))
-                        next()
-                    }
+                Step.VISION -> OnboardingAnswers.visionTypes(heard)?.let {
+                    profile = profile.copy(visionTypes = it); next()
                 }
 
                 Step.DESCRIBE -> {
-                    profile = profile.copy(visionDescription = text.trim())
-                    next()
+                    profile = profile.copy(visionDescription = heard); next()
                 }
 
-                Step.SEVERITY -> {
-                    val match = when {
-                        heard.contains("little") -> Severity.MILD
-                        heard.contains("moderate") -> Severity.MODERATE
-                        heard.contains("lot") -> Severity.SEVERE
-                        else -> null
-                    }
-                    if (match != null) {
-                        profile = profile.copy(severity = match); next()
-                    }
+                Step.SEVERITY -> OnboardingAnswers.severity(heard)?.let {
+                    profile = profile.copy(severity = it); next()
                 }
 
-                Step.SPEECH_RATE -> {
-                    val match = when {
-                        heard.contains("slow") -> SpeechRates.Slow
-                        heard.contains("fast") -> SpeechRates.Fast
-                        heard.contains("normal") -> SpeechRates.Normal
-                        else -> null
-                    }
-                    if (match != null) {
-                        profile = profile.copy(speechRate = match); next()
-                    }
+                Step.SPEECH_RATE -> OnboardingAnswers.speechRate(heard)?.let {
+                    profile = profile.copy(speechRate = it); next()
                 }
 
-                Step.VERBOSITY -> {
-                    val match = when {
-                        heard.contains("brief") -> Verbosity.BRIEF
-                        heard.contains("detail") -> Verbosity.DETAILED
-                        heard.contains("standard") -> Verbosity.STANDARD
-                        else -> null
-                    }
-                    if (match != null) {
-                        profile = profile.copy(verbosity = match); next()
-                    }
+                Step.VERBOSITY -> OnboardingAnswers.verbosity(heard)?.let {
+                    profile = profile.copy(verbosity = it); next()
                 }
 
-                Step.DONE -> if (heard.contains("start")) next()
+                Step.DONE -> if (OnboardingAnswers.isStart(heard)) next()
             }
         }
     }

@@ -1,10 +1,13 @@
 package ucf.visor.ui.glasses
 
 import org.junit.Assert.assertEquals
+import com.meta.wearable.dat.display.views.IconName
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingState
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -78,5 +81,59 @@ class GlassesNavScreenTest {
     fun nothingIsOfferedBeforeLoggingIn() {
         val screen = glassesNavScreenFor("login", VisorUiState(isAuthComplete = false))
         assertTrue(screen.items.isEmpty())
+    }
+
+    private val offline = loggedIn.copy(isOnline = false)
+
+    @Test
+    fun offlineHomeKeepsEveryButtonInItsPlace() {
+        val online = glassesNavScreenFor("home", loggedIn)
+        val off = glassesNavScreenFor("home", offline)
+        assertEquals(online.items.map { it.command }, off.items.map { it.command })
+        assertEquals(online.items.map { it.label }, off.items.map { it.label })
+    }
+
+    @Test
+    fun offlineOnlyTheFeaturesThatNeedTheInternetShowAPadlock() {
+        val locked = glassesNavScreenFor("home", offline).items
+            .filter { it.icon == IconName.PADLOCK_CLOSED }
+            .map { (it.command as VoiceCommand.RunCamera).command }
+        assertEquals(listOf(CameraCommand.CHECK_HAZARDS), locked)
+        assertTrue(glassesNavScreenFor("home", loggedIn).items.none { it.icon == IconName.PADLOCK_CLOSED })
+    }
+
+    @Test
+    fun offlineEveryScreenSaysSo() {
+        routes.forEach { route ->
+            assertEquals("$route", OFFLINE_SUBTITLE, glassesNavScreenFor(route, offline).subtitle)
+            assertNull("$route", glassesNavScreenFor(route, loggedIn).subtitle)
+        }
+    }
+
+    @Test
+    fun whileReadingPauseAndStopComeFirstWithEverythingElseStillReachable() {
+        val home = glassesNavScreenFor("home", loggedIn)
+        val reading = glassesNavScreenFor("home", loggedIn, ReadingState.READING)
+
+        assertEquals(
+            listOf(VoiceCommand.PauseReading, VoiceCommand.StopReading),
+            reading.page(0).items.take(2).map { it.command },
+        )
+        assertEquals(home.items, reading.items.drop(2))
+    }
+
+    @Test
+    fun pausedOffersResumeInPausesPlace() {
+        val paused = glassesNavScreenFor("settings", loggedIn, ReadingState.PAUSED)
+
+        assertEquals(VoiceCommand.ResumeReading, paused.items[0].command)
+        assertEquals(VoiceCommand.StopReading, paused.items[1].command)
+        assertEquals("Paused", paused.title)
+    }
+
+    @Test
+    fun anAreYouSureIsAnsweredBeforeTheReadingControls() {
+        val asking = loggedIn.copy(isLogoutConfirmVisible = true)
+        assertEquals(glassesNavScreenFor("settings", asking), glassesNavScreenFor("settings", asking, ReadingState.READING))
     }
 }

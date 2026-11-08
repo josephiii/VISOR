@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import ucf.visor.data.Verbosity
 import ucf.visor.network.ApiResult
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
@@ -11,27 +12,22 @@ import ucf.visor.tts.SpokenPhrases
 
 // "VISOR, what do you see?": takes a photo and asks the backend's VLM to
 // describe it, falling back to on-device labels when the server can't answer.
-// ask() answers a spoken question about a fresh photo instead.
+// ask() answers a spoken question about a fresh photo instead. How much either
+// says follows the user's Detail setting (see ScenePrompts).
 class SceneDescriber(
     private val photoSource: PhotoSource,
     private val vlm: VlmClient,
     // Main-thread scope (MainActivity's lifecycleScope): answers are spoken from it.
     private val scope: CoroutineScope,
     private val fallback: ObjectDetector? = null,
-    private val prompt: String = DEFAULT_PROMPT,
+    // Read at each capture, so a change in Settings applies to the very next one.
+    private val verbosity: () -> Verbosity = { Verbosity.STANDARD },
+    // Read at each capture. Offline, a description goes straight to the
+    // on-device labels rather than waiting for a server it can't reach.
+    private val isOnline: () -> Boolean = { true },
 ) : ReadRequester {
 
     companion object {
-        const val DEFAULT_PROMPT =
-            "Describe this scene in two or three short sentences for a blind person. " +
-                    "Mention the main objects and where they are relative to the viewer."
-
-        fun questionPrompt(question: String) =
-            "A blind person is asking a question about what is in front of them. " +
-                    "Question: \"$question\" " +
-                    "Answer it directly in one to three short sentences, suitable for being read aloud. " +
-                    "If the image doesn't show enough to answer, say so."
-
         // Move these into SpokenPhrases if you want them with your other phrases
         private const val QUESTION_NO_ANSWER = "I couldn't work that out."
         private const val QUESTION_SERVER_DOWN = "Sorry, I couldn't reach the server to answer that."
@@ -40,11 +36,11 @@ class SceneDescriber(
     }
 
     override fun requestRead(onText: (String) -> Unit) =
-        run(prompt, isQuestion = false, onText = onText)
+        run(ScenePrompts.describe(verbosity()), isQuestion = false, onText = onText)
 
     /** Takes a picture and answers a spoken question about it. */
     fun ask(question: String, onText: (String) -> Unit) =
-        run(questionPrompt(question), isQuestion = true, onText = onText)
+        run(ScenePrompts.question(question, verbosity()), isQuestion = true, onText = onText)
 
     private fun run(promptToUse: String, isQuestion: Boolean, onText: (String) -> Unit) {
         photoSource.capturePhoto(
@@ -60,6 +56,12 @@ class SceneDescriber(
         deliver: (String) -> Unit,
     ) {
         scope.launch {
+            if (!isOnline()) {
+                // Said first, so labels aren't mistaken for a description.
+                if (isQuestion) deliver(QUESTION_SERVER_DOWN)
+                else describeOnDevice(bitmap) { deliver(SpokenPhrases.offlineScene(it)) }
+                return@launch
+            }
             when (val result = vlm.ask(downscale(bitmap, MAX_IMAGE_SIDE), promptToUse)) {
                 is ApiResult.Success -> deliver(
                     result.body.ifBlank {

@@ -58,7 +58,7 @@ import ucf.visor.ui.theme.VisorShapes
 import ucf.visor.ui.theme.VisorTheme
 
 /**
- * VISOR's choice control: one option of a few, such as a session mode or a
+ * VISOR's choice control: one option of a few, such as a theme or a
  * text size, or with [multiSelect], one of a set that can be picked together,
  * such as the kinds of vision loss. A screen reader announces it as the choice
  * it is, a radio button or a checkbox. An on/off setting is a [SwitchChip],

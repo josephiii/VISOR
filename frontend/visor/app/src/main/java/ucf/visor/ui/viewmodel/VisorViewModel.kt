@@ -22,6 +22,7 @@ import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
+import ucf.visor.network.Connectivity
 import ucf.visor.stt.CameraCommand
 import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.rankForSession
@@ -34,9 +35,25 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     private val profileStore = ProfileStore(application)
     val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
 
-    private val _uiState =
-        MutableStateFlow(VisorUiState(isAuthComplete = sessionStore.isLoggedIn()))
+    private val connectivity = Connectivity(application)
+
+    // Online or not from the start, so a phone that is offline at launch
+    // shows its locked features at once, not after a callback.
+    private val _uiState = MutableStateFlow(
+        VisorUiState(
+            isAuthComplete = sessionStore.isLoggedIn(),
+            isOnline = connectivity.isOnlineNow(),
+        )
+    )
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            connectivity.changes().collect { online ->
+                _uiState.update { it.copy(isOnline = online) }
+            }
+        }
+    }
 
     private val _userProfile = MutableStateFlow(profileStore.load())
     val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
@@ -245,7 +262,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
                 atHelp = false,
                 atMotionLab = false,
                 isOnboarding = false,
-                isConfiguring = false,
+                atPhase1 = false,
             )
         }
     }
@@ -310,6 +327,11 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun confirmDeleteAccount() {
         _uiState.update { it.copy(isDeleteAccountConfirmVisible = false) }
+        // Settings locks the button offline; this is for "delete my account" said aloud.
+        if (!_uiState.value.isOnline) {
+            setRecentError(DELETE_ACCOUNT_OFFLINE)
+            return
+        }
         val token = sessionStore.accessToken()
         if (token.isNullOrBlank()) {
             setRecentError(DELETE_ACCOUNT_LOG_IN_AGAIN)
@@ -375,7 +397,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isPairingHardware = false) }
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(goingHome = true) }
-        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
         _uiState.update { it.copy(isAuthComplete = true) }
         sessionStore.setLoggedIn(true)
     }
@@ -384,7 +405,6 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(goingHome = false) }
         _uiState.update { it.copy(atSettings = false) }
         _uiState.update { it.copy(isPairingHardware = true) }
-        _uiState.update { it.copy(isConfiguring = false) } // PHASE 1
     }
 
     /** Opens Settings at [section], or at its hub of sections when null (the navigation bar's tab). */
@@ -410,6 +430,15 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     /** The head-motion lab (Debug menu → Test Suite): MWDAT 1.0 Motion + camera trials. */
     fun motionLab() {
         _uiState.update { it.copy(atMotionLab = true) }
+    }
+
+    /**
+     * Phase 1's demo scripts (Debug menu → Test Suite): each stands in for a
+     * camera feature's answer to a photo. Opened as one more screen in VISOR's
+     * own navigation, so what a tester sees around it is what a user sees.
+     */
+    fun phase1() {
+        _uiState.update { it.copy(atPhase1 = true) }
     }
 
     fun requestLogoutConfirm() {
@@ -504,20 +533,10 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(glassesStatus = best?.toGlassesStatus()) }
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // PHASE 1
-    fun initiatePhase1() {
-        _uiState.update { it.copy(phase1Initiated = true) }
-    }
-
-    fun configure() {
-        _uiState.update { it.copy(isConfiguring = true) }
-        _uiState.update { it.copy(goingHome = false) }
-        _uiState.update { it.copy(atSettings = false) }
-    }
-
     private companion object {
         const val DELETE_ACCOUNT_LOG_IN_AGAIN =
             "Couldn't delete your account. Please log out, log back in, and try again."
+        const val DELETE_ACCOUNT_OFFLINE =
+            "Deleting your account needs the internet, and you're offline. Your account hasn't changed."
     }
 }

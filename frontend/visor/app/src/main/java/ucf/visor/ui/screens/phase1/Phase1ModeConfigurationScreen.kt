@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +34,9 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 
 /**
  * The Phase 1 demo: pick a camera feature, then a script stands in for its
- * answer to a photo. Which feature's scripts are shown is this screen's own
+ * answer to a photo. Opened from the Debug menu's Test Suite as one more
+ * screen in VISOR (VisorViewModel.phase1), with the usual navigation bar
+ * rather than an environment of its own. Which feature's scripts are shown is this screen's own
  * choice, nothing the rest of VISOR depends on. Its title and buttons follow
  * VISOR's text size like every other screen, and each script is shown whole,
  * wrapping, rather than cut off after 25 characters.
@@ -68,6 +71,16 @@ fun Phase1ModeConfigurationScreen(
     ) {
         ScreenTitle(
             stringResource(R.string.p1_mode_config_screen_title),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // What the buttons below do: this screen opens on its own from the
+        // Debug menu, so it says so itself rather than relying on a tester
+        // already knowing the Phase 1 flow.
+        Text(
+            stringResource(R.string.p1_mode_config_description),
+            style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )

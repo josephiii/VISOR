@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import ucf.visor.R
 import ucf.visor.network.ApiResult
@@ -57,6 +58,11 @@ fun EnterCodeScreen(
     var message by remember { mutableStateOf<String?>(null) }
     var isError by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Checking a code, or sending a new one, needs the server; offline, both
+    // say why instead of waiting for it (network/Connectivity).
+    val offline = verifyEmail != null && !uiState.isOnline
+    val offlineMessage = stringResource(R.string.auth_error_offline_code)
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val viewportHeight = maxHeight
@@ -77,6 +83,9 @@ fun EnterCodeScreen(
                     onCodeComplete = { code ->
                         if (verifyEmail == null) {
                             onCodeComplete()
+                        } else if (offline) {
+                            isError = true
+                            message = offlineMessage
                         } else if (!isLoading) {
                             isLoading = true
                             message = null
@@ -104,9 +113,14 @@ fun EnterCodeScreen(
                 VisorButton(
                     text = stringResource(R.string.resend_code_button_text),
                     width = 1f,
+                    locked = offline,
+                    supportingText = if (offline) stringResource(R.string.offline_locked_reason) else null,
                     onClick = {
                         if (verifyEmail == null) {
                             onResendCodeClick()
+                        } else if (offline) {
+                            isError = true
+                            message = offlineMessage
                         } else {
                             scope.launch {
                                 when (val result = AuthApi.resendCode(verifyEmail)) {

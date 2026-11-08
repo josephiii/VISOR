@@ -6,6 +6,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Whether the phone is online (network/Connectivity), so VISOR can show
+         which features work offline and lock the rest. Granted at install. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- For MWDAT mock device testing -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature

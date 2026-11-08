@@ -28,20 +28,6 @@ sealed class VoiceCommand {
     object GoBack : VoiceCommand()
 
     /**
-     * Anything said about a session, such as "start session". VISOR no longer
-     * has sessions (its camera features work as soon as the user is logged
-     * in), so this only says so, for anyone still in the habit.
-     */
-    object SessionNotNeeded : VoiceCommand()
-
-    /**
-     * "Hazard mode", "reading mode"... VISOR no longer has modes: each camera
-     * feature has its own button and wake phrase. This says how to ask for
-     * [command] directly, rather than taking a picture nobody expected.
-     */
-    data class ModeNotNeeded(val command: CameraCommand) : VoiceCommand()
-
-    /**
      * One of Home's camera buttons, such as "Check for hazards": a picture,
      * and [command]'s answer. Offered on the glasses' own display.
      */
@@ -50,7 +36,6 @@ sealed class VoiceCommand {
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()
     object GoToForgotPassword : VoiceCommand()
-    object ResendCode : VoiceCommand()
 
     object LogOut : VoiceCommand()
     object DeleteAccount : VoiceCommand()
@@ -66,8 +51,18 @@ sealed class VoiceCommand {
 
     object Confirm : VoiceCommand()
     object Cancel : VoiceCommand()
-    object Next : VoiceCommand()
     object RepeatLast : VoiceCommand()
+
+    /**
+     * For a long answer VISOR is reading aloud (tts/Readings): "stop" ends it,
+     * "pause" keeps it paused, and "resume" carries on from the start of the
+     * sentence it stopped in. Saying "VISOR GO" over a reading already pauses
+     * it, so the reading is never lost to the "Listening." before these.
+     * Offered on the glasses' display while VISOR reads.
+     */
+    object StopReading : VoiceCommand()
+    object PauseReading : VoiceCommand()
+    object ResumeReading : VoiceCommand()
 
     object Unrecognized : VoiceCommand()
 }

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -176,6 +177,7 @@ fun SettingsScreen(
                 SettingsSection.DISPLAY -> DisplaySettings(profile, onProfileChange)
                 SettingsSection.COMMANDS -> CommandSettings(profile, onProfileChange)
                 SettingsSection.ACCOUNT -> AccountSettings(
+                    isOnline = uiState.isOnline,
                     onLogout = { viewModel.requestLogoutConfirm() },
                     onDeleteAccount = { viewModel.requestDeleteAccountConfirm() },
                 )
@@ -435,9 +437,14 @@ private fun DisplaySettings(profile: UserProfile, onProfileChange: (UserProfile)
     )
 }
 
-/** "Account": logging out and deleting the account, each confirmed in a dialog first. */
+/**
+ * "Account": logging out and deleting the account, each confirmed in a dialog
+ * first. Logging out happens on the phone, so it works offline; deleting the
+ * account needs the server, so offline its button is locked, with a padlock,
+ * and says why under it.
+ */
 @Composable
-private fun AccountSettings(onLogout: () -> Unit, onDeleteAccount: () -> Unit) {
+private fun AccountSettings(isOnline: Boolean, onLogout: () -> Unit, onDeleteAccount: () -> Unit) {
     SwitchButton(
         label = stringResource(R.string.settings_log_out),
         isDestructive = true,
@@ -447,9 +454,16 @@ private fun AccountSettings(onLogout: () -> Unit, onDeleteAccount: () -> Unit) {
     SwitchButton(
         label = stringResource(R.string.settings_delete_account),
         isDestructive = true,
-        icon = Icons.Filled.DeleteForever,
+        icon = if (isOnline) Icons.Filled.DeleteForever else Icons.Filled.Lock,
         onClick = onDeleteAccount,
+        enabled = isOnline,
     )
+    if (!isOnline) {
+        Text(
+            stringResource(R.string.settings_delete_account_offline),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
 }
 
 private val SettingsSection.icon: ImageVector
@@ -831,4 +845,5 @@ private fun VoiceCommandKind.titleRes(): Int = when (this) {
     VoiceCommandKind.SETTINGS -> R.string.settings_voice_commands_settings
     VoiceCommandKind.ACCOUNT -> R.string.settings_voice_commands_account
     VoiceCommandKind.ANSWERING -> R.string.settings_voice_commands_answering
+    VoiceCommandKind.READING -> R.string.settings_voice_commands_reading
 }

@@ -2,7 +2,10 @@ package ucf.visor.ui.glasses
 
 import com.meta.wearable.dat.display.views.ButtonStyle
 import com.meta.wearable.dat.display.views.IconName
+import ucf.visor.capture.Availability
+import ucf.visor.capture.availability
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.ReadingState
 import ucf.visor.ui.viewmodel.VisorUiState
 import ucf.visor.ui.voice.VoiceCommand
 
@@ -67,8 +70,37 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * methods reach the same destinations. Kept as a pure function (route + state
  * in, screen out) so it needs no Compose/MWDAT session context to reason about
  * or test.
+ *
+ * While VISOR reads a long answer aloud ([reading]), Pause (or Resume) and
+ * Stop come first, as they do along the bottom of the phone's screen
+ * (ReadingControlsBar): the wearer can stop a page of text without reaching
+ * for the phone. The screen's own buttons follow, behind More where they
+ * don't fit, so nothing is out of reach while a reading is paused. Not over
+ * an "Are you sure?", which is answered first.
  */
-fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
+fun glassesNavScreenFor(
+    route: String?,
+    uiState: VisorUiState,
+    reading: ReadingState = ReadingState.NONE,
+): GlassesNavScreen {
+    val screen = navScreenFor(route, uiState)
+    val asking = uiState.isLogoutConfirmVisible || uiState.isDeleteAccountConfirmVisible
+    if (reading == ReadingState.NONE || asking) return screen
+    val paused = reading == ReadingState.PAUSED
+    return screen.copy(
+        title = if (paused) "Paused" else "Reading aloud",
+        items = listOf(
+            if (paused) GlassesNavItem("Resume", IconName.TRIANGLE_RIGHT, VoiceCommand.ResumeReading)
+            else GlassesNavItem("Pause", IconName.TWO_LINES_PARALLEL, VoiceCommand.PauseReading),
+            GlassesNavItem("Stop", IconName.SPEAKER_OFF, VoiceCommand.StopReading, ButtonStyle.SECONDARY),
+        ) + screen.items,
+        // The screen's own status line ("Log in on your phone") still matters.
+        subtitle = screen.subtitle,
+    )
+}
+
+/** The glasses' buttons for [route], with nothing being read aloud. */
+private fun navScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
@@ -115,8 +147,16 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
     // that take a picture straight away fill the display exactly, with no More.
     // The rest of the navigation is on every other screen, with a Home button
     // back to these.
+    //
+    // Offline, the same four stay in the same places, so a wearer's habits
+    // still work; the ones that need the internet show a padlock and the
+    // quieter style, and a tap on one says why it can't run (MainActivity).
     if (route == "home") {
-        return GlassesNavScreen(title = "Home", items = CameraCommand.entries.mapNotNull(::cameraItem))
+        return GlassesNavScreen(
+            title = "Home",
+            items = CameraCommand.entries.mapNotNull { cameraItem(it, uiState.isOnline) },
+            subtitle = if (uiState.isOnline) null else OFFLINE_SUBTITLE,
+        )
     }
 
     val items = mutableListOf<GlassesNavItem>()
@@ -147,9 +187,26 @@ fun glassesNavScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen
         "hardware_pairing" -> "Pair glasses"
         "help" -> "Help"
         "motion_lab" -> "Head-motion lab"
+        "p1_test_mode_config" -> "Phase 1 scripts"
         else -> "VISOR"
     }
-    return GlassesNavScreen(title = title, items = items)
+    return GlassesNavScreen(title = title, items = items, subtitle = if (uiState.isOnline) null else OFFLINE_SUBTITLE)
+}
+
+/** Under each screen's title on the glasses while the phone is offline. */
+const val OFFLINE_SUBTITLE = "Offline. Some features are locked."
+
+/**
+ * [cameraItem] as it is right now: offline, a feature that needs the internet
+ * keeps its place and its label, with a padlock for its icon, in the quieter style.
+ */
+private fun cameraItem(command: CameraCommand, isOnline: Boolean): GlassesNavItem? {
+    val item = cameraItem(command) ?: return null
+    return if (command.availability(isOnline) == Availability.LOCKED) {
+        item.copy(icon = IconName.PADLOCK_CLOSED, style = ButtonStyle.SECONDARY)
+    } else {
+        item
+    }
 }
 
 /**

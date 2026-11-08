@@ -3,7 +3,6 @@ package ucf.visor.ui.voice
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import ucf.visor.data.CameraChoice
-import ucf.visor.stt.CameraCommand
 
 /** "VISOR GO, use my phone camera" switches cameras, without taking over nearby commands. */
 class CameraChoiceCommandTest {
@@ -37,9 +36,5 @@ class CameraChoiceCommandTest {
         assertEquals(VoiceCommand.PairDevice, VoiceCommandParser.parse("connect my glasses"))
         assertEquals(VoiceCommand.PairDevice, VoiceCommandParser.parse("pair glasses"))
         assertEquals(VoiceCommand.GoHome, VoiceCommandParser.parse("go home"))
-        assertEquals(
-            VoiceCommand.ModeNotNeeded(CameraCommand.CHECK_HAZARDS),
-            VoiceCommandParser.parse("hazard mode"),
-        )
     }
 }
