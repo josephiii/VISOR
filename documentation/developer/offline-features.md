@@ -14,6 +14,8 @@ VISOR keeps working without the internet. It shows which features still work, an
 | Log in, sign up, email code | **Locked** | Backend calls |
 | Delete account | **Locked** | Backend call. Log out works offline: it only clears the phone. |
 | Settings, voice commands, wake phrases, glasses, Phase 1 scripts | Works | All on the phone |
+| VISOR's voice: voices on the phone | Works | The phone's text-to-speech engine |
+| VISOR's voice: voices that need the internet | **Locked** in Settings; VISOR speaks in the voice's on-phone version, or its default voice, until it reconnects | Spoken by the engine's server. See [Voice options](./voice-options.md) |
 
 The camera-feature rules are one function, `CameraCommand.availability(isOnline)` in [`capture/Availability.kt`](../../frontend/visor/app/src/main/java/ucf/visor/capture/Availability.kt). Change it there and Home, the glasses and the wake phrases all follow.
 

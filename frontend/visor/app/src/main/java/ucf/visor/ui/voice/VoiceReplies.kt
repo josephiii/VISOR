@@ -42,6 +42,14 @@ object VoiceReplies {
 
     fun speechRate(rate: Float): String = "Speech rate set to ${SpeechRates.spokenLabel(rate)}."
 
+    /** As Settings names it (R.string.voice_choice_default). */
+    const val DEFAULT_VOICE = "VISOR's default voice"
+    const val NO_OTHER_VOICES =
+        "There are no other voices to choose from right now. Get more in Settings, under Speech."
+
+    /** Said in the new voice: [label] as Settings lists it, or null for VISOR's default. */
+    fun voice(label: String?): String = "Voice changed to ${label ?: DEFAULT_VOICE}."
+
     fun detail(verbosity: Verbosity): String = "Detail set to " + when (verbosity) {
         Verbosity.BRIEF -> "brief."
         Verbosity.STANDARD -> "standard."

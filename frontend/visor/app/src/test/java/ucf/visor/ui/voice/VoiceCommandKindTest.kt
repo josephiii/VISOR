@@ -49,7 +49,10 @@ class VoiceCommandKindTest {
             this == VoiceCommand.SpeakSlower ||
             this is VoiceCommand.SetVerbosity ||
             this is VoiceCommand.SetTextScale ||
-            this is VoiceCommand.UseCamera
+            this is VoiceCommand.UseCamera ||
+            this == VoiceCommand.NextVoice ||
+            this == VoiceCommand.PreviousVoice ||
+            this == VoiceCommand.DefaultVoice
 
         VoiceCommandKind.ACCOUNT ->
             this == VoiceCommand.LogOut || this == VoiceCommand.DeleteAccount

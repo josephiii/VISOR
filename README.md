@@ -56,6 +56,7 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.
 - The [phone camera fallback](./documentation/research/phone-camera-fallback.md): why VISOR can use the phone's camera, how users choose it, and how to test without glasses.
 - [Offline features](./documentation/developer/offline-features.md): what works without the internet, how locked features are shown and said, and how to test it.
+- [Voice options](./documentation/developer/voice-options.md): choosing VISOR's voice, how voices that need the internet behave offline, and the bar any new voice model must clear (including its license).
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout
@@ -85,7 +86,7 @@ VISOR/
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. Also `Connectivity`, which says whether the phone is online. Offline, `capture/Availability` locks the features that need the server (see [Offline features](./documentation/developer/offline-features.md)). |
 | `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). |
 | `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
-| `tts/` | Speaking: `Speaker`, the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). `Readings` reads a long answer a sentence at a time, so it can be paused, resumed and stopped (Home's Last answer card, `ui/components/ReadingControlsBar` on other screens, "VISOR GO, stop", and the glasses). |
+| `tts/` | Speaking: `Speaker`, which voice it speaks in (`VoiceCatalog`: the phone's voices, and an on-phone one in place of one that needs the internet while offline), the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). `Readings` reads a long answer a sentence at a time, so it can be paused, resumed and stopped (Home's Last answer card, `ui/components/ReadingControlsBar` on other screens, "VISOR GO, stop", and the glasses). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |

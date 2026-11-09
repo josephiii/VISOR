@@ -1,5 +1,9 @@
 package ucf.visor.ui.screens.profile
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -15,6 +19,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,10 +29,15 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Icon
@@ -36,6 +46,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +56,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -54,7 +67,10 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.MutableStateFlow
 import ucf.visor.R
 import ucf.visor.data.AudioMix
 import ucf.visor.data.Severity
@@ -69,6 +85,10 @@ import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.data.label
 import ucf.visor.stt.CameraCommand
+import ucf.visor.tts.VoiceCatalog
+import ucf.visor.tts.VoiceChooser
+import ucf.visor.tts.VoiceInfo
+import ucf.visor.tts.VoiceOption
 import ucf.visor.ui.components.ChoiceRow
 import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SelectableChip
@@ -102,6 +122,8 @@ import ucf.visor.ui.voice.VoiceCommandKind
  * @param speakAt and [playSample] play what a new volume sounds like, as soon
  *   as a volume slider is let go: loudness can't be judged by looking at a
  *   slider. [speakAt] speaks at the volume given, whatever the sliders are.
+ * @param voices the phone's voices, for "How VISOR sounds"; it also says each
+ *   voice's sample in that voice.
  */
 @Composable
 fun SettingsScreen(
@@ -109,6 +131,7 @@ fun SettingsScreen(
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
     speakAt: (String, Float) -> Unit = { _, _ -> },
     playSample: (SoundCategory) -> Unit = {},
+    voices: VoiceChooser? = null,
     onProfileChange: (UserProfile) -> Unit = {},
     onLogout: () -> Unit = {},          // TODO: revoke access + refresh tokens (frontend-only per Joseph)
     onDeleteAccount: () -> Unit = {},   // VisorViewModel.confirmDeleteAccount: DELETE /auth/deleteAccount, then wipes the profile
@@ -160,7 +183,13 @@ fun SettingsScreen(
             ScreenTitle(stringResource(section.titleRes))
             when (section) {
                 SettingsSection.ABOUT_YOU -> AboutYouSettings(profile, onProfileChange)
-                SettingsSection.SPEECH -> SpeechSettings(profile, onProfileChange)
+                SettingsSection.SPEECH -> SpeechSettings(
+                    profile = profile,
+                    onProfileChange = onProfileChange,
+                    isOnline = uiState.isOnline,
+                    voices = voices,
+                    speakAt = speakAt,
+                )
                 SettingsSection.SOUND -> {
                     VolumeSettings(
                         profile = profile,
@@ -329,9 +358,17 @@ private fun AboutYouSettings(profile: UserProfile, onProfileChange: (UserProfile
     )
 }
 
-/** "Speech": how fast VISOR talks, and how much it says. */
+/** "Speech": which voice VISOR speaks in, how fast it talks, and how much it says. */
 @Composable
-private fun SpeechSettings(profile: UserProfile, onProfileChange: (UserProfile) -> Unit) {
+private fun SpeechSettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    isOnline: Boolean,
+    voices: VoiceChooser?,
+    speakAt: (String, Float) -> Unit,
+) {
+    VoiceSettings(profile, onProfileChange, isOnline, voices, speakAt)
+
     SettingSection(stringResource(R.string.settings_section_speech_rate))
     Text(
         text = SpeechRates.label(profile.speechRate),
@@ -372,6 +409,181 @@ private fun SpeechSettings(profile: UserProfile, onProfileChange: (UserProfile) 
         }
     }
 }
+
+/**
+ * "How VISOR sounds": which of the phone's voices VISOR speaks in (see
+ * tts.VoiceCatalog). Voices can't be judged by their names, so choosing one
+ * says a sample in it straight away, at the speed and volume answers are read
+ * at, and "Hear VISOR's voice" says one again.
+ *
+ * VISOR's default voice comes first, then the voices that work offline, then
+ * those that need the internet: on-phone voices keep what VISOR reads on the
+ * phone, and the others say so before they are chosen. Offline, those are
+ * locked, as Home's buttons are, and VISOR speaks in an on-phone voice until
+ * the phone is back online.
+ */
+@Composable
+private fun VoiceSettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    isOnline: Boolean,
+    voices: VoiceChooser?,
+    speakAt: (String, Float) -> Unit,
+) {
+    val context = LocalContext.current
+    val noVoices = remember { MutableStateFlow(emptyList<VoiceInfo>()) }
+    val all by (voices?.voices ?: noVoices).collectAsStateWithLifecycle()
+
+    // Read the phone's voices again each time Settings comes back to the
+    // front: the user may have just downloaded some ("Get more voices").
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, voices) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) voices?.refreshVoices()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val options = VoiceCatalog.options(all)
+    val chosen = profile.voiceName
+    val chosenOption = VoiceCatalog.option(chosen, all)
+    val defaultLabel = stringResource(R.string.voice_choice_default)
+    val sampleVolume = profile.audio.loudness(VoiceCategory.ANSWERS)
+        .takeUnless(Volumes::isOff) ?: profile.audio.master
+
+    // Says the sample in [name] at once: VISOR switches to it now, rather
+    // than once the profile's change has gone round, which would be too late
+    // for the sample.
+    fun sample(name: String?) {
+        voices?.useVoice(name)
+        val label = VoiceCatalog.option(name, all)?.label ?: defaultLabel
+        speakAt(context.getString(R.string.voice_choice_sample, label), sampleVolume)
+    }
+
+    fun choose(option: VoiceOption?) {
+        if (option != null && option.needsInternet && !isOnline) {
+            speakAt(context.getString(R.string.voice_choice_locked_spoken, option.label), sampleVolume)
+            return
+        }
+        if (option?.name != chosen) onProfileChange(profile.copy(voiceName = option?.name))
+        sample(option?.name)
+    }
+
+    SettingSection(stringResource(R.string.voice_choice_section))
+    Text(
+        stringResource(R.string.voice_choice_current, chosenOption?.label ?: defaultLabel),
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+    )
+    when {
+        chosen != null && all.isNotEmpty() && chosenOption == null ->
+            VoiceNote(Icons.Filled.Info, stringResource(R.string.voice_choice_missing))
+
+        chosenOption != null && chosenOption.needsInternet && !isOnline -> VoiceNote(
+            Icons.Filled.CloudOff,
+            if (VoiceCatalog.voiceToUse(chosen, all, isOnline) != null) {
+                stringResource(R.string.voice_choice_offline_twin, chosenOption.label)
+            } else {
+                stringResource(R.string.voice_choice_offline_default)
+            },
+        )
+    }
+    SwitchButton(
+        label = stringResource(R.string.voice_choice_hear),
+        outlined = true,
+        icon = Icons.AutoMirrored.Filled.VolumeUp,
+        onClick = { sample(VoiceCatalog.voiceToUse(chosen, all, isOnline)) },
+    )
+
+    // One choice across both lists, so a screen reader counts them together.
+    Column(
+        modifier = Modifier.selectableGroup(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        SettingSubsection(stringResource(R.string.voice_choice_offline_group))
+        SelectableChip(
+            label = defaultLabel,
+            supportingText = stringResource(R.string.voice_choice_default_supporting),
+            selected = chosenOption == null,
+            icon = Icons.Filled.RecordVoiceOver,
+        ) { choose(null) }
+        val offline = options.filterNot { it.needsInternet }
+        offline.forEach { option ->
+            SelectableChip(
+                label = option.label,
+                supportingText = stringResource(R.string.voice_choice_works_offline),
+                selected = option.name == chosen,
+                icon = Icons.Filled.PhoneAndroid,
+            ) { choose(option) }
+        }
+        if (all.isNotEmpty() && options.isEmpty()) {
+            Text(stringResource(R.string.voice_choice_none), style = MaterialTheme.typography.bodyLarge)
+        }
+
+        val online = options.filter { it.needsInternet }
+        if (online.isNotEmpty()) {
+            SettingSubsection(stringResource(R.string.voice_choice_internet_group))
+            Text(
+                stringResource(R.string.voice_choice_internet_privacy),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            online.forEach { option ->
+                SelectableChip(
+                    label = option.label,
+                    supportingText = stringResource(R.string.offline_locked_reason),
+                    selected = option.name == chosen,
+                    locked = !isOnline,
+                    icon = if (isOnline) Icons.Filled.Cloud else Icons.Filled.Lock,
+                ) { choose(option) }
+            }
+        }
+    }
+
+    SwitchButton(
+        label = stringResource(R.string.voice_choice_more),
+        outlined = true,
+        icon = Icons.Filled.Download,
+        onClick = { openTextToSpeechSettings(context) },
+    )
+    Text(stringResource(R.string.voice_choice_more_description), style = MaterialTheme.typography.bodyMedium)
+}
+
+/**
+ * Something about the voice being heard, with an icon so it never rests on
+ * color, said by a screen reader as it appears (a polite live region).
+ */
+@Composable
+private fun VoiceNote(icon: ImageVector, text: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(iconSizeFor(MaterialTheme.typography.bodyLarge)),
+        )
+        Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/**
+ * The phone's own text-to-speech settings, where more voices are downloaded.
+ * Not every phone has that page under the usual name; Accessibility settings,
+ * which lead to it, are the next best.
+ */
+private fun openTextToSpeechSettings(context: Context) {
+    val flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    try {
+        context.startActivity(Intent(TTS_SETTINGS_ACTION).addFlags(flags))
+    } catch (_: ActivityNotFoundException) {
+        runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(flags)) }
+    }
+}
+
+private const val TTS_SETTINGS_ACTION = "com.android.settings.TTS_SETTINGS"
 
 /** Vibration, beside the sounds it goes with: each of VISOR's buzzes, and the switch for them all. */
 @Composable

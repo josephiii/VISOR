@@ -59,6 +59,8 @@ import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.ReadingState
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
+import ucf.visor.tts.VoiceCatalog
+import ucf.visor.tts.VoiceChooser
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -76,7 +78,8 @@ import ucf.visor.ui.voice.VoiceReplies
 // volume, for Settings previews; onCapture takes a picture and answers it for
 // one camera feature (MainActivity). reading pauses, resumes and stops a long
 // answer being read aloud (tts/Readings), from the bar along the bottom of
-// every screen, the glasses, or "VISOR GO, stop".
+// every screen, the glasses, or "VISOR GO, stop". voices lists the phone's
+// voices and switches VISOR's at once, for "VISOR GO, next voice" and Settings.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -90,6 +93,7 @@ fun VisorLayout(
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
     reading: ReadingControls? = null,
+    voices: VoiceChooser? = null,
     modifier: Modifier = Modifier,
 ) {
 
@@ -428,6 +432,26 @@ fun VisorLayout(
                     reply("Slower. ${SpeechRates.spokenLabel(rate)}.")
                 }
 
+                // Switched at once, before the reply, so the reply is the new
+                // voice saying its own name. Offline, voices that need the
+                // internet are passed over, as Settings locks them.
+                VoiceCommand.NextVoice, VoiceCommand.PreviousVoice, VoiceCommand.DefaultVoice -> {
+                    val all = voices?.voices?.value.orEmpty()
+                    val online = uiState.isOnline
+                    if (command != VoiceCommand.DefaultVoice && !VoiceCatalog.hasChoices(all, online)) {
+                        reply(VoiceReplies.NO_OTHER_VOICES)
+                    } else {
+                        val name = when (command) {
+                            VoiceCommand.NextVoice -> VoiceCatalog.next(profile.voiceName, all, online)
+                            VoiceCommand.PreviousVoice -> VoiceCatalog.previous(profile.voiceName, all, online)
+                            else -> null
+                        }
+                        viewModel.updateProfile(profile.copy(voiceName = name))
+                        voices?.useVoice(VoiceCatalog.voiceToUse(name, all, online))
+                        reply(VoiceReplies.voice(VoiceCatalog.option(name, all)?.label))
+                    }
+                }
+
                 is VoiceCommand.SetVerbosity -> {
                     viewModel.updateProfile(profile.copy(verbosity = command.verbosity))
                     reply(VoiceReplies.detail(command.verbosity))
@@ -614,6 +638,7 @@ fun VisorLayout(
                             onRequestWearablesPermission = onRequestWearablesPermission,
                             onCapture = onCapture,
                             reading = reading,
+                            voices = voices,
                         )
                     }
                 }
