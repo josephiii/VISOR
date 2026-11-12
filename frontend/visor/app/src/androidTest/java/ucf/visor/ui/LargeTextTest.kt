@@ -74,7 +74,7 @@ class LargeTextTest {
 
     @Test
     fun signUp() = assertNothingCutOff {
-        SignUpScreen(viewModel = VisorViewModel(app), onSignUpClick = {}, onLoginClick = {})
+        SignUpScreen(viewModel = VisorViewModel(app), onSignUpClick = { _, _ -> },onLoginClick = {})
     }
 
     @Test
