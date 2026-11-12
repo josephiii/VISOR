@@ -86,9 +86,10 @@ fun VisorNavHost(
             SignUpScreen(
                 viewModel = viewModel,
                 talk = talk,
-                // Register only creates the account — the new user must now
-                // verify the emailed code.
-                onSignUpClick = { email -> viewModel.verifyAccount(email) },
+                // DISABLED (email verification):
+                // onSignUpClick = { email -> viewModel.verifyAccount(email) },
+                // Sign-up logs the new user in; no saved profile -> onboarding.
+                onSignUpClick = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onLoginClick = { viewModel.login() }
             )
         }

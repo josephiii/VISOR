@@ -48,9 +48,10 @@ import ucf.visor.ui.viewmodel.VisorViewModel
 private const val TAG = "VISOR Sign up"
 
 /**
- * NOTE: the email is only checked for its shape here (see [checkSignUp]);
- * ownership of the address is proven afterwards by the emailed code, entered on
- * the verify_account / enter_code screens, so [onSignUpClick] gets the email.
+ * NOTE: the email is only checked for its shape here (see [checkSignUp]).
+ * Email verification (emailed code on verify_account / enter_code) is currently
+ * DISABLED, so after registering the new user is logged in and [onSignUpClick]
+ * gets the session tokens.
  *
  * @param talk says what went wrong when signing up fails, for a user who isn't
  *   looking at the screen (see [ErrorMessage]).
@@ -58,7 +59,7 @@ private const val TAG = "VISOR Sign up"
 @Composable
 fun SignUpScreen(
     viewModel: VisorViewModel,
-    onSignUpClick: (email: String) -> Unit,
+    onSignUpClick: (accessToken: String, refreshToken: String) -> Unit,
     onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     talk: (String, VoiceCategory) -> Unit = { _, _ -> },
@@ -124,9 +125,29 @@ fun SignUpScreen(
             when (val result = AuthApi.register(username.trim(), email.trim(), password)) {
                 is ApiResult.Success -> {
                     // Backend returns { "user_id": ... } — no token yet.
-                    // The backend has emailed a code; the user verifies next.
-                    isLoading = false
-                    onSignUpClick(email.trim())
+                    // DISABLED (email verification): the backend emails a code and
+                    // the user verifies next. Re-enable by restoring this call and
+                    // the verify_account / enter_code wiring in VisorNavHost.
+                    // isLoading = false
+                    // onSignUpClick(email.trim())
+
+                    // Without verification, log the new account straight in; the
+                    // ViewModel then sends it through onboarding (no saved profile).
+                    when (val login = AuthApi.login(email.trim(), password)) {
+                        is ApiResult.Success -> {
+                            isLoading = false
+                            onSignUpClick(
+                                login.json.optString("access_token"),
+                                login.json.optString("refresh_token"),
+                            )
+                        }
+
+                        is ApiResult.Error -> {
+                            isLoading = false
+                            Log.w(TAG, "Login after sign-up failed (${login.code}): ${login.message}")
+                            requestError = authErrorMessage(login, AuthRequest.LOG_IN)
+                        }
+                    }
                 }
 
                 is ApiResult.Error -> {
