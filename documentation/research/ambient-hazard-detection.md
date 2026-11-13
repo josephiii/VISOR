@@ -11,13 +11,13 @@ Today, "Check for hazards" takes **one** picture when the user asks, and VISOR s
 
 > ...during obstacle navigation modes, audio alerts notify me of the direction and urgency of a nearby obstacle ("chair, 2 o'clock, close"), so that I can react appropriately without needing visual confirmation.
 
-**Short answer: yes. A first version can be built on VISOR's current models and server, as a "hazard watch" the user turns on and off. Three limits of the current tools need to be fixed before it can be trusted outdoors. Each fix is a small step from what VISOR already uses.**
+**Short answer: yes. A first version can be built on VISOR's current models and server, as a "hazard watch" the user turns on and off. The GPU server is fast enough with room to spare. The real limits are what the detector can name and how trustworthy its distances are, and the bench shows how to close the first one.**
 
-| | Verdict | Evidence |
+| | Verdict (measured on the GPU server, 2026-11-12) | Evidence |
 |---|---|---|
-| Can the current pipeline (glasses stream → YOLO11n + Depth-Anything-V2 on the server) run continuously? | **Yes, by design**. The glasses stream already runs for minutes in the head-motion lab, and both models are small. Its speed is **not measured yet**: the bench that measures it is checked in. Sending today's photos would cost about **600 MB of data an hour**; smaller frames cut that to about 270 MB | [Measurements](#what-we-measured) |
-| Does it find the hazards that matter? | **Partly.** It finds people, vehicles, bikes and furniture well. It **cannot** find drop-offs, holes, stairs, curbs or poles, because those aren't among YOLO11's 80 classes. | Manhole and street tests below |
-| Are its distances right? | **Indoors, roughly. Outdoors, no.** The depth model is the *indoor* metric model. | Indoor vs outdoor depth below |
+| Can the current pipeline (glasses stream → YOLO11n + Depth-Anything-V2 on the server) run continuously? | **Yes.** The models take **about 26 ms a frame** on the GPU, and the live endpoint answers in **0.35 s** (median; 0.43 s at the 90th percentile) from a home connection. That's enough for 2 checks a second, inside the 1.2 s budget. Data: about **240 MB an hour** with smaller frames, against 580 MB with today's | [Measurements](#what-we-measured) |
+| Does it find the hazards that matter? | **YOLO11n: partly.** People, vehicles, bikes and furniture, but it has no class for holes, stairs, curbs or poles. **YOLOE found the open manhole** that YOLO11n can't name, plus traffic cones and a door, for 7 ms more a frame. Neither found the rooftop drop-off | [Detector results](#2-what-the-detectors-can-name-measured) |
+| Are its distances right? | **Unproven, and the two depth models disagree by 1.6–4.9× under 4 m.** The *outdoor* model is the implausible one at short range, even outdoors, so the earlier plan to switch to it is withdrawn. A tape-measure check is now the most important missing test | [Depth results](#3-how-far-away-things-are-measured) |
 | Does it work offline? | **No.** YOLO and depth run on the server, as "Check for hazards" does today | [Offline features](../developer/offline-features.md) |
 
 **Recommendation:** build it in three phases (see the [plan](#the-plan)). Phase 1 uses only today's toolset and ships the interaction design, alert policy and safety rules. Phase 2 fixes what the detector can see and how well it judges distance. Phase 3 moves detection onto the phone for offline use and lower latency.
@@ -50,71 +50,113 @@ Ambient detection is still compatible with that decision, as long as it **doesn'
 | Distinct sounds and vibrations | `tts/Chimes` (synthesized tones), `ui/feedback/Haptics` (one pattern per meaning) | Needs two new patterns each (critical, warning) |
 | Per-category volume | `data/AudioMix` | Needs a *Hazard alerts* category |
 | Offline locking | `capture/Availability` | The watch is **Locked** offline in phases 1–2 |
-| A one-shot VLM | `POST /vlm/image_prompt` (Qwen3-VL-2B) | **Too slow for alerts** (measured below), but useful for a "what's ahead?" check on demand |
+| A one-shot VLM | `POST /vlm/image_prompt` (Qwen3-VL-2B) | **Too slow for alerts** (generative, see [tools](#tool-quality-analysis)), but useful for a "what's ahead?" check on demand |
 
 ---
 
 ## What We Measured
 
-> **Model timings are not in this document yet.** The development laptop's Windows Application Control policy blocks PyTorch's native library (`torch.dll`), so YOLO and the depth models couldn't run on it. The bench is checked in as [`backend/scripts/bench_hazard_watch.py`](../../backend/scripts/bench_hazard_watch.py), to run on the GPU server where the watch's real numbers come from (see [Measurements to take](#measurements-to-take)). Everything below is either measured, from the model's own documentation, or from VISOR's code, and each says which.
+*Run on VISOR's GPU server (CUDA) on 2026-11-12 with [`backend/scripts/bench_hazard_watch.py`](../../backend/scripts/bench_hazard_watch.py), over the 14 sample images in `backend/samples/`, each resized to the glasses' stream size (long side 896 px). Times are the median of 5 runs after a warm-up (3 for depth). The live endpoint was timed separately from a developer's home connection. The VLM was not timed (`--vlm` not run).*
 
-### 1. Upload size and mobile data *(measured)*
+### 1. Speed
 
-Each of the 14 sample images was resized to the glasses' stream size and compressed as `ApiClient.jpeg` does (quality 85), and again at 640 px and quality 70:
+| Stage | Median per frame |
+|---|---|
+| YOLO11n, 896 px frame | 13.7 ms |
+| YOLO11n, 640 px frame | **10.4 ms** |
+| Depth-Anything-V2 Metric Indoor Small | **16.0 ms** |
+| Depth-Anything-V2 Metric Outdoor Small | 15.9 ms |
+| YOLOE-26s, text-prompted with 26 hazard words | 17.2 ms |
+| **Today's pipeline (YOLO11n 640 + indoor depth)** | **≈ 26 ms** |
 
-| Frame sent | Median size | Data at 1 check/s | Data at 2 checks/s |
+**The live endpoint**, `POST /yolo/runHazardDetection`, called 10 times per frame size from a home broadband connection (network round trip ≈ 70–80 ms):
+
+| Frame sent | Size | Median | 90th percentile | Range |
+|---|---|---|---|---|
+| 640 px, quality 70 | 48 KB | **0.35 s** | **0.43 s** | 0.21–0.69 s |
+| 896 px, quality 85 (today) | 123 KB | 0.30 s | 0.42 s | 0.21–0.42 s |
+
+**Findings:**
+
+- **The server is not the bottleneck.** Model time is about 26 ms. The other 200–300 ms of each call is a new connection per request (the app's OkHttp client reuses connections, which saves one round trip), upload, image decode, and running depth on the *full-size* image: the downscale TODO in `DepthEstService` isn't done. Phase 1's per-stage timing log will show which.
+- **On home broadband, frame size made no difference.** On mobile data, where upload is slower and round trips are longer, the 640 px frame should save roughly 50–100 ms; that still needs measuring from a phone.
+- **Estimated end to end on a phone:** about 0.35–0.6 s for the server call on mobile data, plus the glasses' Bluetooth frame delivery (unmeasured) and about 0.3 s for speech to start. That comes to roughly 0.8–1.1 s: **inside the 1.2 s budget, but not by much.** This is an estimate until it's measured on a phone.
+- **Capacity:** at about 26 ms of GPU time a frame, one GPU can serve on the order of **15–20 users** each checking twice a second, before batching or a second worker. Enough for testing and a pilot.
+
+### 2. What the detectors can name *(measured)*
+
+`yolo11n.pt` knows the 80 COCO classes. It has **no class for** stairs, curb, hole or open manhole, drop-off or ledge, pole or bollard, traffic cone, door, wall, barrier, low branch or wet floor sign. YOLOE was given 26 hazard words instead (in the script's `HAZARD_WORDS`).
+
+| Image | YOLO11n found | YOLOE found | What it means |
 |---|---|---|---|
-| 896 px, quality 85 (what "Check for hazards" sends today) | **85 KB** | 308 MB/hour | **615 MB/hour** |
-| 640 px, quality 70 | **37 KB** | 133 MB/hour | 267 MB/hour |
+| `manhole.jpg` (open manhole in the path) | **nothing** | **open manhole (0.51)**, plus the walker's own shoe as "dog" (0.28) | YOLOE closes the gap YOLO11n can't. The false "dog" falls under a 0.35 threshold |
+| `edge.jpg` (rooftop drop) | nothing | nothing | **Drop-offs aren't objects.** No detector here sees them (see depth below) |
+| `dangerous.jpg` (person crossing in front of a car) | person, 5 cars | person (0.92), cars, a truck, **3 traffic cones** | Same moving hazards, plus cones |
+| `street.jpg` (crowd, cars, scooter) | 22 objects, many people at 0.26–0.4 | 35 objects, people at 0.8–0.9, plus a bicycle and a cone | YOLOE is more confident on people, and found more |
+| `room.jpg` (bedroom) | bed, chair, potted plant, tv | chair (0.77), **door (0.43)** | YOLOE missed the bed only because "bed" wasn't in its word list |
+| `living.png` | couch | nothing | Same: "couch" wasn't in the list |
+| `dog.jpg` | fire hydrant, dog | dog, and the hydrant as **"fire" (0.42)** | **A word-list hazard:** "fire" matched a red hydrant. Above a 0.35 threshold, this would be a false alarm |
+| `puppy.png` | **"bear" (0.81)** | dog (0.41) | YOLO11n can be confidently wrong too |
 
-**Finding:** sending today's photos continuously would use about half a gigabyte an hour, which is too much for many users' data plans. The watch should send 640 px at quality 70. YOLO resizes to 640 internally anyway, so detection loses nothing; depth runs at 518. Phase 3 (detection on the phone) brings the data use close to zero.
+**Findings:**
 
-### 2. What the detector can name *(from the model)*
+- **YOLOE can name hazards YOLO11n has no word for**, and the open manhole is exactly the kind of hazard the watch exists for. It costs 7 ms more a frame.
+- **YOLOE is only as good as its word list.** Every object the watch should name must be in it (bed, couch, table...). Vague words cause false alarms: "fire" matched a red fire hydrant. The list has to be curated and tested, not just typed in.
+- **One frame and one image prove little.** A 0.51 on one manhole photo is promising, not reliable. The tracker's "seen in 2 of 3 frames" rule and a real test set (below) are what make it trustworthy.
 
-`yolo11n.pt` knows the 80 COCO classes. That list has the moving hazards (person, bicycle, car, motorcycle, bus, truck, dog), street furniture (bench, fire hydrant, stop sign, parking meter, traffic light) and indoor furniture (chair, couch, dining table, potted plant). **It has no class for:** stairs, curb, hole or open manhole, drop-off or ledge, pole or bollard, traffic cone, door or glass door, wall, barrier, low branch, wet floor sign.
+### 3. How far away things are *(measured)*
 
-**Finding:** two of the sample images VISOR's team chose as hazards, `manhole.jpg` (an open manhole in the walking path) and `edge.jpg` (a drop from a rooftop), show hazards the current detector **has no word for**. Whatever else it finds in them, it can't warn about the hole or the edge. These are the trip-and-fall hazards that matter most to someone walking, and the earlier [VLM test](../testing/vlm-tests.md) shows the gap isn't covered elsewhere: asked to describe `manhole.jpg`, Qwen3 called it a manhole with a visible interior, but not a danger.
+Both depth models measured every box YOLO11n found. For the 11 objects the indoor model placed under 4 m, the range the watch speaks about:
 
-### 3. How far the depth model can see *(from the model)*
+| Object | Indoor model | Outdoor model | Ratio |
+|---|---|---|---|
+| `street.jpg` person, motorcycle | 3.9 m | 6.1 m | 1.6× |
+| `night.jpg` person | 2.8 m | 6.0 m | 2.1× |
+| `room.jpg` bed | 3.4 m | 7.8 m | 2.3× |
+| `dangerous.jpg` person | 2.8 m | 7.6 m | 2.7× |
+| `dog.jpg` dog | 2.2 m | 8.8 m | 4.0× |
+| `puppy.png` puppy (a close-up) | 1.3 m | 6.2 m | 4.9× |
+| *All 11* | | | **median 2.7×, range 1.6–4.9×** |
 
-The server uses **Depth-Anything-V2 Metric Indoor Small**, fine-tuned on the synthetic indoor Hypersim set with a **maximum depth of 20 m**. The outdoor sibling, **Metric Outdoor Small**, is fine-tuned on Virtual KITTI 2 (driving scenes) with a **maximum of 80 m** ([Depth-Anything-V2 metric depth](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth)). Both share the same code path: `DepthEstService` would change only its model id.
+**Which is closer to the truth?** There's no ground truth for these photos, but simple geometry gives a sanity check. The person in `dangerous.jpg` fills about 93% of the frame's height. For a person about 1.75 m tall to be **7.6 m** away (outdoor model), the camera would need a telephoto lens, about a 14° vertical view. At **2.8 m** (indoor model), it needs about 37°, which is an ordinary camera. The close-up `puppy.png` can't be 6.2 m away either. The *outdoor* model is the implausible one at short range, **even outdoors**.
 
-**Finding:** outdoors, the indoor model squeezes a street into a room-sized scale. For distances under 4 m, the only range the watch speaks about, the error matters less than the cap. But it is unmeasured, and "close" is exactly where a wrong number misleads. The bench reports both models' distances for the same boxes. Phase 2 checks them with a tape measure.
+**Findings:**
 
-### 4. How long the pipeline takes *(to measure)*
+- **Keep the indoor model for the watch's range (under about 8 m), indoors and out.** The earlier recommendation to switch to the outdoor model outdoors is withdrawn: at short range it overestimates by 2–5×, and overestimating distance is the dangerous direction ("ahead" when it's really "close"). The indoor model's 20 m cap only matters for far vehicles, and box growth handles those.
+- **The indoor model may still overestimate.** The geometry check suggests it, but doesn't prove it. A tape-measure test is now **the most important missing measurement**: the distance bands depend on it.
+- **Drop-offs aren't visible to depth either.** On `edge.jpg`, a rooftop view of a street dozens of metres below, the indoor model's deepest point is 9.4 m and the outdoor model's 12.5 m. Neither sees the drop. A drop-off needs its own trained class, or a check that the ground ahead is where the IMU says it should be.
 
-"Check for hazards" already runs YOLO11n and then the depth model on every photo, one after the other (`routes/YoloRoutes.py`), and skips depth when YOLO finds nothing. The bench times each stage on the server's hardware. Until then, the design uses a **budget** instead of a measurement: **≤ 1.2 s from frame to first sound**, at the 90th percentile. That is the latency every threshold in the [urgency levels](#urgency-levels) is built around. If the bench shows the server can't meet it, the phase 3 order changes: on-device detection moves first.
+### 4. Upload size and mobile data *(measured)*
 
-### Measurements to take
-
-From `backend/` on the GPU server (and once on a laptop for comparison):
-
-```
-python -m scripts.bench_hazard_watch          # add --vlm to time the VLM too
-```
-
-| Record | Why it matters | Decision it settles |
+| Frame sent | Median size (14 images) | Data at 2 checks/s |
 |---|---|---|
-| YOLO11n ms, depth ms (indoor), per image | The server's share of the 1.2 s budget | Whether phase 1 can promise 2 checks/s |
-| Depth indoor vs outdoor, for the same boxes, on `street.jpg` and `dangerous.jpg` | How wrong indoor depth is outdoors | Whether phase 2's depth switch is urgent |
-| YOLOE's boxes on `manhole.jpg`, `edge.jpg`, `street.jpg` | Can it name the hole, the edge, the curb? | Whether YOLOE is worth carrying past labeling help |
-| YOLOE ms vs YOLO11n ms | Its cost | Server-side YOLOE in phase 2, or fine-tuned YOLO11n only |
-| VLM ms (`--vlm`) | Why the VLM isn't the alert path | Confirms or overturns the VLM verdict below |
+| 896 px, quality 85 (what "Check for hazards" sends today) | 80 KB | **576 MB/hour** |
+| 640 px, quality 70 | **33 KB** | **239 MB/hour** |
 
-Add the results here as a table, with the machine they came from.
+**Finding:** the watch should send 640 px at quality 70. YOLO resizes to 640 internally anyway, so detection loses nothing; depth runs at 518. Phase 3 (detection on the phone) brings data use close to zero.
+
+### Still to measure
+
+| Measurement | How | Decision it settles |
+|---|---|---|
+| **Depth vs a tape measure**, 0.5–5 m, indoors and outdoors | Photograph a person and a chair at marked distances with the glasses | The distance bands, and whether the indoor model needs a correction factor |
+| End to end on a phone, on mobile data | Timestamps from glasses frame to first sound, in a phase 1 debug build | Whether 2 checks/s and the 1.2 s budget hold |
+| YOLOE on a real hazard set: curbs, stairs, poles, glass doors, holes, from walking height | 50–100 photos taken with the glasses, run through the bench | Whether YOLOE replaces YOLO11n in phase 2, and its threshold |
+| VLM time | `python -m scripts.bench_hazard_watch --vlm` | Confirms the VLM stays out of the alert path |
+| Server instance type | `nvidia-smi` | Puts the numbers above against the hosting research |
 
 ---
 
 ## Tool Quality Analysis
 
-The [measurements](#what-we-measured) found three gaps in today's tools: hazards with no class, depth with the wrong scale outdoors, and no offline path. These are the tools considered for each. Every new tool is judged on the same questions: does it close the gap, how good is it on the evidence, what does it cost per frame, can it run on the phone later, and what are its strings attached?
+The [measurements](#what-we-measured) found three gaps in today's tools: hazards with no class, distances nobody has checked against a tape measure, and no offline path. These are the tools considered for each. Every new tool is judged on the same questions: does it close the gap, how good is it on the evidence, what does it cost per frame, can it run on the phone later, and what are its strings attached?
 
 | Tool | Gap it closes | Quality evidence | Cost | Verdict |
 |---|---|---|---|---|
 | **YOLO11n** (in use) | — | Proven, fast; 2.6M parameters. Only the 80 COCO classes | Smallest of the YOLO family | **Keep** for phase 1 |
-| **YOLOE** (Ultralytics, open-vocabulary YOLO) | Names hazards by *text prompt*: "stairs," "open manhole," "pole" | LVIS minival (1,203 classes), text prompts: **YOLOE-26n 24.7, YOLOE-26s 30.8 mAP** ([docs](https://docs.ultralytics.com/models/yoloe)). That's useful, but zero-shot rare classes are missed often. For comparison, YOLO11n scores 39.5 on COCO's 80 common classes. | 26s: 10.7M parameters, about 4× YOLO11n. Prompts can be baked in at export (ONNX, LiteRT), so it then runs as a plain YOLO. The class comparison adds about 19% at 1,203 classes, and less at VISOR's ~26 | **Adopt as a tool, not yet as the detector:** use it to auto-label VISOR's hazard dataset (cuts labeling time), and as a server-side candidate if the bench shows it finds `manhole.jpg`'s hole. Not trusted alone for a safety alert on zero-shot accuracy |
+| **YOLOE** (Ultralytics, open-vocabulary YOLO) | Names hazards by *text prompt*: "stairs," "open manhole," "pole" | LVIS minival (1,203 classes), text prompts: **YOLOE-26n 24.7, YOLOE-26s 30.8 mAP** ([docs](https://docs.ultralytics.com/models/yoloe)). That's useful, but zero-shot rare classes are missed often. For comparison, YOLO11n scores 39.5 on COCO's 80 common classes. | 26s: 10.7M parameters, about 4× YOLO11n. Prompts can be baked in at export (ONNX, LiteRT), so it then runs as a plain YOLO. The class comparison adds about 19% at 1,203 classes, and less at VISOR's ~26 | **Promoted to the phase 2 lead candidate.** On the server bench it found the open manhole YOLO11n can't name, plus cones and a door, for 17 ms a frame (7 ms more than YOLO11n). It also called a red hydrant "fire" and a shoe "dog", and it misses anything left out of its word list. Next: a curated word list and a real hazard test set from the glasses. Until then, also use it to auto-label VISOR's own dataset |
 | **YOLO11n fine-tuned** on VISOR's hazard classes | Same, with VISOR's own data | The recipe is in [yolo-research.md](./yolo-research.md); fine-tuned small models reliably beat zero-shot on their own classes, and accuracy is measured on VISOR's own validation set | Same speed as today. Costs data collection: hundreds of varied, labeled images per new class for a pilot, more for production. Ultralytics' [training tips](https://docs.ultralytics.com/yolov5/tutorials/tips_for_best_training_results/) suggest 1,500+ per class | **Phase 2 target.** The model that also goes on the phone in phase 3 |
-| **Depth-Anything-V2 Metric Outdoor Small** | Outdoor scale | Same family and size as the indoor model; 80 m range vs 20 m. Trained on synthetic *driving* scenes, so its viewpoint is a car's, not a pedestrian's | Same as indoor; a one-line change in `DepthEstService` | **Adopt in phase 2**, chosen per scene, after a tape-measure check |
+| **Depth-Anything-V2 Metric Outdoor Small** | Outdoor scale | Same family and size as the indoor model; 80 m range vs 20 m. Trained on synthetic *driving* scenes, so its viewpoint is a car's, not a pedestrian's | Same as indoor (15.9 ms measured); a one-line change in `DepthEstService` | **Rejected for the watch.** Measured on the same boxes, it put objects under 4 m **1.6–4.9× farther** than the indoor model, implausibly far on a geometry check, even outdoors. It may still help for far vehicles, which box growth already covers |
 | **Ground-plane distance** (camera height + IMU pitch + box bottom) | Distance with no depth model, so offline too | Pure geometry. The glasses' roll and pitch were validated in the [pose report](../testing/imu-pose-tracking-report.md) (they agree with an IMU-only filter). It assumes flat ground and that the object touches the floor, and the error grows with distance, which is acceptable under 4 m | Microseconds | **Adopt in phase 2 as a cross-check; phase 3 as the offline distance** |
 | **Box growth (looming)** | "Coming toward me," with no depth | A well-established time-to-contact cue (the rate an object's image grows), used in collision warning. It needs consistent tracking across frames, and it's noisy for small, far boxes, which the watch ignores anyway | Free once the tracker exists | **Adopt in phase 1**: it drives "approaching" |
 | **Qwen3-VL-2B** (VISOR's VLM) | Understands any hazard, in context | Rich answers, but it is generative: it writes its answer word by word, so one answer takes many forward passes of a 2B model, against one pass of a 2.6M-parameter YOLO. It can also hallucinate, and in the [VLM test](../testing/vlm-tests.md) it described an open manhole without calling it a danger | Seconds per answer (bench `--vlm` measures it), plus heavy GPU memory per user | **Reject for alerts.** Keep for an on-demand "VISOR, what's ahead?" while the watch runs, and later perhaps as a slow second opinion when the user stops walking |
@@ -178,7 +220,7 @@ Three levels. **Only the first two are on by default.**
 | **Warning** | In path within **1–2.5 m** (3–8 ft). A person or vehicle approaching from any direction within 4 m. | Warning tone, then "Chair, 12 o'clock, close." Waits for a short reply or status update to finish, but cuts into a long reading (which pauses). | Only when it moves up a distance band, enters the path, or is still in path after 8 s |
 | **Notice** *(off by default)* | Off to the side within 2.5 m, or in path at 2.5–4 m | No tone. Spoken only when VISOR is otherwise quiet: "Bench, 10 o'clock." | Once per object |
 
-Why these thresholds: at a typical walking speed of 1.2–1.4 m/s, the system's own delay eats into the warning distance. With the **1.2 s budget** from frame to first sound (see [measurements](#4-how-long-the-pipeline-takes-to-measure)), the user walks about **1.6 m** before hearing about something. A warning at 2.5 m leaves under a metre and about a second to react, which is why the warning band starts no closer than that. It is also why "very close" is called critical: by the time it is spoken, the object may be at arm's length. When phase 3 cuts the latency, the bands can come in and fewer alerts fire. **Once the bench has run, recompute the bands as (walking speed × measured 90th-percentile latency) + 1 m of reaction room.**
+Why these thresholds: at a typical walking speed of 1.2–1.4 m/s, the system's own delay eats into the warning distance. The server bench puts frame to first sound at roughly **0.8–1.1 s** on a phone ([estimate](#1-speed)), inside the **1.2 s budget**. At 1.3 m/s the user walks **1.0–1.4 m** before hearing about something. Adding 1 m of reaction room gives **2.0–2.4 m**, so the warning band's 2.5 m outer edge holds. It is also why "very close" is called critical: by the time it is spoken, the object may be at arm's length. Recompute as (walking speed × 90th-percentile latency) + 1 m once end to end is measured on a phone, and again when phase 3 cuts the latency; then the bands can come in and fewer alerts fire.
 
 ### Staying quiet: the rules that make it bearable
 
@@ -265,7 +307,7 @@ Users who said their vision affects them **a lot** (`Severity.SEVERE`) get the w
 |---|---|
 | `backend/services/DepthEstService.py` | Do the existing TODO: downscale to the model's 518 px before inference. Return the image size the boxes refer to. Log per-stage time. |
 | `backend/routes/YoloRoutes.py` | Accept `?watch=1` to skip objects below 0.35 confidence, and return processing time in a header so the app can show and log real latency |
-| `network/HazardClient` | For the watch, send 640 px JPEGs at quality 70 (37 KB rather than 85 KB; [measured](#1-upload-size-and-mobile-data-measured)) |
+| `network/HazardClient` | For the watch, send 640 px JPEGs at quality 70 (33 KB rather than 80 KB; [measured](#4-upload-size-and-mobile-data-measured)) |
 | `backend/scripts/bench_hazard_watch.py` *(added)* | Run it on the GPU server first. Its numbers set the bands and the check rate |
 | `capture/StreamingFrameSource` *(new)* | A long-lived glasses session (camera + Motion, as `LabGlassesLink` does) that holds `GlassesLease` as `"hazard_watch"`. It hands out the latest frame, and it implements `PhotoSource`, so the other features can take their pictures from it while it runs. |
 | `hazards/` *(new package, pure Kotlin)* | `HazardTracker`, `HazardScorer`, `AlertPolicy`, each unit-tested with scripted detection sequences: flicker, approach, grouping, cooldowns, stale drops, can't-see |
@@ -279,8 +321,8 @@ Users who said their vision affects them **a lot** (`Severity.SEVERE`) get the w
 
 *Goal: drop-offs, stairs, curbs, poles, and distances that hold up outdoors.* See the [tool analysis](#tool-quality-analysis) for why each step was chosen.
 
-1. **Detector:** a YOLO11n fine-tuned with VISOR's hazard classes (stairs up, stairs down, curb, pole/bollard, hole/drop-off, open door, low branch). It follows the two-stage recipe already in [yolo-research.md](./yolo-research.md), with COCO images mixed in so people and vehicles aren't forgotten. YOLOE text prompts can bootstrap the labels for the new classes (auto-label, then review in CVAT or Roboflow), which cuts the labeling work.
-2. **Depth:** use the **Outdoor** metric model outdoors and the Indoor one indoors. Choose by GPS accuracy and ambient light, or by a scene label from ML Kit, which is already on the phone.
+1. **Detector:** first, **YOLOE-26s with a curated word list**, the lead candidate since the bench found the open manhole with it ([results](#2-what-the-detectors-can-name-measured)). The list has every object the watch should name, and no vague words like "fire". Test it on 50–100 hazard photos taken with the glasses from walking height, and pick its threshold from that set. If it falls short on curbs, stairs or drop-offs, fine-tune: a YOLO11n (or YOLOE) trained on VISOR's hazard classes (stairs up, stairs down, curb, pole/bollard, hole/drop-off, open door, low branch). That follows the two-stage recipe in [yolo-research.md](./yolo-research.md), with COCO images mixed in so people and vehicles aren't forgotten. YOLOE can auto-label the new classes for review in CVAT or Roboflow, which cuts the labeling work.
+2. **Depth:** keep the **Indoor** metric model, indoors and out (the outdoor model measured 2–5× too far at short range; see [depth results](#3-how-far-away-things-are-measured)). Check it against a tape measure from 0.5 to 5 m, and add a correction factor if it reads consistently long.
 3. **Ground-plane distance as a cross-check:** for anything standing on the floor, its distance follows from the camera's height and pitch (IMU) and the bottom edge of its box: `distance ≈ eye height ÷ tan(pitch below horizon + angle of the box's bottom edge)`. It needs no depth model, so it works offline and catches a depth model that is badly wrong.
 
 ### Phase 3: On the phone
