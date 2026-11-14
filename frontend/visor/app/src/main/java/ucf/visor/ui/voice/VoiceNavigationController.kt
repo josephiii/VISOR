@@ -38,7 +38,7 @@ enum class VoiceNavState {
 
 /**
  * Owns the "VISOR GO" -> free-speech -> [VoiceCommand] pipeline.
- * Does not itself run the KWS wake-word engine (MainActivity keeps a
+ * Does not itself run the KWS wake-word engine (VisorEngine keeps a
  * single [ucf.visor.stt.Listener] for both the OCR wake phrases and "VISOR GO",
  * so mic ownership has one clear home) — call [activate] when "VISOR GO" fires.
  *

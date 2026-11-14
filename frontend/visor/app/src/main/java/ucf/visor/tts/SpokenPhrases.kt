@@ -27,6 +27,10 @@ object SpokenPhrases {
     const val GLASSES_PHOTO_FAILED = "I couldn't take a picture with your glasses."
     const val GLASSES_PHOTO_UNREADABLE = "I couldn't read the photo from your glasses."
 
+    /** The wearer paused VISOR's session: a tap on the glasses, or taking them off. */
+    const val GLASSES_PAUSED =
+        "Your glasses have paused VISOR. Put them on, or tap them once, then try again."
+
     /** No glasses to take the picture: what to check, and the way to carry on without them. */
     const val NO_GLASSES_TRY_PHONE =
         "No connected glasses were found. Make sure your glasses are on and connected, " +

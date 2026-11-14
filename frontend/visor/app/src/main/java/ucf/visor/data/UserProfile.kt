@@ -187,6 +187,22 @@ data class UserProfile(
      * the user turns it off, like the sounds it goes with.
      */
     val vibrationEnabled: Boolean = true,
+
+    /**
+     * Keep listening for wake phrases with the screen off or in another app,
+     * through a foreground service and its notification (see
+     * background.ListeningService). Off until the user turns it on: it uses
+     * more battery, and keeps a microphone open the user may not expect.
+     */
+    val backgroundListeningEnabled: Boolean = false,
+
+    /**
+     * With glasses connected, hear commands through their microphone, not the
+     * phone's (see stt.MicRoute). On by default: the glasses hear the wearer
+     * best, above all with the phone in a pocket. Turning it off keeps the
+     * glasses' speakers at full quality.
+     */
+    val listenThroughGlasses: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About

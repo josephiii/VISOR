@@ -33,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -89,6 +90,7 @@ fun VisorLayout(
     onCapture: (CameraCommand) -> Unit = {},
     voiceNav: VoiceNavigationController? = null,
     glassesNav: GlassesNavigationController? = null,
+    screenCommands: Flow<VoiceCommand> = emptyFlow(),
     reading: ReadingControls? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -117,21 +119,8 @@ fun VisorLayout(
     // OBSERVERS
     ///////////////////////////////////////////////////////////////////////////
     // General State Observers:
-    // Voice navigation listening, felt as well as seen (see VoiceListeningGlow
-    // below), for a user who isn't looking at the screen: a firm buzz as the
-    // microphone opens for a command, and a light tick as it closes. The
-    // microphone opens a moment after VISOR says "Listening." (see
-    // VoiceNavState.PROMPTING), and the buzz waits for it, so it means "speak now".
-    val haptics = LocalHaptics.current
-    LaunchedEffect(voiceNav, haptics) {
-        voiceNav?.state
-            ?.map { it == VoiceNavState.LISTENING }
-            ?.distinctUntilChanged()
-            ?.drop(1) // the state at launch is not a change
-            ?.collect { listening ->
-                if (listening) haptics?.listeningStarted() else haptics?.listeningStopped()
-            }
-    }
+    // Voice navigation listening is felt as a buzz as well (VisorEngine,
+    // so it is felt with the screen off too), and seen as the glow below.
 
     ///////////////////////////////////////////////////////////////////////////
     // Screen State Observers:
@@ -282,7 +271,10 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // Voice + Glasses-Tap Navigation Observer
-    LaunchedEffect(voiceNav, glassesNav) {
+    // The commands that need a screen, from "VISOR GO" and the glasses' taps.
+    // The rest (pictures, reading, speech settings) VisorEngine carries out
+    // itself, with the screen on or off: see background.BackgroundPolicy.
+    LaunchedEffect(screenCommands) {
         // What VISOR says back about a command itself, and, once it has done
         // what was asked, where it went or what it changed (VoiceReplies): a
         // user who isn't looking at the screen would otherwise hear nothing.
@@ -291,10 +283,7 @@ fun VisorLayout(
         // name as it opens (VisorNavHost), so VISOR doesn't say it as well.
         val announce: (String) -> Unit = { if (!context.isScreenReaderOn()) reply(it) }
 
-        merge(
-            voiceNav?.commands ?: emptyFlow(),
-            glassesNav?.commands ?: emptyFlow()
-        ).collect { command ->
+        screenCommands.collect { command ->
             when (command) {
                 // Home/Settings/Help/Pairing/camera are all post-login-only —
                 // none of them have a touch equivalent before uiState.isAuthComplete
@@ -344,12 +333,6 @@ fun VisorLayout(
                     if (navController.popBackStack()) announce(VoiceReplies.BACK)
                     else reply("There's nowhere to go back to.")
 
-                // From the glasses: one of Home's camera buttons, from wherever
-                // the phone is. The answer is said, and kept on Home's Last answer card.
-                is VoiceCommand.RunCamera ->
-                    if (uiState.isAuthComplete) onCapture(command.command)
-                    else reply("Log in first to take a picture.")
-
                 // Before login only, as their buttons are. viewModel.login()
                 // also ends the saved login, so once logged in "log in" (or a
                 // misheard "logging") would log the user out with no "Are you
@@ -396,43 +379,6 @@ fun VisorLayout(
                     reply(VoiceReplies.highContrast(on))
                 }
 
-                // As the Pair screen's choice is, so post-login like it; said
-                // back, with how to hold the phone when that is the camera.
-                is VoiceCommand.UseCamera ->
-                    if (uiState.isAuthComplete) {
-                        viewModel.updateProfile(profile.copy(camera = command.camera))
-                        reply(
-                            when (command.camera) {
-                                CameraChoice.PHONE -> SpokenPhrases.USING_PHONE_CAMERA
-                                CameraChoice.GLASSES -> SpokenPhrases.USING_GLASSES_CAMERA
-                            }
-                        )
-                    } else {
-                        reply("Log in first to choose a camera.")
-                    }
-
-                is VoiceCommand.SetSpeechRate -> {
-                    viewModel.updateProfile(profile.copy(speechRate = command.rate))
-                    reply(VoiceReplies.speechRate(command.rate))
-                }
-
-                VoiceCommand.SpeakFaster -> {
-                    val rate = SpeechRates.faster(profile.speechRate)
-                    viewModel.updateProfile(profile.copy(speechRate = rate))
-                    reply("Faster. ${SpeechRates.spokenLabel(rate)}.")
-                }
-
-                VoiceCommand.SpeakSlower -> {
-                    val rate = SpeechRates.slower(profile.speechRate)
-                    viewModel.updateProfile(profile.copy(speechRate = rate))
-                    reply("Slower. ${SpeechRates.spokenLabel(rate)}.")
-                }
-
-                is VoiceCommand.SetVerbosity -> {
-                    viewModel.updateProfile(profile.copy(verbosity = command.verbosity))
-                    reply(VoiceReplies.detail(command.verbosity))
-                }
-
                 is VoiceCommand.SetTextScale -> {
                     viewModel.updateProfile(profile.copy(textScale = command.scale))
                     reply(VoiceReplies.textSize(command.scale))
@@ -465,34 +411,8 @@ fun VisorLayout(
                 // something inside the onboarding wizard's own voice-first flow,
                 // which listens directly (no "VISOR GO" needed) and doesn't go
                 // through this dispatcher — see ProfileCreationScreen.
-                // Said again as the kind of speech it was, at that kind's volume.
-                VoiceCommand.RepeatLast -> lastSpoken()?.let { talk(it.text, it.category) }
-                    ?: reply("I haven't said anything yet.")
-
-                // "VISOR GO" itself paused the reading ("Listening." was said
-                // over it), so by now a reading being read is a paused one.
-                // Resuming says nothing first: the reading carrying on is the reply.
-                VoiceCommand.StopReading ->
-                    if (reading != null && reading.reading.value != ReadingState.NONE) {
-                        reading.stop()
-                        reply(VoiceReplies.READING_STOPPED)
-                    } else {
-                        reply(VoiceReplies.NOTHING_BEING_READ)
-                    }
-
-                VoiceCommand.PauseReading ->
-                    if (reading != null && reading.reading.value != ReadingState.NONE) {
-                        reading.pause()
-                        reply(VoiceReplies.READING_PAUSED)
-                    } else {
-                        reply(VoiceReplies.NOTHING_BEING_READ)
-                    }
-
-                VoiceCommand.ResumeReading ->
-                    if (reading != null && reading.reading.value == ReadingState.PAUSED) reading.resume()
-                    else reply(VoiceReplies.NOTHING_TO_RESUME)
-
-                VoiceCommand.Unrecognized -> Unit // already told the user via VoiceNavigationController
+                // Everything else is VisorEngine's (BackgroundPolicy.Handler.ANYWHERE).
+                else -> Unit
             }
         }
     }

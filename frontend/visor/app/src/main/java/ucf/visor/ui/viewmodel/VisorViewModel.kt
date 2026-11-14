@@ -5,179 +5,103 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.meta.wearable.dat.core.Wearables
-import com.meta.wearable.dat.core.selectors.AutoDeviceSelector
 import com.meta.wearable.dat.core.selectors.DeviceSelector
-import com.meta.wearable.dat.core.types.Device
-import com.meta.wearable.dat.core.types.DeviceCompatibility
-import com.meta.wearable.dat.core.types.DeviceIdentifier
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import ucf.visor.data.ProfileStore
-import ucf.visor.data.SessionStore
+import ucf.visor.VisorApp
 import ucf.visor.data.UserProfile
+import ucf.visor.engine.VisorState
 import ucf.visor.network.ApiResult
 import ucf.visor.network.AuthApi
-import ucf.visor.network.Connectivity
 import ucf.visor.stt.CameraCommand
-import ucf.visor.wearables.GlassesAppUpdate
-import ucf.visor.wearables.rankForSession
-import ucf.visor.wearables.toGlassesStatus
 
+/**
+ * What the screens show, and their navigation requests. What outlives the
+ * screens (the profile, the glasses, the camera features' answers) is kept in
+ * the process-wide [VisorState], which VISOR's engine also answers from with
+ * the screen off; this ViewModel shows it and passes changes on to it.
+ */
 class VisorViewModel(application: Application) : AndroidViewModel(application) {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // VISOR
-    private val sessionStore = SessionStore(application)
-    private val profileStore = ProfileStore(application)
+    private val state: VisorState = VisorApp.from(application).state
+    private val sessionStore = state.sessionStore
+    private val profileStore = state.profileStore
     val startDestination: String = if (sessionStore.isLoggedIn()) "home" else "title"
 
-    private val connectivity = Connectivity(application)
-
-    // Online or not from the start, so a phone that is offline at launch
-    // shows its locked features at once, not after a callback.
     private val _uiState = MutableStateFlow(
         VisorUiState(
             isAuthComplete = sessionStore.isLoggedIn(),
-            isOnline = connectivity.isOnlineNow(),
+            isOnline = state.isOnline.value,
         )
     )
     val uiState: StateFlow<VisorUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            connectivity.changes().collect { online ->
-                _uiState.update { it.copy(isOnline = online) }
+            state.isOnline.collect { online -> _uiState.update { it.copy(isOnline = online) } }
+        }
+        viewModelScope.launch { state.errors.collect(::setRecentError) }
+        viewModelScope.launch {
+            state.registrationState.collect { value -> _uiState.update { it.copy(registrationState = value) } }
+        }
+        viewModelScope.launch {
+            state.isDatAppUpdateRequired.collect { required ->
+                _uiState.update { it.copy(isDatAppUpdateRequired = required) }
             }
+        }
+        viewModelScope.launch {
+            state.isFirmwareUpdateRequired.collect { required ->
+                _uiState.update { it.copy(isFirmwareUpdateRequired = required) }
+            }
+        }
+        viewModelScope.launch {
+            state.devices.collect { value -> _uiState.update { it.copy(devices = value.toImmutableList()) } }
+        }
+        viewModelScope.launch {
+            state.glassesStatus.collect { status -> _uiState.update { it.copy(glassesStatus = status) } }
         }
     }
 
-    private val _userProfile = MutableStateFlow(profileStore.load())
-    val userProfile: StateFlow<UserProfile> = _userProfile.asStateFlow()
+    val userProfile: StateFlow<UserProfile> = state.profile
 
-    private val _captures = MutableStateFlow<Map<CameraCommand, CaptureStatus>>(emptyMap())
     /**
      * What each camera feature is doing (see [onCaptureStarted]), for its
      * button on Home. A feature that isn't working isn't in it: it is idle.
      */
-    val captures: StateFlow<Map<CameraCommand, CaptureStatus>> = _captures.asStateFlow()
+    val captures = state.captures
 
-    private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
     /** What a camera feature last answered, for Home's Last answer card. */
-    val lastAnswer: StateFlow<LastAnswer?> = _lastAnswer.asStateFlow()
+    val lastAnswer = state.lastAnswer
 
-    // A wake phrase and Home's button can ask the same feature for a second
-    // picture before the first is answered; it is working until each is.
-    private val capturesInFlight = mutableMapOf<CameraCommand, Int>()
+    /** Which microphone VISOR hears commands through right now (Settings > Commands). */
+    val listeningThrough = state.listeningThrough
 
-    fun updateProfile(profile: UserProfile) {
-        _userProfile.value = profile
-        profileStore.save(profile)
-    }
+    /** Whether VISOR is listening with the screen off right now (background listening). */
+    val backgroundListeningActive = state.backgroundListeningActive
+
+    fun updateProfile(profile: UserProfile) = state.updateProfile(profile)
 
     /** [command] has been asked for: VISOR is taking its picture. Call on the main thread. */
-    fun onCaptureStarted(command: CameraCommand) {
-        capturesInFlight[command] = (capturesInFlight[command] ?: 0) + 1
-        _captures.update { it + (command to CaptureStatus.TAKING_PICTURE) }
-    }
+    fun onCaptureStarted(command: CameraCommand) = state.onCaptureStarted(command)
 
     /** The glasses have taken [command]'s picture: VISOR is working out what is in it. */
-    fun onPictureTaken(command: CameraCommand) {
-        _captures.update {
-            if (it[command] == CaptureStatus.TAKING_PICTURE) it + (command to CaptureStatus.THINKING) else it
-        }
-    }
+    fun onPictureTaken(command: CameraCommand) = state.onPictureTaken(command)
 
     /** [command] has answered with [text], which VISOR is now saying. */
-    fun onAnswered(command: CameraCommand, text: String) {
-        val left = ((capturesInFlight[command] ?: 0) - 1).coerceAtLeast(0)
-        if (left == 0) {
-            capturesInFlight.remove(command)
-            _captures.update { it - command }
-        } else {
-            capturesInFlight[command] = left
-        }
-        showAnswer(text, command)
-    }
+    fun onAnswered(command: CameraCommand, text: String) = state.onAnswered(command, text)
 
     /** Shows [text] on Home's Last answer card, as an answer [command] has just given. */
-    fun showAnswer(text: String, command: CameraCommand) {
-        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis(), command)
-    }
+    fun showAnswer(text: String, command: CameraCommand) = state.showAnswer(text, command)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // MWDAT
     // AutoDeviceSelector automatically selects the first available wearable device.
-    val deviceSelector: DeviceSelector by lazy { AutoDeviceSelector() }
-
-    private var monitoringStarted = false
-    private val deviceMonitoringJobs = mutableMapOf<DeviceIdentifier, Job>()
-    private val deviceCompatibility = mutableMapOf<DeviceIdentifier, DeviceCompatibility>()
-    private val deviceSnapshots = mutableMapOf<DeviceIdentifier, Device>()
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // MWDAT
-    private fun startMonitoring() {
-        if (monitoringStarted) {
-            return
-        }
-        monitoringStarted = true
-
-        // This allows the app to react to registration changes (registered, unregistered, etc.)
-        viewModelScope.launch {
-            Wearables.registrationState.collect { value ->
-                _uiState.update { it.copy(registrationState = value) }
-            }
-        }
-        // Reported by whichever VISOR feature's glasses session was refused.
-        viewModelScope.launch {
-            GlassesAppUpdate.required.collect { required ->
-                _uiState.update { it.copy(isDatAppUpdateRequired = required) }
-            }
-        }
-        // This automatically updates when devices are discovered, connected, or disconnected
-        viewModelScope.launch {
-            Wearables.devices.collect { value ->
-                _uiState.update { it.copy(devices = value.toList().toImmutableList()) }
-                // Monitor device metadata for compatibility issues
-                monitorDeviceCompatibility(value)
-            }
-        }
-    }
-
-    private fun monitorDeviceCompatibility(devices: Set<DeviceIdentifier>) {
-        // Cancel monitoring jobs for devices that are no longer in the list
-        val removedDevices = deviceMonitoringJobs.keys - devices
-        removedDevices.forEach { deviceId ->
-            deviceMonitoringJobs[deviceId]?.cancel()
-            deviceMonitoringJobs.remove(deviceId)
-            deviceCompatibility.remove(deviceId)
-            deviceSnapshots.remove(deviceId)
-        }
-        updateFirmwareUpdateRequired()
-        updateGlassesStatus()
-
-        // Start monitoring jobs only for new devices (not already being monitored)
-        val newDevices = devices - deviceMonitoringJobs.keys
-        newDevices.forEach { deviceId ->
-            val job = viewModelScope.launch {
-                Wearables.devicesMetadata[deviceId]?.collect { metadata ->
-                    deviceCompatibility[deviceId] = metadata.compatibility
-                    deviceSnapshots[deviceId] = metadata
-                    updateFirmwareUpdateRequired()
-                    updateGlassesStatus()
-                    if (metadata.compatibility == DeviceCompatibility.DEVICE_UPDATE_REQUIRED) {
-                        val deviceName = metadata.name.ifEmpty { deviceId }
-                        setRecentError("Device '$deviceName' requires an update to work with this app")
-                    }
-                }
-            }
-            deviceMonitoringJobs[deviceId] = job
-        }
-    }
+    val deviceSelector: DeviceSelector get() = state.deviceSelector
 
     fun startRegistration(activity: Activity) {
         Wearables.startRegistration(activity)
@@ -272,6 +196,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(isLoggingIn = true) }
         _uiState.update { it.copy(isAuthComplete = false) }
         sessionStore.setLoggedIn(false)
+        state.onSessionChanged()
     }
 
     /**
@@ -314,8 +239,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         sessionStore.clear() // drops tokens + loggedIn flag
+        state.onSessionChanged()
         // It may be text read off someone's mail: not for the next person to log in.
-        _lastAnswer.value = null
+        state.clearLastAnswer()
     }
 
     /**
@@ -340,8 +266,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             when (val result = AuthApi.deleteAccount(token)) {
                 is ApiResult.Success -> {
-                    profileStore.clear()
-                    _userProfile.value = UserProfile()
+                    state.resetProfile()
                     logout()
                 }
 
@@ -399,6 +324,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(goingHome = true) }
         _uiState.update { it.copy(isAuthComplete = true) }
         sessionStore.setLoggedIn(true)
+        state.onSessionChanged()
     }
 
     fun hardwarePairing() {
@@ -502,35 +428,12 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(canRegister = granted) }
         if (granted) {
             onAllGranted()
-            startMonitoring()
+            state.startMonitoring()
         } else {
             _uiState.update {
                 it.copy(recentError = "Allow All Permissions (Bluetooth, Bluetooth Connect, Internet)")
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        // Cancel all device monitoring jobs when ViewModel is cleared
-        deviceMonitoringJobs.values.forEach { it.cancel() }
-        deviceMonitoringJobs.clear()
-    }
-
-    private fun updateFirmwareUpdateRequired() {
-        val isRequired =
-            deviceCompatibility.values.any { it == DeviceCompatibility.DEVICE_UPDATE_REQUIRED }
-        _uiState.update { it.copy(isFirmwareUpdateRequired = isRequired) }
-    }
-
-    /**
-     * Battery, worn, hinge and thermal state arrive on `Device` itself since
-     * MWDAT 1.0 (`Wearables.getDeviceState` was removed). Only the pair VISOR
-     * would actually use — worn and connected first — is surfaced.
-     */
-    private fun updateGlassesStatus() {
-        val best = deviceSnapshots.values.minByOrNull(::rankForSession)
-        _uiState.update { it.copy(glassesStatus = best?.toGlassesStatus()) }
     }
 
     private companion object {

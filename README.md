@@ -56,6 +56,7 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.
 - The [phone camera fallback](./documentation/research/phone-camera-fallback.md): why VISOR can use the phone's camera, how users choose it, and how to test without glasses.
 - [Offline features](./documentation/developer/offline-features.md): what works without the internet, how locked features are shown and said, and how to test it.
+- [Background listening](./documentation/developer/background-listening.md): listening with the screen off, its notification, hearing commands through the glasses' microphone, and what to check on hardware.
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout
@@ -79,12 +80,14 @@ VISOR/
 
 | Package | What it holds |
 | --- | --- |
-| `MainActivity.kt` | Entry point: permissions, Meta Wearables setup, and routing each wake phrase, and each of Home's and the glasses' camera buttons, to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in, with no session to start and no mode to pick. |
+| `MainActivity.kt` | Entry point: permissions, intents ("Hey Meta, start VISOR", registration) and the screen. It tells the engine when VISOR is on screen and lends it the phone's camera. |
+| `VisorApp.kt`, `engine/` | What outlives any screen. `VisorState` is the profile, login, glasses, and each camera feature's status and last answer. `VisorEngine` listens and speaks: wake phrases, "VISOR GO", routing each wake phrase and glasses button to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in. |
+| `background/` | Background listening (see [Background listening](./documentation/developer/background-listening.md)): `ListeningService`, its notification (`ListeningNotification`, `ListeningNotificationText`), and `BackgroundPolicy`, which says which commands work with the screen off. |
 | `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene, or answer a spoken question about it, via `ui/SceneQuestionController`), `HazardDetector` (what's ahead and how far away). Each takes one photo with the camera chosen on the Pair screen (`ChosenPhotoSource`): the glasses (`GlassesPhotoSource`) or the phone's back camera (`PhoneCameraSource`, which catches black photos with `BlackPhoto`). Without glasses, choose the phone (the emulator's camera works too), or pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. Also `Connectivity`, which says whether the phone is online. Offline, `capture/Availability` locks the features that need the server (see [Offline features](./documentation/developer/offline-features.md)). |
 | `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). |
-| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`) and spoken commands. |
+| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`), spoken commands, and `MicRoute`, which hears them through the glasses' microphone when glasses are connected. |
 | `tts/` | Speaking: `Speaker`, the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). `Readings` reads a long answer a sentence at a time, so it can be paused, resumed and stopped (Home's Last answer card, `ui/components/ReadingControlsBar` on other screens, "VISOR GO, stop", and the glasses). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
