@@ -37,6 +37,7 @@ private val helpTopics = listOf(
     HelpTopic(R.string.help_offline_title, R.string.help_offline_body),
     HelpTopic(R.string.help_voice_nav_title, R.string.help_voice_nav_body),
     HelpTopic(R.string.help_reading_title, R.string.help_reading_body),
+    HelpTopic(R.string.help_voice_title, R.string.help_voice_body),
     HelpTopic(R.string.help_profile_title, R.string.help_profile_body),
     HelpTopic(R.string.help_personalize_title, R.string.help_personalize_body),
 )

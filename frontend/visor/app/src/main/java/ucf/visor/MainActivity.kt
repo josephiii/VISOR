@@ -67,6 +67,7 @@ import ucf.visor.tts.Chimes.Chime
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
+import ucf.visor.tts.VoiceCatalog
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.feedback.Haptics
 import ucf.visor.ui.feedback.LocalHaptics
@@ -193,6 +194,15 @@ class MainActivity : ComponentActivity() {
                 speaker.setSpeechRate(profile.speechRate)
             }
 
+            // The voice chosen in Settings, or, offline, one that works
+            // without the internet in place of one that doesn't (see
+            // VoiceCatalog.voiceToUse). Back online, the chosen one returns.
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val voices by speaker.voices.collectAsStateWithLifecycle()
+            LaunchedEffect(profile.voiceName, uiState.isOnline, voices) {
+                speaker.useVoice(VoiceCatalog.voiceToUse(profile.voiceName, voices, uiState.isOnline))
+            }
+
             VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(LocalHaptics provides haptics) {
@@ -207,6 +217,7 @@ class MainActivity : ComponentActivity() {
                             voiceNav = voiceNav,
                             glassesNav = glassesNav,
                             reading = speaker,
+                            voices = speaker,
                         )
                     }
                 }

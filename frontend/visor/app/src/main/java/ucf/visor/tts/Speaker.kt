@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,12 +30,15 @@ import java.util.Locale
  *   change is heard on the very next word.
  * @param leadInMs how long until a chime that is still playing ends: speech
  *   waits for it rather than talking over it (see [Chimes]).
+ *
+ * It speaks in VISOR's default voice until told another ([useVoice]); which
+ * one, given the user's choice and the connection, is [VoiceCatalog]'s call.
  */
 class Speaker(
     context: Context,
     private val loudness: (VoiceCategory) -> Float,
     private val leadInMs: () -> Long = { 0L },
-) : ReadingControls {
+) : ReadingControls, VoiceChooser {
 
     /** Something VISOR said, and which kind of speech it was. */
     data class Utterance(val text: String, val category: VoiceCategory)
@@ -57,6 +61,12 @@ class Speaker(
         private set
 
     private var speechRate = 1.0f
+
+    private val _voices = MutableStateFlow<List<VoiceInfo>>(emptyList())
+    override val voices: StateFlow<List<VoiceInfo>> = _voices.asStateFlow()
+
+    /** The voice being spoken in, by name; null for VISOR's default. */
+    private var voiceInUse: String? = null
 
     private val _reading = MutableStateFlow(ReadingState.NONE)
     override val reading: StateFlow<ReadingState> = _reading.asStateFlow()
@@ -83,6 +93,7 @@ class Speaker(
                 tts?.language = Locale.US
                 tts?.setSpeechRate(speechRate)
                 tts?.setOnUtteranceProgressListener(progress)
+                _voices.value = installedVoices()
                 isReady = true
                 pending.forEach { it() }
                 pending.clear()
@@ -97,6 +108,46 @@ class Speaker(
         speechRate = rate
         tts?.setSpeechRate(rate)
     }
+
+    override fun refreshVoices() {
+        whenReady { _voices.value = installedVoices() }
+    }
+
+    /**
+     * Speaks in [name] from the next word on, or in VISOR's default voice for
+     * null, or for a voice the engine no longer has. A reading being read
+     * carries on in the new voice from the start of its sentence: what was
+     * already queued would otherwise finish in the old one, and if the old
+     * one needs the internet that has just gone, it would stall.
+     */
+    override fun useVoice(name: String?) {
+        whenReady {
+            if (name == voiceInUse) return@whenReady
+            val engine = tts ?: return@whenReady
+            val voice = name?.let { n -> runCatching { engine.voices }.getOrNull()?.firstOrNull { it.name == n } }
+            if (voice == null || engine.setVoice(voice) != TextToSpeech.SUCCESS) {
+                // What VISOR has always done: the engine's default voice for US English.
+                engine.language = Locale.US
+                voiceInUse = null
+            } else {
+                voiceInUse = voice.name
+            }
+            // Some engines go back to their default rate with a new voice.
+            engine.setSpeechRate(speechRate)
+            if (_reading.value == ReadingState.READING) queueReading()
+        }
+    }
+
+    /** The engine's voices; none when it can't say (some engines throw). */
+    private fun installedVoices(): List<VoiceInfo> =
+        runCatching { tts?.voices }.getOrNull().orEmpty().map { it.toInfo() }
+
+    private fun Voice.toInfo() = VoiceInfo(
+        name = name,
+        locale = locale,
+        needsInternet = isNetworkConnectionRequired,
+        installed = TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in features.orEmpty(),
+    )
 
     /**
      * Says [text] at its [category]'s volume. When that category is silenced
@@ -144,7 +195,7 @@ class Speaker(
             engine.stop()
             return
         }
-        val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume) }
+        val params = params(volume)
         val mode = leadIn(engine)
         engine.speak(text, mode, params, UTTERANCE_ID)
     }
@@ -169,13 +220,25 @@ class Speaker(
             return
         }
         generation++
-        val params = Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume) }
+        val params = params(volume)
         var mode = leadIn(engine)
         for (index in current until pieces.size) {
             engine.speak(pieces[index], mode, params, pieceId(generation, index))
             mode = TextToSpeech.QUEUE_ADD
         }
         _reading.value = ReadingState.READING
+    }
+
+    /**
+     * How each utterance is said: at [volume]; and with a voice that needs
+     * the internet, how long the engine may wait on its server before it
+     * gives up. VISOR switches such a voice for an on-phone one as soon as
+     * the phone is offline (see VoiceCatalog.voiceToUse), but a connection
+     * can be too weak to use some time before it is counted as gone.
+     */
+    private fun params(volume: Float) = Bundle().apply {
+        putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
+        putString(TextToSpeech.Engine.KEY_FEATURE_NETWORK_TIMEOUT_MS, NETWORK_TIMEOUT_MS)
     }
 
     /**
@@ -277,5 +340,8 @@ class Speaker(
     private companion object {
         const val UTTERANCE_ID = "VISOR_SPEAKING"
         const val READING_ID = "VISOR_READING"
+
+        /** See [params]: a sentence starting this late is better said by an on-phone voice. */
+        const val NETWORK_TIMEOUT_MS = "2000"
     }
 }
