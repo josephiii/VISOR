@@ -42,6 +42,7 @@ import ucf.visor.motionlab.protocol.RunnerState
 import ucf.visor.motionlab.protocol.Trial
 import ucf.visor.motionlab.protocol.TrialOutcome
 import ucf.visor.motionlab.protocol.Trials
+import ucf.visor.wearables.GlassesLinkNudge
 import ucf.visor.wearables.VoiceLaunches
 import ucf.visor.wearables.preferredDevice
 import ucf.visor.wearables.toGlassesStatus
@@ -88,6 +89,19 @@ class MwdatMockDeviceTest {
             )
         }
         return glasses
+    }
+
+    /**
+     * VISOR reconnects the glasses in place by reaching the SDK's Bluetooth
+     * listener (GlassesLinkNudge). If an SDK update moves it, this fails here
+     * rather than in the field, where VISOR would fall back to restarting.
+     */
+    @Test
+    fun theSdkBluetoothListenerIsReachableForReconnecting() {
+        pairWornGlasses()
+        assertTrue("The SDK's Bluetooth listener wasn't found", GlassesLinkNudge.isAvailable)
+        // Telling it about every device it tracks must not throw.
+        GlassesLinkNudge.nudge(context)
     }
 
     @Test
@@ -205,6 +219,47 @@ class MwdatMockDeviceTest {
             peaks.sorted()[peaks.size / 2] > 0.2
         )
         if (!keepRecordings) result.file.delete()
+        video.delete()
+    }
+
+    /**
+     * Pictures in a row share one glasses session (HeldGlassesSession): the
+     * session that took the first is still open for the next, which is what
+     * keeps the SDK's link to the glasses alive between commands. One session
+     * per picture lost the link on real Ray-Ban Meta (2026-11-13). The lab can
+     * still take the glasses from it.
+     */
+    @Test
+    fun glassesPicturesInARowShareOneHeldSession() {
+        val video = java.io.File(context.cacheDir, "panning-held.mp4")
+        PanningVideo.encode(video, pixelsPerFrame = 6)
+        val glasses = pairWornGlasses()
+        glasses.services.camera.setCameraFeed(android.net.Uri.fromFile(video))
+        val camera = VisorApp.from(context).engine.glassesCamera
+
+        repeat(3) { n ->
+            val done = java.util.concurrent.CountDownLatch(1)
+            var photo: android.graphics.Bitmap? = null
+            var problem: String? = null
+            composeTestRule.runOnUiThread {
+                camera.capturePhoto(
+                    onPhoto = { photo = it; done.countDown() },
+                    onError = { problem = it; done.countDown() },
+                )
+            }
+            assertTrue("picture ${n + 1} timed out", done.await(60, java.util.concurrent.TimeUnit.SECONDS))
+            assertNotNull("picture ${n + 1}: $problem", photo)
+            // Between pictures the session stays open, holding the glasses.
+            assertEquals(
+                "after picture ${n + 1}",
+                ucf.visor.wearables.HeldGlassesSession.LEASE_OWNER,
+                ucf.visor.wearables.GlassesLease.holder.value,
+            )
+        }
+
+        // The lab asks for the glasses: the held session gives way.
+        assertTrue(ucf.visor.wearables.GlassesLease.acquire("instrumentation"))
+        ucf.visor.wearables.GlassesLease.release("instrumentation")
         video.delete()
     }
 

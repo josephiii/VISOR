@@ -1,6 +1,7 @@
 package ucf.visor.stt
 
 import android.content.res.AssetManager
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -24,6 +25,9 @@ class Listener(
     private var stream: OnlineStream? = null
     private var audioRecord: AudioRecord? = null
     private var worker: Thread? = null
+
+    /** The microphone to record from: the glasses' (see MicRoute), or null for the phone's. */
+    private var preferredInput: AudioDeviceInfo? = null
 
     @Volatile
     private var isRunning = false
@@ -78,6 +82,7 @@ class Listener(
             minBuf * 2,
         )
         audioRecord = record
+        record.setPreferredDevice(preferredInput)
         record.startRecording()
 
         // The thread works on its own references to the recorder, spotter and
@@ -93,6 +98,16 @@ class Listener(
                 }
             }
         }
+    }
+
+    /**
+     * Records from [device] (the glasses' microphone), or from the phone's when
+     * null. Takes effect at once, even mid-listening.
+     */
+    fun setPreferredInput(device: AudioDeviceInfo?) {
+        if (preferredInput?.id == device?.id) return
+        preferredInput = device
+        audioRecord?.setPreferredDevice(device)
     }
 
     private fun feed(s: KeywordSpotter, st: OnlineStream, samples: FloatArray) {

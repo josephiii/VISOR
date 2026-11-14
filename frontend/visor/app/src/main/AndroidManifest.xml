@@ -23,6 +23,20 @@
          pulses as a session starts. Granted at install; nothing to ask for. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Background listening (Settings > Commands > "Keep listening with the screen off"):
+         a foreground service that may use the microphone, and the glasses as a
+         connected device, with the screen off. Granted at install. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <!-- Its notification (Android 13+ asks, when the switch is turned on). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Keeps the phone awake from a wake phrase to its answer with the screen off. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Hearing commands through the glasses' microphone (stt/MicRoute):
+         Bluetooth HFP, set as the communication device. Granted at install. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Lets SpeechRecognizer.isRecognitionAvailable() resolve the on-device recognizer
          service on Android 11+ (package-visibility rules) for voice navigation. -->
     <queries>
@@ -32,6 +46,7 @@
     </queries>
 
     <application
+        android:name=".VisorApp"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -91,6 +106,13 @@
                 <data android:scheme="visor" />
             </intent-filter>
         </activity>
+
+        <!-- Background listening: see background/ListeningService. Started only
+             while VISOR is on screen, as Android requires for the microphone. -->
+        <service
+            android:name=".background.ListeningService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|connectedDevice" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

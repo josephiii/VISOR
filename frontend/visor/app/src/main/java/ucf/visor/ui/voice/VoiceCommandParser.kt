@@ -23,6 +23,27 @@ object VoiceCommandParser {
         if (text.isEmpty()) return VoiceCommand.Unrecognized
 
         return when {
+            // Background listening. First: "stop listening in the background"
+            // also holds "back" (GoBack) and "stop" (StopReading).
+            containsAny(
+                text,
+                "stop listening",
+                "don't listen",
+                "do not listen",
+                "turn off background listening",
+                "stop background listening",
+            ) -> VoiceCommand.StopListening
+
+            containsAny(
+                text,
+                "keep listening",
+                "listen in the background",
+                "listen with the screen off",
+                "listen when the screen is off",
+                "turn on background listening",
+                "background listening on",
+            ) -> VoiceCommand.KeepListening
+
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
             containsAny(text, "settings", "setting") ->
                 settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
@@ -174,6 +195,7 @@ enum class VoiceCommandKind(val examples: List<String>) {
             "brief", "detailed", "standard detail",
             "large text", "extra large text", "normal text", "high contrast",
             "use my phone camera", "use my glasses camera",
+            "keep listening", "stop listening",
         )
     ),
     ACCOUNT(listOf("log out", "delete my account")),

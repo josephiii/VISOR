@@ -14,10 +14,10 @@ import kotlin.math.roundToInt
  */
 object SpokenPhrases {
 
-    // A capture has started. With the phone's camera, VISOR says so every
+    // A capture has started. With the glasses, their own shutter sound says
+    // so and VISOR says nothing. With the phone's camera, VISOR says so every
     // time: it is the cue to hold the phone up, and nobody has to remember
     // which camera they chose.
-    const val TAKING_PICTURE = "Taking picture"
     const val TAKING_PICTURE_WITH_PHONE = "Taking picture with your phone"
     const val AWAITING_SCENE_DESCRIPTION = "Awaiting scene description"
 
@@ -26,6 +26,10 @@ object SpokenPhrases {
     const val GLASSES_CAMERA_UNAVAILABLE = "I couldn't connect to your glasses camera."
     const val GLASSES_PHOTO_FAILED = "I couldn't take a picture with your glasses."
     const val GLASSES_PHOTO_UNREADABLE = "I couldn't read the photo from your glasses."
+
+    /** The wearer paused VISOR's session: a tap on the glasses, or taking them off. */
+    const val GLASSES_PAUSED =
+        "Your glasses have paused VISOR. Put them on, or tap them once, then try again."
 
     /** No glasses to take the picture: what to check, and the way to carry on without them. */
     const val NO_GLASSES_TRY_PHONE =

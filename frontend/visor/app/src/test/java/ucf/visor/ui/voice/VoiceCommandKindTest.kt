@@ -52,7 +52,9 @@ class VoiceCommandKindTest {
             this is VoiceCommand.UseCamera ||
             this == VoiceCommand.NextVoice ||
             this == VoiceCommand.PreviousVoice ||
-            this == VoiceCommand.DefaultVoice
+            this == VoiceCommand.DefaultVoice ||
+            this == VoiceCommand.KeepListening ||
+            this == VoiceCommand.StopListening
 
         VoiceCommandKind.ACCOUNT ->
             this == VoiceCommand.LogOut || this == VoiceCommand.DeleteAccount

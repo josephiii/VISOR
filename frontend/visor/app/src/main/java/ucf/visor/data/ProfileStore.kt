@@ -44,6 +44,8 @@ class ProfileStore(context: Context) {
             )
             .putBoolean(KEY_VIBRATION, p.vibrationEnabled)
             .putString(KEY_CAMERA, p.camera.name)
+            .putBoolean(KEY_BACKGROUND_LISTENING, p.backgroundListeningEnabled)
+            .putBoolean(KEY_LISTEN_THROUGH_GLASSES, p.listenThroughGlasses)
         for (category in AudioCategory.all) editor.putFloat(category.key, p.audio.level(category))
         editor.apply()
     }
@@ -82,6 +84,14 @@ class ProfileStore(context: Context) {
                 .toSet(),
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, defaults.vibrationEnabled),
             camera = enumOrDefault(KEY_CAMERA, defaults.camera),
+            backgroundListeningEnabled = prefs.getBoolean(
+                KEY_BACKGROUND_LISTENING,
+                defaults.backgroundListeningEnabled
+            ),
+            listenThroughGlasses = prefs.getBoolean(
+                KEY_LISTEN_THROUGH_GLASSES,
+                defaults.listenThroughGlasses
+            ),
         )
     }
 
@@ -166,5 +176,7 @@ class ProfileStore(context: Context) {
         const val KEY_CAMERA_COMMANDS_OFF = "cameraCommandsOff"
         const val KEY_VIBRATION = "vibrationEnabled"
         const val KEY_CAMERA = "camera"
+        const val KEY_BACKGROUND_LISTENING = "backgroundListeningEnabled"
+        const val KEY_LISTEN_THROUGH_GLASSES = "listenThroughGlasses"
     }
 }

@@ -73,5 +73,13 @@ sealed class VoiceCommand {
     object PauseReading : VoiceCommand()
     object ResumeReading : VoiceCommand()
 
+    /**
+     * Background listening (Settings > Commands): "keep listening" turns it on,
+     * and "stop listening" off, from anywhere, so nobody has to find the phone
+     * to silence VISOR. Android only lets it be turned on with VISOR on screen.
+     */
+    object KeepListening : VoiceCommand()
+    object StopListening : VoiceCommand()
+
     object Unrecognized : VoiceCommand()
 }

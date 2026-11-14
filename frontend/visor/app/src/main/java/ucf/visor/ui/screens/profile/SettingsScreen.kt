@@ -1,10 +1,14 @@
 package ucf.visor.ui.screens.profile
 
+import android.Manifest.permission.POST_NOTIFICATIONS
+import android.os.Build
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,6 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +72,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,6 +91,7 @@ import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.data.label
 import ucf.visor.stt.CameraCommand
+import ucf.visor.stt.MicRoute
 import ucf.visor.tts.VoiceCatalog
 import ucf.visor.tts.VoiceChooser
 import ucf.visor.tts.VoiceInfo
@@ -139,6 +146,7 @@ fun SettingsScreen(
 ) {
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listeningThrough by viewModel.listeningThrough.collectAsStateWithLifecycle()
     val section = uiState.settingsSection
     // Each part opens at its top, not where the last one was scrolled to.
     val scrollState = key(section) { rememberScrollState() }
@@ -204,7 +212,7 @@ fun SettingsScreen(
                     VibrationSettings(profile, onProfileChange)
                 }
                 SettingsSection.DISPLAY -> DisplaySettings(profile, onProfileChange)
-                SettingsSection.COMMANDS -> CommandSettings(profile, onProfileChange)
+                SettingsSection.COMMANDS -> CommandSettings(profile, onProfileChange, listeningThrough)
                 SettingsSection.ACCOUNT -> AccountSettings(
                     isOnline = uiState.isOnline,
                     onLogout = { viewModel.requestLogoutConfirm() },
@@ -869,7 +877,11 @@ private fun VolumeWarning(text: String) {
  * them are on until the user turns one off.
  */
 @Composable
-private fun CommandSettings(profile: UserProfile, onProfileChange: (UserProfile) -> Unit) {
+private fun CommandSettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    listeningThrough: MicRoute.Source,
+) {
     Text(
         stringResource(R.string.settings_commands_description),
         style = MaterialTheme.typography.bodyMedium,
@@ -953,6 +965,80 @@ private fun CommandSettings(profile: UserProfile, onProfileChange: (UserProfile)
     CommandSwitch(stringResource(R.string.settings_section_tap_navigation), profile.glassesTapNavigationEnabled) {
         onProfileChange(profile.copy(glassesTapNavigationEnabled = !profile.glassesTapNavigationEnabled))
     }
+    ListeningSettings(profile, onProfileChange, listeningThrough)
+}
+
+/**
+ * How VISOR listens: through the glasses' microphone or the phone's (with
+ * which one it is using right now), and whether it keeps listening with the
+ * screen off (background listening, with its notification).
+ */
+@Composable
+private fun ListeningSettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    listeningThrough: MicRoute.Source,
+) {
+    SettingSubsection(stringResource(R.string.settings_microphone_title))
+    Text(
+        stringResource(R.string.settings_listen_through_glasses_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    CommandSwitch(stringResource(R.string.settings_listen_through_glasses), profile.listenThroughGlasses) {
+        onProfileChange(profile.copy(listenThroughGlasses = !profile.listenThroughGlasses))
+    }
+    // Which microphone right now, in words. A polite live region, so a screen
+    // reader says it when it changes: as the glasses connect, or this is switched.
+    Text(
+        stringResource(
+            when (listeningThrough) {
+                MicRoute.Source.GLASSES -> R.string.settings_listening_through_glasses_now
+                MicRoute.Source.PHONE -> R.string.settings_listening_through_phone_now
+            }
+        ),
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
+
+    SettingSubsection(stringResource(R.string.settings_background_listening_title))
+    Text(
+        stringResource(R.string.settings_background_listening_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    val context = LocalContext.current
+    val notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled()
+    val latestProfile by rememberUpdatedState(profile)
+    // Turned on once notifications are answered for, either way: VISOR
+    // listens without them too, and says so under the switch.
+    val askForNotifications = rememberLauncherForActivityResult(RequestPermission()) {
+        onProfileChange(latestProfile.copy(backgroundListeningEnabled = true))
+    }
+    CommandSwitch(stringResource(R.string.settings_background_listening), profile.backgroundListeningEnabled) {
+        val turningOn = !profile.backgroundListeningEnabled
+        if (turningOn && !notificationsAllowed && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            askForNotifications.launch(POST_NOTIFICATIONS)
+        } else {
+            onProfileChange(profile.copy(backgroundListeningEnabled = turningOn))
+        }
+    }
+    val nothingToListenFor = !profile.voiceNavigationEnabled && profile.cameraCommands.isEmpty()
+    when {
+        nothingToListenFor -> BackgroundListeningNote(stringResource(R.string.settings_background_listening_nothing))
+        profile.backgroundListeningEnabled && !notificationsAllowed ->
+            BackgroundListeningNote(stringResource(R.string.settings_background_listening_no_notifications))
+    }
+}
+
+/** Why the switch above can't do all it says, right under it, in words. */
+@Composable
+private fun BackgroundListeningNote(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
 }
 
 /** An on/off switch for one command, drawn like the other switches here: "Read text", then ON or OFF. */
