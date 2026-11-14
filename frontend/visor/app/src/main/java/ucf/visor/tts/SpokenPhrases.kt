@@ -14,10 +14,10 @@ import kotlin.math.roundToInt
  */
 object SpokenPhrases {
 
-    // A capture has started. With the phone's camera, VISOR says so every
+    // A capture has started. With the glasses, their own shutter sound says
+    // so and VISOR says nothing. With the phone's camera, VISOR says so every
     // time: it is the cue to hold the phone up, and nobody has to remember
     // which camera they chose.
-    const val TAKING_PICTURE = "Taking picture"
     const val TAKING_PICTURE_WITH_PHONE = "Taking picture with your phone"
     const val AWAITING_SCENE_DESCRIPTION = "Awaiting scene description"
 

@@ -196,9 +196,14 @@ class VisorEngine(
 
     private fun isOnline(): Boolean = state.isOnline.value
 
-    /** What VISOR says as a camera feature takes its picture: which camera, when it is the phone's. */
-    fun takingPicturePhrase(): String = when (cameraChoice()) {
-        CameraChoice.GLASSES -> SpokenPhrases.TAKING_PICTURE
+    /**
+     * What VISOR says as a camera feature takes its picture, or null for
+     * nothing. The glasses play their own shutter sound as they take it, so
+     * VISOR says nothing over it. The phone's camera makes none, and "Taking
+     * picture with your phone" is also the cue to hold the phone up.
+     */
+    fun takingPicturePhrase(): String? = when (cameraChoice()) {
+        CameraChoice.GLASSES -> null
         CameraChoice.PHONE -> SpokenPhrases.TAKING_PICTURE_WITH_PHONE
     }
 
@@ -942,9 +947,9 @@ class VisorEngine(
 
     /**
      * Every camera feature sounds the same, whether a wake phrase, a button
-     * on Home or one on the glasses asked for it: "Taking picture" ("with
-     * your phone", when that is the camera), beeps while it thinks, then the
-     * answer. Its button on Home shows each step too (VisorState.captures),
+     * on Home or one on the glasses asked for it: the glasses' shutter sound
+     * (or "Taking picture with your phone", when that is the camera), beeps
+     * while it thinks, then the answer. Its button on Home shows each step too (VisorState.captures),
      * and Home keeps the answer on screen, for anyone who can't hear them.
      */
     /** The last camera command asked for: carried on with after a restart for the glasses. */
@@ -970,7 +975,7 @@ class VisorEngine(
             }
         }
         state.onCaptureStarted(command)
-        speaker.speak(takingPicturePhrase(), VoiceCategory.STATUS_UPDATES)
+        takingPicturePhrase()?.let { speaker.speak(it, VoiceCategory.STATUS_UPDATES) }
         thinkingBeeper.start()
         feature.requestRead { text ->
             state.onAnswered(command, text)

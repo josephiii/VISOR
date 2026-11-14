@@ -14,8 +14,9 @@ import ucf.visor.tts.ThinkingBeeper
  * to know, takes a picture, and answers it. [onAsked] and [onAnswered] report
  * the same steps every camera feature reports, so Home's button shows it
  * working and the Last answer card keeps what it said. [takingPicture] is
- * what it says as it takes the picture, which names the phone's camera when
- * that is the one in use, as every camera feature does.
+ * what it says as it takes the picture, as every camera feature does:
+ * "Taking picture with your phone" with the phone's camera, and nothing (null)
+ * with the glasses, whose own shutter sound says it.
  *
  * [speak] says its prompts ("What's your question?"); [sayAnswer] says the
  * answer, which is an answer like any other camera feature's: at the Answers
@@ -34,7 +35,7 @@ class SceneQuestionController(
     private val listenDelayMs: Long = 500L,
     private val onAsked: () -> Unit = {},
     private val onAnswered: (String) -> Unit = {},
-    private val takingPicture: () -> String = { SpokenPhrases.TAKING_PICTURE },
+    private val takingPicture: () -> String? = { null },
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var busy = false
@@ -60,7 +61,7 @@ class SceneQuestionController(
         }
         Log.d("VISOR", "Scene question: $question")
         onAsked()
-        speak(takingPicture())
+        takingPicture()?.let(speak)
         beeper.start()
         describer.ask(question) { answer ->
             beeper.stop()

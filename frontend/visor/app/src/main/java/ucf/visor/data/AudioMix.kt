@@ -5,7 +5,7 @@ import kotlin.math.roundToInt
 /**
  * One of the kinds of sound VISOR makes, each with its own volume slider in
  * Settings. They are split by what a sound is for, so a user can quiet what
- * they don't need (say, "Taking picture", when they can see Home working)
+ * they don't need (say, "Awaiting scene description", when they can see Home working)
  * without losing what they do (the answers).
  */
 sealed interface AudioCategory {
@@ -29,7 +29,7 @@ enum class VoiceCategory(override val key: String) : AudioCategory {
      */
     ANSWERS("answersVolume"),
 
-    /** "Taking picture", "Awaiting scene description", and "VISOR is ready". */
+    /** "Taking picture with your phone", "Awaiting scene description", and "VISOR is ready". */
     STATUS_UPDATES("sessionUpdatesVolume"),
 
     /**
