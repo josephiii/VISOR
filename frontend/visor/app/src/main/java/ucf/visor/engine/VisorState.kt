@@ -20,9 +20,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import ucf.visor.wearables.GlassesConnectionNotice
+import ucf.visor.data.HistoryEntry
+import ucf.visor.data.HistoryStore
 import ucf.visor.data.ProfileStore
+import ucf.visor.data.ResponseHistory
 import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
 import ucf.visor.network.Connectivity
@@ -34,6 +38,7 @@ import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.GlassesStatus
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
+import java.time.ZoneId
 
 /**
  * What VISOR knows that outlives any one screen: the profile, whether someone
@@ -120,8 +125,11 @@ class VisorState(context: Context) {
         }
     }
 
-    /** [command] has answered with [text], which VISOR is now saying. */
-    fun onAnswered(command: CameraCommand, text: String) {
+    /**
+     * [command] has answered with [text], which VISOR is now saying. [question]
+     * is what was asked, for "Ask a question".
+     */
+    fun onAnswered(command: CameraCommand, text: String, question: String? = null) {
         val left = ((capturesInFlight[command] ?: 0) - 1).coerceAtLeast(0)
         if (left == 0) {
             capturesInFlight.remove(command)
@@ -129,17 +137,38 @@ class VisorState(context: Context) {
         } else {
             capturesInFlight[command] = left
         }
-        showAnswer(text, command)
+        showAnswer(text, command, question)
     }
 
-    /** Shows [text] on Home's Last answer card, as an answer [command] has just given. */
-    fun showAnswer(text: String, command: CameraCommand) {
-        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis(), command)
+    /**
+     * Shows [text] on Home's Last answer card, as an answer [command] has just
+     * given, and adds it to today's [history].
+     */
+    fun showAnswer(text: String, command: CameraCommand, question: String? = null) {
+        val now = System.currentTimeMillis()
+        _lastAnswer.value = LastAnswer(text, now, command)
+        val entry = HistoryEntry(text, now, command, question?.trim()?.ifEmpty { null })
+        historyStore.save(_history.updateAndGet { ResponseHistory.add(it, entry, ZoneId.systemDefault()) })
     }
 
     /** It may be text read off someone's mail: not for the next person to log in. */
     fun clearLastAnswer() {
         _lastAnswer.value = null
+    }
+
+    private val historyStore = HistoryStore(context)
+    private val _history = MutableStateFlow(historyStore.load())
+
+    /**
+     * Today's answers, newest first, for Settings > History (see
+     * ResponseHistory). Saved on the phone only.
+     */
+    val history: StateFlow<List<HistoryEntry>> = _history.asStateFlow()
+
+    /** "Clear history", and logging out: like the last answer, not for the next person to log in. */
+    fun clearHistory() {
+        _history.value = emptyList()
+        historyStore.clear()
     }
 
     // ---------------------------------------------------------------------

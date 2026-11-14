@@ -78,6 +78,12 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     /** What a camera feature last answered, for Home's Last answer card. */
     val lastAnswer = state.lastAnswer
 
+    /** Today's answers, newest first, for Settings > History. */
+    val history = state.history
+
+    /** Settings > History's "Clear history", once confirmed. */
+    fun clearHistory() = state.clearHistory()
+
     /** Which microphone VISOR hears commands through right now (Settings > Commands). */
     val listeningThrough = state.listeningThrough
 
@@ -245,6 +251,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         state.onSessionChanged()
         // It may be text read off someone's mail: not for the next person to log in.
         state.clearLastAnswer()
+        state.clearHistory()
     }
 
     /**

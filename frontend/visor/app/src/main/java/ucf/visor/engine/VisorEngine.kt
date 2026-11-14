@@ -296,7 +296,7 @@ class VisorEngine(
         pauseWakeListening = { listener.stop() },
         resumeWakeListening = { if (canListenNow()) listener.start() },
         onAsked = { state.onCaptureStarted(CameraCommand.ASK_QUESTION) },
-        onAnswered = { answer -> state.onAnswered(CameraCommand.ASK_QUESTION, answer) },
+        onAnswered = { question, answer -> state.onAnswered(CameraCommand.ASK_QUESTION, answer, question) },
         takingPicture = ::takingPicturePhrase,
     )
 

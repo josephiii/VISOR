@@ -24,6 +24,20 @@ class SettingsCommandTest {
     }
 
     @Test
+    fun historyOpensWithOrWithoutSettings() {
+        listOf(
+            "open history",
+            "history",
+            "open history settings",
+            "show my past answers",
+            "today's answers",
+            "go back to my previous answers",
+        ).forEach { said ->
+            assertEquals(said, VoiceCommand.OpenSettingsSection(SettingsSection.HISTORY), VoiceCommandParser.parse(said))
+        }
+    }
+
+    @Test
     fun settingsAloneOpensTheHub() {
         assertEquals(VoiceCommand.OpenSettings, VoiceCommandParser.parse("open settings"))
         assertEquals(VoiceCommand.OpenSettings, VoiceCommandParser.parse("settings"))

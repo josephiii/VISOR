@@ -45,6 +45,18 @@ object VoiceCommandParser {
             ) -> VoiceCommand.KeepListening
 
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
+            // Settings > History, with or without "settings". Ahead of "back"
+            // and "previous", for "go back to my previous answers".
+            containsAny(
+                text,
+                "history",
+                "past answers",
+                "earlier answers",
+                "previous answers",
+                "today's answers",
+                "todays answers",
+                "all my answers",
+            ) -> VoiceCommand.OpenSettingsSection(SettingsSection.HISTORY)
             containsAny(text, "settings", "setting") ->
                 settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
             containsAny(text, "help") -> VoiceCommand.OpenHelp
@@ -188,7 +200,7 @@ object VoiceCommandParser {
  * Settings never suggests something VISOR won't act on.
  */
 enum class VoiceCommandKind(val examples: List<String>) {
-    GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
+    GO_PLACES(listOf("go home", "open settings", "open sound settings", "open history", "help", "pair glasses", "go back")),
     SETTINGS(
         listOf(
             "faster", "slower", "normal speed", "next voice", "previous voice", "default voice",

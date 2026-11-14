@@ -116,6 +116,7 @@
     <string name="settings_hub_display_description" description="Settings hub tile: what Text and display holds">Text size, light or dark, and High contrast</string>
     <string name="settings_hub_commands_description" description="Settings hub tile: what Commands holds">Camera commands, voice navigation and tap navigation</string>
     <string name="settings_hub_account_description" description="Settings hub tile: what Account holds">Log out, or delete your account</string>
+    <string name="settings_hub_history_description" description="Settings hub tile: what History holds">Today\'s answers, to read or hear again</string>
     <string name="settings_hub_help_description" description="Settings hub tile: what Help holds">What each part of VISOR does, and how</string>
     <string name="settings_hub_open" description="What tapping a Settings hub tile does, as a screen reader says it">open</string>
     <string name="settings_back_to_hub" description="Button at the top of each part of Settings">Back to Settings</string>
@@ -234,13 +235,28 @@
     <string name="settings_delete_account_confirm_title" description="Delete account confirmation title">Delete your account?</string>
     <string name="settings_delete_account_confirm_message" description="Delete account confirmation message">This permanently deletes your VISOR account and everything in it. This can\'t be undone.</string>
     <string name="settings_delete_account_confirm_button" description="Delete account confirm button">Delete</string>
-
+    <!-- Settings → History: today's answers (data/ResponseHistory) -->
+    <string name="history_title" description="Settings hub tile and screen title: today's answers">History</string>
+    <string name="history_description" description="Under the History title: what it shows, and where it is kept">What VISOR has answered today, newest first. Kept on this phone only, and cleared at midnight and when you log out.</string>
+    <plurals name="history_count" description="How many answers History holds">
+        <item quantity="one">1 answer today</item>
+        <item quantity="other"><xliff:g id="count">%d</xliff:g> answers today</item>
+    </plurals>
+    <string name="history_count_limit" description="Under the count, once History is full: the oldest answers make way">History keeps the latest <xliff:g id="limit">%d</xliff:g> answers. Older ones are removed as new ones arrive.</string>
+    <string name="history_empty" description="History before VISOR has answered anything today">No answers yet today. Each time VISOR answers, the answer is added here.</string>
+    <string name="history_question" description="Above an Ask a question answer: what was asked">"You asked: “<xliff:g id="question">%1$s</xliff:g>”"</string>
+    <string name="history_read_aloud" description="Button under an answer in History: says it again">Read aloud</string>
+    <string name="history_read_aloud_named" description="What a screen reader says for one answer's Read aloud button">"Read aloud: <xliff:g id="feature">%1$s</xliff:g> answer from <xliff:g id="time">%2$s</xliff:g>"</string>
+    <string name="history_clear" description="Button at the bottom of History: deletes today's answers">Clear history</string>
+    <string name="history_clear_confirm_title" description="Clear history confirmation title">Clear today\'s history?</string>
+    <string name="history_clear_confirm_message" description="Clear history confirmation message">This removes every answer from History on this phone. The last answer on Home stays.</string>
+    <string name="history_clear_confirm_button" description="Clear history confirm button">Clear</string>
     <!-- Help Screen: one title and body per topic -->
     <string name="help_title" description="Help screen heading">Help &amp; how VISOR works</string>
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_capture_title" description="Help topic title">Taking a picture</string>
-    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. Settings, History keeps every answer from today, newest first, to read or hear again: say \"VISOR GO, open history\" to go straight there. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
     <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
@@ -284,7 +300,7 @@
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
-    <string name="help_personalize_body" description="Help topic">Settings is in parts: About you, Speech, Sound, Text and display, Commands, and Account.\n\nIn them you can change VISOR\'s voice, how fast it talks and how much detail it gives, how loud each kind of sound is and whether VISOR vibrates, your text size, light or dark, and High contrast. Changes apply at once.</string>
+    <string name="help_personalize_body" description="Help topic">Settings is in parts: About you, Speech, Sound, Text and display, Commands, History, and Account.\n\nIn them you can change VISOR\'s voice, how fast it talks and how much detail it gives, how loud each kind of sound is and whether VISOR vibrates, your text size, light or dark, and High contrast. Changes apply at once.</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>

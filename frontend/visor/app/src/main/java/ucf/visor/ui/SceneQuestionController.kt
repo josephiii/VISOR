@@ -13,7 +13,8 @@ import ucf.visor.tts.ThinkingBeeper
  * "Ask a question" (CameraCommand.ASK_QUESTION): asks the wearer what they want
  * to know, takes a picture, and answers it. [onAsked] and [onAnswered] report
  * the same steps every camera feature reports, so Home's button shows it
- * working and the Last answer card keeps what it said. [takingPicture] is
+ * working and the Last answer card keeps what it said; [onAnswered] is given
+ * the question too, for Settings > History. [takingPicture] is
  * what it says as it takes the picture, as every camera feature does:
  * "Taking picture with your phone" with the phone's camera, and nothing (null)
  * with the glasses, whose own shutter sound says it.
@@ -34,7 +35,7 @@ class SceneQuestionController(
     private val resumeWakeListening: () -> Unit,
     private val listenDelayMs: Long = 500L,
     private val onAsked: () -> Unit = {},
-    private val onAnswered: (String) -> Unit = {},
+    private val onAnswered: (question: String, answer: String) -> Unit = { _, _ -> },
     private val takingPicture: () -> String? = { null },
 ) {
     private val handler = Handler(Looper.getMainLooper())
@@ -65,7 +66,7 @@ class SceneQuestionController(
         beeper.start()
         describer.ask(question) { answer ->
             beeper.stop()
-            onAnswered(answer)
+            onAnswered(question, answer)
             sayAnswer(answer)
             // Listening for wake phrases again at once, as it is while any
             // other camera feature's answer is said, so "VISOR GO, stop"

@@ -35,6 +35,7 @@ object VoiceReplies {
         SettingsSection.SOUND -> "Sound settings."
         SettingsSection.DISPLAY -> "Text and display settings."
         SettingsSection.COMMANDS -> "Command settings."
+        SettingsSection.HISTORY -> "Today's answers."
         SettingsSection.ACCOUNT -> "Account settings."
     }
 

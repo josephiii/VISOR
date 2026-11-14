@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
@@ -147,6 +148,7 @@ fun SettingsScreen(
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listeningThrough by viewModel.listeningThrough.collectAsStateWithLifecycle()
+    val history by viewModel.history.collectAsStateWithLifecycle()
     val section = uiState.settingsSection
     // Each part opens at its top, not where the last one was scrolled to.
     val scrollState = key(section) { rememberScrollState() }
@@ -213,6 +215,11 @@ fun SettingsScreen(
                 }
                 SettingsSection.DISPLAY -> DisplaySettings(profile, onProfileChange)
                 SettingsSection.COMMANDS -> CommandSettings(profile, onProfileChange, listeningThrough)
+                SettingsSection.HISTORY -> HistorySettings(
+                    entries = history,
+                    talk = talk,
+                    onClear = { viewModel.clearHistory() },
+                )
                 SettingsSection.ACCOUNT -> AccountSettings(
                     isOnline = uiState.isOnline,
                     onLogout = { viewModel.requestLogoutConfirm() },
@@ -693,6 +700,7 @@ private val SettingsSection.icon: ImageVector
         SettingsSection.SOUND -> Icons.AutoMirrored.Filled.VolumeUp
         SettingsSection.DISPLAY -> Icons.Filled.TextFields
         SettingsSection.COMMANDS -> Icons.Filled.Mic
+        SettingsSection.HISTORY -> Icons.Filled.History
         SettingsSection.ACCOUNT -> Icons.Filled.AccountCircle
     }
 
@@ -704,6 +712,7 @@ private val SettingsSection.titleRes: Int
         SettingsSection.SOUND -> R.string.settings_hub_sound
         SettingsSection.DISPLAY -> R.string.settings_hub_display
         SettingsSection.COMMANDS -> R.string.settings_section_commands
+        SettingsSection.HISTORY -> R.string.history_title
         SettingsSection.ACCOUNT -> R.string.settings_section_account
     }
 
@@ -715,6 +724,7 @@ private val SettingsSection.descriptionRes: Int
         SettingsSection.SOUND -> R.string.settings_hub_sound_description
         SettingsSection.DISPLAY -> R.string.settings_hub_display_description
         SettingsSection.COMMANDS -> R.string.settings_hub_commands_description
+        SettingsSection.HISTORY -> R.string.settings_hub_history_description
         SettingsSection.ACCOUNT -> R.string.settings_hub_account_description
     }
 
