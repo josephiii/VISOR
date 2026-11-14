@@ -61,6 +61,7 @@ import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.ReadingState
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
+import ucf.visor.tts.VoiceChooser
 import ucf.visor.ui.screens.debug.DebugScreen
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
@@ -78,7 +79,8 @@ import ucf.visor.ui.voice.VoiceReplies
 // volume, for Settings previews; onCapture takes a picture and answers it for
 // one camera feature (MainActivity). reading pauses, resumes and stops a long
 // answer being read aloud (tts/Readings), from the bar along the bottom of
-// every screen, the glasses, or "VISOR GO, stop".
+// every screen, the glasses, or "VISOR GO, stop". voices lists the phone's
+// voices and switches VISOR's at once, for "VISOR GO, next voice" and Settings.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisorLayout(
@@ -93,6 +95,7 @@ fun VisorLayout(
     glassesNav: GlassesNavigationController? = null,
     screenCommands: Flow<VoiceCommand> = emptyFlow(),
     reading: ReadingControls? = null,
+    voices: VoiceChooser? = null,
     modifier: Modifier = Modifier,
 ) {
 
@@ -542,6 +545,7 @@ fun VisorLayout(
                             onRequestWearablesPermission = onRequestWearablesPermission,
                             onCapture = onCapture,
                             reading = reading,
+                            voices = voices,
                         )
                     }
                 }

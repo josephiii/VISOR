@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
                             glassesNav = engine.glassesNav,
                             screenCommands = engine.screenCommands,
                             reading = engine.speaker,
+                            voices = engine.speaker,
                         )
                     }
                 }

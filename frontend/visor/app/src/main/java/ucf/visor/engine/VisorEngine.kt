@@ -69,6 +69,7 @@ import ucf.visor.tts.ReadingState
 import ucf.visor.tts.Speaker
 import ucf.visor.tts.SpokenPhrases
 import ucf.visor.tts.ThinkingBeeper
+import ucf.visor.tts.VoiceCatalog
 import ucf.visor.ui.feedback.Haptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.labelRes
@@ -327,6 +328,18 @@ class VisorEngine(
                 updateWakeListening()
                 updateHeldSession()
             }
+        }
+        // The voice chosen in Settings, or, offline, one that works without
+        // the internet in place of one that doesn't (see
+        // VoiceCatalog.voiceToUse). Back online, the chosen one returns.
+        scope.launch {
+            combine(
+                state.profile.map { it.voiceName }.distinctUntilChanged(),
+                state.isOnline,
+                speaker.voices,
+            ) { name, online, voices -> VoiceCatalog.voiceToUse(name, voices, online) }
+                .distinctUntilChanged()
+                .collect { speaker.useVoice(it) }
         }
         scope.launch {
             state.loggedIn.collect {
@@ -1073,6 +1086,26 @@ class VisorEngine(
                 val rate = SpeechRates.slower(profile.speechRate)
                 state.updateProfile(profile.copy(speechRate = rate))
                 reply("Slower. ${SpeechRates.spokenLabel(rate)}.")
+            }
+
+            // Switched at once, before the reply, so the reply is the new
+            // voice saying its own name. Offline, voices that need the
+            // internet are passed over, as Settings locks them.
+            VoiceCommand.NextVoice, VoiceCommand.PreviousVoice, VoiceCommand.DefaultVoice -> {
+                val all = speaker.voices.value
+                val online = isOnline()
+                if (command != VoiceCommand.DefaultVoice && !VoiceCatalog.hasChoices(all, online)) {
+                    reply(VoiceReplies.NO_OTHER_VOICES)
+                } else {
+                    val name = when (command) {
+                        VoiceCommand.NextVoice -> VoiceCatalog.next(profile.voiceName, all, online)
+                        VoiceCommand.PreviousVoice -> VoiceCatalog.previous(profile.voiceName, all, online)
+                        else -> null
+                    }
+                    state.updateProfile(profile.copy(voiceName = name))
+                    speaker.useVoice(VoiceCatalog.voiceToUse(name, all, online))
+                    reply(VoiceReplies.voice(VoiceCatalog.option(name, all)?.label))
+                }
             }
 
             is VoiceCommand.SetVerbosity -> {

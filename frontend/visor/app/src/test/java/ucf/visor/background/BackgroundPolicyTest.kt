@@ -37,6 +37,9 @@ class BackgroundPolicyTest {
             VoiceCommand.SetSpeechRate(1.0f),
             VoiceCommand.SpeakFaster,
             VoiceCommand.SpeakSlower,
+            VoiceCommand.NextVoice,
+            VoiceCommand.PreviousVoice,
+            VoiceCommand.DefaultVoice,
             VoiceCommand.SetVerbosity(Verbosity.BRIEF),
         ).forEach { assertEquals(it.toString(), ANYWHERE, handler(it)) }
     }

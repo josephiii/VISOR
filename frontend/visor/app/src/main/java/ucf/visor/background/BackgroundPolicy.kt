@@ -39,6 +39,9 @@ object BackgroundPolicy {
         is VoiceCommand.SetSpeechRate,
         VoiceCommand.SpeakFaster,
         VoiceCommand.SpeakSlower,
+        VoiceCommand.NextVoice,
+        VoiceCommand.PreviousVoice,
+        VoiceCommand.DefaultVoice,
         is VoiceCommand.SetVerbosity,
         // Turning background listening itself on and off.
         VoiceCommand.KeepListening,
