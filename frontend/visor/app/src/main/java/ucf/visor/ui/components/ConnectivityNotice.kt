@@ -108,8 +108,9 @@ fun ConnectivityNotice(
     }
 }
 
+/** A notice at the top of the screen: an icon, a bold label, then the rest, at full contrast inside an outline. */
 @Composable
-private fun NoticeRow(icon: ImageVector, label: String, body: String, modifier: Modifier) {
+internal fun NoticeRow(icon: ImageVector, label: String, body: String, modifier: Modifier) {
     val colors = MaterialTheme.colorScheme
     val style = MaterialTheme.typography.bodyLarge
     Row(

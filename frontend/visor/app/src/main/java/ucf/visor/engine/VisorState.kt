@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import ucf.visor.wearables.GlassesConnectionNotice
 import ucf.visor.data.ProfileStore
 import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
@@ -153,16 +154,16 @@ class VisorState(context: Context) {
         _listeningThrough.value = source
     }
 
-    private val _glassesLinkLost = MutableStateFlow(false)
+    private val _glassesConnection = MutableStateFlow(GlassesConnectionNotice.NONE)
 
     /**
-     * VISOR lost its link to glasses still connected to the phone and needs
-     * opening to reconnect (VisorEngine): said on its notification.
+     * What VISOR is doing about a lost link to the glasses (VisorEngine): shown
+     * at the top of every screen and on the listening notification.
      */
-    val glassesLinkLost: StateFlow<Boolean> = _glassesLinkLost.asStateFlow()
+    val glassesConnection: StateFlow<GlassesConnectionNotice> = _glassesConnection.asStateFlow()
 
-    fun setGlassesLinkLost(lost: Boolean) {
-        _glassesLinkLost.value = lost
+    fun setGlassesConnection(notice: GlassesConnectionNotice) {
+        _glassesConnection.value = notice
     }
 
     private val _backgroundListeningActive = MutableStateFlow(false)

@@ -13,13 +13,18 @@ package ucf.visor.wearables
  * - If the SDK still sees the glasses, a fresh session is all it takes.
  * - If it has lost them, it will not find them again by itself in this
  *   process: it retries only when Android reports a Bluetooth change (#208),
- *   and the glasses never left the phone. `Wearables.reset()` +
- *   `initialize()` does not help on MWDAT 1.0.0: `reset()` only drops the SDK's
- *   reference to its instance without shutting it down, and the new one made
- *   no connection attempt in two field logs. Restarting VISOR is what always
- *   worked. With no screen showing, VISOR can't restart itself (Android would
- *   not let it have the microphone back), so it asks the wearer to open it,
- *   and restarts then.
+ *   and the glasses never left the phone. So VISOR first tells the SDK that
+ *   change happened (GlassesLinkNudge), which works with the screen off and
+ *   takes a few seconds. `Wearables.reset()` + `initialize()` does not help on
+ *   MWDAT 1.0.0: `reset()` only drops the SDK's reference to its instance
+ *   without shutting it down, and the new one made no connection attempt in
+ *   two field logs.
+ * - If that fails, restarting VISOR is what always worked. With no screen
+ *   showing, VISOR can't restart itself (Android would not let it have the
+ *   microphone back), so it asks the wearer to open it, and restarts then.
+ *
+ * The watchdog that notices a lost link before any picture asks
+ * (VisorEngine.watchGlassesLink) follows the same steps.
  */
 object GlassesRecovery {
 
@@ -32,6 +37,9 @@ object GlassesRecovery {
 
         /** The SDK still sees the glasses: drop the session and try again in a fresh one. */
         RETRY,
+
+        /** The SDK has lost glasses still on the phone: tell it they are there (GlassesLinkNudge). */
+        NUDGE_SDK,
 
         /** Restart VISOR, which is on screen. */
         RESTART_VISOR,
@@ -49,6 +57,8 @@ object GlassesRecovery {
         val sdkSeesGlasses: Boolean,
         /** This recovery has already retried in a fresh session. */
         val retried: Boolean,
+        /** This recovery has already told the SDK the glasses are there, and it didn't reconnect. */
+        val nudged: Boolean,
         val screenShown: Boolean,
         /** How long since VISOR last restarted itself for this, or null if it never has. */
         val sinceLastRestartMs: Long?,
@@ -75,6 +85,7 @@ object GlassesRecovery {
         s.micOnGlasses -> Step.YIELD_MIC
         s.sdkSeesGlasses && !s.retried -> Step.RETRY
         s.sdkSeesGlasses -> Step.GIVE_UP
+        !s.nudged -> Step.NUDGE_SDK
         s.sinceLastRestartMs != null && s.sinceLastRestartMs < MIN_RESTART_GAP_MS -> Step.GIVE_UP
         s.screenShown -> Step.RESTART_VISOR
         else -> Step.ASK_TO_OPEN_VISOR

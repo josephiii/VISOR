@@ -1,5 +1,7 @@
 package ucf.visor.background
 
+import ucf.visor.wearables.GlassesConnectionNotice
+
 /**
  * What background listening's notification says. Pure, so the accessibility
  * rules below are unit-tested (ListeningNotificationTextTest):
@@ -54,6 +56,9 @@ object ListeningNotificationText {
 
     /** First, ahead of everything else, while VISOR has lost its link to the glasses. */
     const val LINK_LOST = "Lost the glasses connection. Tap here to reconnect."
+    const val RECONNECTING = "Reconnecting to your glasses."
+    const val RESTARTING = "VISOR is restarting to reconnect to your glasses."
+    const val RECONNECTED = "Your glasses are reconnected."
 
     /** At or below this, and not charging, the battery is said to be low. */
     const val LOW_BATTERY_PERCENT = 20
@@ -65,24 +70,37 @@ object ListeningNotificationText {
         throughGlasses: Boolean,
         answer: Answer?,
         glasses: Glasses?,
-        linkLost: Boolean = false,
+        connection: GlassesConnectionNotice = GlassesConnectionNotice.NONE,
     ): Content {
         val title = if (throughGlasses) "$TITLE through your glasses" else "$TITLE through your phone"
         val glassesLine = glasses?.let(::glassesLine)
         val answerLine = answer?.let { "Last answer, ${it.feature}: ${shorten(it.text)}" }
 
-        // A lost link comes first: it is what to do next, and tapping fixes it.
-        val lead = if (linkLost) LINK_LOST else answerLine ?: HINT
-        val bigText = listOfNotNull(lead, answerLine.takeIf { linkLost }, glassesLine).joinToString("\n")
+        // The glasses connection comes first: it says what is happening and,
+        // when the link is lost, what to do next (tapping opens VISOR, which
+        // restarts to reconnect).
+        val connectionLine = connectionLine(connection)
+        val lead = connectionLine ?: answerLine ?: HINT
+        val bigText = listOfNotNull(lead, answerLine.takeIf { connectionLine != null }, glassesLine)
+            .joinToString("\n")
         return Content(
             title = title,
             text = lead,
             bigText = bigText,
             subText = glasses?.let(::batteryShort),
             publicTitle = TITLE,
-            publicText = if (linkLost) LINK_LOST else glassesLine ?: HINT,
+            publicText = connectionLine ?: glassesLine ?: HINT,
             answeredAtMillis = answer?.atMillis,
         )
+    }
+
+    /** What VISOR is doing about the glasses connection, or null when there is nothing to say. */
+    fun connectionLine(connection: GlassesConnectionNotice): String? = when (connection) {
+        GlassesConnectionNotice.NONE -> null
+        GlassesConnectionNotice.RECONNECTING -> RECONNECTING
+        GlassesConnectionNotice.RESTARTING -> RESTARTING
+        GlassesConnectionNotice.RECONNECTED -> RECONNECTED
+        GlassesConnectionNotice.LOST -> LINK_LOST
     }
 
     /** "Glasses battery 40%, charging." and the like: one sentence, facts the SDK knows only. */

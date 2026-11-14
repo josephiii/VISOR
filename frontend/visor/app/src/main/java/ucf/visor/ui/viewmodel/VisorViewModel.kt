@@ -84,6 +84,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     /** Whether VISOR is listening with the screen off right now (background listening). */
     val backgroundListeningActive = state.backgroundListeningActive
 
+    /** What VISOR is doing about a lost link to the glasses, for the notice at the top of every screen. */
+    val glassesConnection = state.glassesConnection
+
     fun updateProfile(profile: UserProfile) = state.updateProfile(profile)
 
     /** [command] has been asked for: VISOR is taking its picture. Call on the main thread. */

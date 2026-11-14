@@ -35,6 +35,7 @@ import ucf.visor.R
 import ucf.visor.background.BackgroundPolicy
 import ucf.visor.background.BatteryAlerts
 import ucf.visor.background.ListeningNotificationText
+import ucf.visor.background.GlassesRestartNotification
 import ucf.visor.background.ListeningService
 import ucf.visor.capture.Availability
 import ucf.visor.capture.ChosenPhotoSource
@@ -76,7 +77,9 @@ import ucf.visor.ui.voice.VoiceCommand
 import ucf.visor.ui.voice.VoiceNavState
 import ucf.visor.ui.voice.VoiceNavigationController
 import ucf.visor.ui.voice.VoiceReplies
+import ucf.visor.wearables.GlassesConnectionNotice
 import ucf.visor.wearables.GlassesLease
+import ucf.visor.wearables.GlassesLinkNudge
 import ucf.visor.wearables.GlassesRecovery
 import ucf.visor.wearables.HeldGlassesSession
 import ucf.visor.wearables.VoiceLaunches
@@ -153,20 +156,13 @@ class VisorEngine(
 
     fun onScreenShown() {
         isScreenShown = true
-        // Asked to reopen VISOR to reconnect the glasses (ASK_TO_OPEN_VISOR):
-        // now it can restart itself, if the SDK still can't see them. A fresh
-        // launch (wearablesReady still false) is already a restart.
-        if (recoveryPrefs.getBoolean(KEY_RESTART_ON_OPEN, false)) {
-            recoveryPrefs.edit().putBoolean(KEY_RESTART_ON_OPEN, false).apply()
-            if (wearablesReady && !sdkSeesGlasses() && restartAllowed()) {
-                speaker.speak(app.getString(R.string.glasses_restarting_visor), VoiceCategory.STATUS_UPDATES)
-                restartVisor()
-                return
-            }
-        }
         updateBackgroundService()
         updateWakeListening()
         updateHeldSession()
+        // Opened with the glasses link lost (perhaps asked to, with the screen
+        // off): now VISOR may restart itself if reconnecting in place fails.
+        // A fresh launch (wearablesReady still false) is already a restart.
+        if (wearablesReady && sdkHasSeenGlasses && !sdkSeesGlasses()) startRecovering(confirmMs = 0L)
     }
 
     fun onScreenHidden() {
@@ -553,13 +549,60 @@ class VisorEngine(
     private fun sdkSeesGlasses(): Boolean =
         runCatching { preferredDevice()?.second?.linkState == LinkState.CONNECTED }.getOrDefault(false)
 
+    /** Whether the glasses are connected to the phone (for audio), whatever the SDK thinks. */
+    private fun glassesOnPhone(): Boolean = micRoute.glassesConnected(state.glassesStatus.value?.name)
+
     private fun sinceLastRestartMs(): Long? {
         val at = recoveryPrefs.getLong(KEY_LAST_RESTART_AT, 0L)
         return if (at == 0L) null else (System.currentTimeMillis() - at).coerceAtLeast(0L)
     }
 
-    private fun restartAllowed(): Boolean =
-        sinceLastRestartMs()?.let { it >= GlassesRecovery.MIN_RESTART_GAP_MS } ?: true
+    private var reconnectedJob: Job? = null
+
+    /**
+     * Shows what VISOR is doing about the glasses link: at the top of every
+     * screen and on the listening notification (GlassesConnectionNotice).
+     * "Reconnected" stays a few seconds, long enough to read under a magnifier.
+     */
+    private fun showConnection(notice: GlassesConnectionNotice) {
+        reconnectedJob?.cancel()
+        state.setGlassesConnection(notice)
+        if (notice == GlassesConnectionNotice.RECONNECTED) {
+            reconnectedJob = scope.launch {
+                delay(RECONNECTED_SHOWN_MS)
+                state.setGlassesConnection(GlassesConnectionNotice.NONE)
+            }
+        }
+    }
+
+    /**
+     * Gets the SDK to reconnect to the glasses in place (GlassesLinkNudge),
+     * which works with the screen off and needs no restart, and waits for it.
+     * Returns whether the glasses are back. The watcher ([watchGlassesLink])
+     * says so when they are.
+     */
+    private suspend fun reconnectInPlace(say: Boolean): Boolean {
+        if (!GlassesLinkNudge.isAvailable) {
+            Log.w(RECOVERY_TAG, "Can't reconnect in place: the SDK's Bluetooth listener wasn't found")
+            return false
+        }
+        showConnection(GlassesConnectionNotice.RECONNECTING)
+        if (say) speaker.speak(app.getString(R.string.glasses_reconnecting), VoiceCategory.STATUS_UPDATES)
+        val back = withTimeoutOrNull(NUDGE_WAIT_MS) {
+            var nudgedAt = 0L
+            while (!sdkSeesGlasses()) {
+                val now = SystemClock.elapsedRealtime()
+                if (nudgedAt == 0L || now - nudgedAt >= NUDGE_REPEAT_MS) {
+                    nudgedAt = now
+                    withContext(Dispatchers.IO) { GlassesLinkNudge.nudge(app) }
+                }
+                delay(RECONNECT_POLL_MS)
+            }
+            true
+        } ?: false
+        Log.i(RECOVERY_TAG, if (back) "Reconnected in place" else "The in-place reconnect didn't bring the glasses back")
+        return back
+    }
 
     /**
      * A glasses picture failed in a way a recovery may fix: works through
@@ -568,19 +611,30 @@ class VisorEngine(
      */
     suspend fun recoverGlassesLink(): GlassesRecovery.Outcome = recoveryLock.withLock {
         var retried = false
+        var nudged = false
         repeat(MAX_RECOVERY_STEPS) {
             val situation = GlassesRecovery.Situation(
-                glassesOnPhone = micRoute.glassesConnected(state.glassesStatus.value?.name),
+                glassesOnPhone = glassesOnPhone(),
                 micOnGlasses = micRoute.source.value == MicRoute.Source.GLASSES,
                 sdkSeesGlasses = sdkSeesGlasses(),
                 retried = retried,
+                nudged = nudged,
                 screenShown = isScreenShown,
                 sinceLastRestartMs = sinceLastRestartMs(),
             )
             val step = GlassesRecovery.next(situation)
             Log.i(RECOVERY_TAG, "$situation -> $step")
             when (step) {
-                GlassesRecovery.Step.GIVE_UP -> return@withLock GlassesRecovery.Outcome.Stop()
+                GlassesRecovery.Step.GIVE_UP -> {
+                    // Lost, on the phone, and a restart too soon after the last:
+                    // the watcher keeps trying, and the wearer is told so.
+                    if (situation.glassesOnPhone && !situation.sdkSeesGlasses) {
+                        showConnection(GlassesConnectionNotice.LOST)
+                        ensureRecovering()
+                        return@withLock GlassesRecovery.Outcome.Stop(app.getString(R.string.glasses_still_trying))
+                    }
+                    return@withLock GlassesRecovery.Outcome.Stop()
+                }
 
                 GlassesRecovery.Step.YIELD_MIC -> {
                     speaker.speak(app.getString(R.string.mic_yield_for_camera), VoiceCategory.STATUS_UPDATES)
@@ -596,13 +650,19 @@ class VisorEngine(
                     return@withLock GlassesRecovery.Outcome.TryAgain
                 }
 
+                GlassesRecovery.Step.NUDGE_SDK -> {
+                    nudged = true
+                    reconnectInPlace(say = true)
+                }
+
                 GlassesRecovery.Step.RESTART_VISOR -> {
                     restartVisor(replay = lastCameraCommand)
                     return@withLock GlassesRecovery.Outcome.Stop(app.getString(R.string.glasses_restarting_visor))
                 }
 
                 GlassesRecovery.Step.ASK_TO_OPEN_VISOR -> {
-                    markLinkLost()
+                    showConnection(GlassesConnectionNotice.LOST)
+                    ensureRecovering()
                     return@withLock GlassesRecovery.Outcome.Stop(app.getString(R.string.glasses_open_visor_to_reconnect))
                 }
             }
@@ -614,20 +674,29 @@ class VisorEngine(
      * Restarts VISOR's process, the one fix that always brought the glasses
      * back by hand, once what VISOR is saying has been said. Only with VISOR on
      * screen (Android lets a visible app relaunch itself) and at most every
-     * [GlassesRecovery.MIN_RESTART_GAP_MS]. The relaunched VISOR says whether
-     * the glasses are back ([announceAfterRestart]).
+     * [GlassesRecovery.MIN_RESTART_GAP_MS]. Meanwhile the screen and a
+     * notification say VISOR is restarting; the notification stays through
+     * the restart. The relaunched VISOR says whether the glasses are back
+     * ([announceAfterRestart]). Called off if the glasses come back first.
      */
     private fun restartVisor(replay: CameraCommand? = null) {
         recoveryPrefs.edit()
             .putLong(KEY_LAST_RESTART_AT, System.currentTimeMillis())
-            .putBoolean(KEY_RESTART_ON_OPEN, false)
             .putBoolean(KEY_ANNOUNCE_AFTER_RESTART, true)
             .putString(KEY_REPLAY_COMMAND, replay?.name)
             .putLong(KEY_REPLAY_AT, System.currentTimeMillis())
             .commit()
+        showConnection(GlassesConnectionNotice.RESTARTING)
+        GlassesRestartNotification.show(app)
         scope.launch {
             delay(RESTART_LEAD_IN_MS)
             withTimeoutOrNull(RESTART_SPEECH_WAIT_MS) { while (speaker.isSpeaking()) delay(100) }
+            if (sdkSeesGlasses()) {
+                Log.i(RECOVERY_TAG, "The glasses came back by themselves: no restart")
+                recoveryPrefs.edit().putBoolean(KEY_ANNOUNCE_AFTER_RESTART, false).remove(KEY_REPLAY_COMMAND).apply()
+                GlassesRestartNotification.cancel(app)
+                return@launch
+            }
             Log.i(RECOVERY_TAG, "Restarting VISOR to reconnect the glasses")
             val launch = app.packageManager.getLaunchIntentForPackage(app.packageName) ?: return@launch
             app.startActivity(Intent.makeRestartActivityTask(launch.component))
@@ -636,9 +705,10 @@ class VisorEngine(
     }
 
     /**
-     * After VISOR restarted itself for the glasses: says whether they are back
-     * and, when they are, carries on with the camera command that was cut off,
-     * so the wearer does not have to ask again.
+     * After VISOR restarted itself for the glasses: shows it is reconnecting
+     * until they are back (the watcher says so) and carries on with the camera
+     * command that was cut off, so the wearer does not have to ask again; or
+     * says it still can't reach them.
      */
     private fun announceAfterRestart() {
         if (!recoveryPrefs.getBoolean(KEY_ANNOUNCE_AFTER_RESTART, false)) return
@@ -649,16 +719,19 @@ class VisorEngine(
             .putBoolean(KEY_ANNOUNCE_AFTER_RESTART, false)
             .remove(KEY_REPLAY_COMMAND)
             .apply()
+        if (!sdkSeesGlasses()) showConnection(GlassesConnectionNotice.RECONNECTING)
         scope.launch {
             val back = withTimeoutOrNull(ANNOUNCE_WAIT_MS) {
                 while (!sdkSeesGlasses()) delay(RECONNECT_POLL_MS)
                 true
             } ?: false
-            speaker.speak(
-                app.getString(if (back) R.string.glasses_reconnected else R.string.glasses_still_unreachable),
-                VoiceCategory.STATUS_UPDATES,
-            )
-            if (back && replay != null && state.isLoggedIn()) {
+            GlassesRestartNotification.cancel(app)
+            if (!back) {
+                showConnection(GlassesConnectionNotice.LOST)
+                speaker.speak(app.getString(R.string.glasses_still_unreachable), VoiceCategory.STATUS_UPDATES)
+                return@launch
+            }
+            if (replay != null && state.isLoggedIn()) {
                 Log.i(RECOVERY_TAG, "Carrying on with $replay after the restart")
                 // Let the session open (updateHeldSession) before asking for a picture.
                 delay(REPLAY_DELAY_MS)
@@ -674,16 +747,15 @@ class VisorEngine(
     private var sdkHasSeenGlasses = false
 
     /** VISOR asked the wearer to open it to reconnect, and has not heard back. */
-    private var linkLostSaid = false
+    private var openToReconnectSaid = false
 
-    private var wedgeJob: Job? = null
+    private var recoveryJob: Job? = null
 
     /**
      * Watches for the SDK losing glasses that are still connected to the
      * phone (MWDAT 1.0.0 does not reconnect them by itself; see
-     * GlassesRecovery), and recovers before the wearer's next command needs
-     * them: VISOR restarts itself if it is on screen, or else says to open it
-     * and shows that on its notification.
+     * GlassesRecovery) and recovers before the wearer's next command needs
+     * them, every time, screen or not ([recover]). Says when they are back.
      */
     private fun watchGlassesLink() {
         scope.launch {
@@ -691,47 +763,96 @@ class VisorEngine(
                 .map { it?.connected == true }
                 .distinctUntilChanged()
                 .collect { seen ->
-                    wedgeJob?.cancel()
                     if (seen) {
                         sdkHasSeenGlasses = true
-                        linkLostSaid = false
-                        state.setGlassesLinkLost(false)
+                        openToReconnectSaid = false
+                        recoveryJob?.cancel()
+                        val wasRecovering = state.glassesConnection.value.let {
+                            it != GlassesConnectionNotice.NONE && it != GlassesConnectionNotice.RECONNECTED
+                        }
+                        if (wasRecovering) {
+                            Log.i(RECOVERY_TAG, "The glasses are back")
+                            showConnection(GlassesConnectionNotice.RECONNECTED)
+                            speaker.speak(app.getString(R.string.glasses_reconnected), VoiceCategory.STATUS_UPDATES)
+                        }
                         return@collect
                     }
-                    if (!sdkHasSeenGlasses) return@collect
-                    wedgeJob = scope.launch {
-                        // A moment's drop the SDK recovers from by itself is not one.
-                        delay(WEDGE_CONFIRM_MS)
-                        onGlassesLinkLost()
-                    }
+                    // A moment's drop the SDK recovers from by itself is not one.
+                    if (sdkHasSeenGlasses) startRecovering(confirmMs = WEDGE_CONFIRM_MS)
                 }
         }
     }
 
-    private suspend fun onGlassesLinkLost() = recoveryLock.withLock {
-        if (sdkSeesGlasses()) return@withLock
-        // Glasses that left the phone (off, folded, out of range) are not a stuck SDK.
-        if (!micRoute.glassesConnected(state.glassesStatus.value?.name)) return@withLock
-        // Only while VISOR is in use: nobody is waiting on it otherwise.
-        if (!isScreenShown && !serviceRunning) return@withLock
-        Log.i(RECOVERY_TAG, "The SDK lost the glasses, which are still connected to the phone")
-        when {
-            isScreenShown && restartAllowed() -> {
-                speaker.speak(app.getString(R.string.glasses_restarting_visor), VoiceCategory.STATUS_UPDATES)
-                restartVisor()
-            }
-            !isScreenShown && !linkLostSaid -> {
-                linkLostSaid = true
-                markLinkLost()
-                speaker.speak(app.getString(R.string.glasses_open_visor_to_reconnect), VoiceCategory.STATUS_UPDATES)
+    /** Starts recovering now if a lost link isn't being recovered already. */
+    private fun ensureRecovering() {
+        if (recoveryJob?.isActive != true) startRecovering(confirmMs = 0L)
+    }
+
+    private fun startRecovering(confirmMs: Long) {
+        recoveryJob?.cancel()
+        recoveryJob = scope.launch {
+            delay(confirmMs)
+            var round = 0
+            while (!recoveryLock.withLock { recover(round) }) {
+                round++
+                delay(if (round < FAST_ROUNDS) RECOVERY_RETRY_MS else RECOVERY_SLOW_RETRY_MS)
             }
         }
     }
 
-    /** Opening VISOR next will restart it, and its notification says so meanwhile. */
-    private fun markLinkLost() {
-        recoveryPrefs.edit().putBoolean(KEY_RESTART_ON_OPEN, true).apply()
-        state.setGlassesLinkLost(true)
+    /**
+     * One try at bringing back glasses the SDK lost, in [GlassesRecovery]'s
+     * order: reconnect in place, then (on screen) restart VISOR, or (off
+     * screen) ask to open it. Returns true when there is nothing more to do;
+     * false to try again shortly, so a lost link is never left alone while
+     * VISOR is in use.
+     */
+    private suspend fun recover(round: Int): Boolean {
+        if (sdkSeesGlasses()) return true
+        // Glasses that left the phone (off, folded, out of range) are not a stuck SDK.
+        if (!glassesOnPhone()) {
+            if (state.glassesConnection.value != GlassesConnectionNotice.RESTARTING) {
+                showConnection(GlassesConnectionNotice.NONE)
+            }
+            return true
+        }
+        // Only while VISOR is in use: opening it starts this again (onScreenShown).
+        if (!isScreenShown && !serviceRunning) return true
+        if (round == 0) Log.i(RECOVERY_TAG, "The SDK lost the glasses, which are still connected to the phone")
+        if (reconnectInPlace(say = round == 0)) return true
+        val step = GlassesRecovery.next(
+            GlassesRecovery.Situation(
+                glassesOnPhone = true,
+                // The watcher leaves the microphone alone: a picture that needs it moved does that.
+                micOnGlasses = false,
+                sdkSeesGlasses = false,
+                retried = true,
+                nudged = true,
+                screenShown = isScreenShown,
+                sinceLastRestartMs = sinceLastRestartMs(),
+            )
+        )
+        Log.i(RECOVERY_TAG, "Watcher, round $round -> $step")
+        return when (step) {
+            GlassesRecovery.Step.RESTART_VISOR -> {
+                speaker.speak(app.getString(R.string.glasses_restarting_visor), VoiceCategory.STATUS_UPDATES)
+                restartVisor()
+                true
+            }
+            GlassesRecovery.Step.ASK_TO_OPEN_VISOR -> {
+                showConnection(GlassesConnectionNotice.LOST)
+                if (!openToReconnectSaid) {
+                    openToReconnectSaid = true
+                    speaker.speak(app.getString(R.string.glasses_open_visor_to_reconnect), VoiceCategory.STATUS_UPDATES)
+                }
+                false
+            }
+            // Restarted too recently: keep trying in place, and restart once it may.
+            else -> {
+                showConnection(GlassesConnectionNotice.LOST)
+                false
+            }
+        }
     }
 
     /** Whether background listening should be running: on in Settings, with something to listen for. */
@@ -789,11 +910,11 @@ class VisorEngine(
             micRoute.source,
             state.lastAnswer,
             state.glassesStatus,
-            state.glassesLinkLost,
-        ) { source, answer, glasses, linkLost ->
+            state.glassesConnection,
+        ) { source, answer, glasses, connection ->
             ListeningNotificationText.build(
                 throughGlasses = source == MicRoute.Source.GLASSES,
-                linkLost = linkLost,
+                connection = connection,
                 answer = answer?.let {
                     ListeningNotificationText.Answer(app.getString(it.command.labelRes), it.text, it.atMillis)
                 },
@@ -1021,7 +1142,6 @@ class VisorEngine(
         const val ANNOUNCE_WAIT_MS = 15_000L
 
         const val KEY_LAST_RESTART_AT = "lastRestartAt"
-        const val KEY_RESTART_ON_OPEN = "restartOnOpen"
         const val KEY_ANNOUNCE_AFTER_RESTART = "announceAfterRestart"
         const val KEY_REPLAY_COMMAND = "replayCommand"
         const val KEY_REPLAY_AT = "replayAt"
@@ -1031,7 +1151,19 @@ class VisorEngine(
         const val REPLAY_DELAY_MS = 1_500L
 
         /** How long the SDK must have lost the glasses before VISOR treats it as stuck. */
-        const val WEDGE_CONFIRM_MS = 5_000L
+        const val WEDGE_CONFIRM_MS = 3_000L
+
+        /** How long an in-place reconnect has, and how often the SDK is told again meanwhile. */
+        const val NUDGE_WAIT_MS = 10_000L
+        const val NUDGE_REPEAT_MS = 5_000L
+
+        /** While the link stays lost: try again this often, then less often after [FAST_ROUNDS] tries. */
+        const val RECOVERY_RETRY_MS = 20_000L
+        const val RECOVERY_SLOW_RETRY_MS = 60_000L
+        const val FAST_ROUNDS = 6
+
+        /** How long "Glasses reconnected" stays shown. */
+        const val RECONNECTED_SHOWN_MS = 6_000L
 
         /** How long the restarted SDK has to find the glasses again. */
         const val RECONNECT_POLL_MS = 250L

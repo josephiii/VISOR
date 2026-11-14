@@ -25,6 +25,14 @@
     <string name="offline_notice_spoken" description="Said aloud as the phone goes offline">You\'re offline. Features that need the internet are locked until you reconnect.</string>
     <string name="online_again_label" description="Bold first words of the notice shown for a few seconds once the phone is back online">Back online.</string>
     <string name="online_again_body" description="Rest of the notice shown for a few seconds once the phone is back online">Every feature is available again.</string>
+    <string name="glasses_notice_reconnecting_label" description="Bold first words of the notice shown while VISOR reconnects to the glasses">Reconnecting to your glasses.</string>
+    <string name="glasses_notice_reconnecting_body" description="Rest of the notice shown while VISOR reconnects to the glasses">This takes a few seconds.</string>
+    <string name="glasses_notice_restarting_label" description="Bold first words of the notice shown just before VISOR restarts itself to reconnect to the glasses">VISOR is restarting.</string>
+    <string name="glasses_notice_restarting_body" description="Rest of the notice shown just before VISOR restarts itself">It is reconnecting to your glasses and will be back in a moment.</string>
+    <string name="glasses_notice_reconnected_label" description="Bold first words of the notice shown for a few seconds once the glasses are reconnected">Glasses reconnected.</string>
+    <string name="glasses_notice_reconnected_body" description="Rest of the notice shown once the glasses are reconnected">The glasses camera is ready again.</string>
+    <string name="glasses_notice_lost_label" description="Bold first words of the notice shown while VISOR can't reach glasses that are still connected to the phone">Glasses not reachable.</string>
+    <string name="glasses_notice_lost_body" description="Rest of the notice shown while VISOR can't reach the glasses">VISOR keeps trying. If this stays, turn your glasses off and on again.</string>
     <string name="online_again_spoken" description="Said aloud as the phone comes back online">Back online. Every feature is available again.</string>
     <!-- Under the name of a button that is locked while offline -->
     <string name="offline_locked_reason" description="Second line of a button locked while offline">Needs the internet</string>
@@ -234,9 +242,14 @@
     <string name="glasses_open_visor_to_reconnect" description="Said with the screen off when only reopening VISOR can reconnect the glasses">VISOR lost its connection to your glasses. Open VISOR on your phone to reconnect them.</string>
     <string name="glasses_reconnected" description="Said after VISOR restarted itself and found the glasses again">Your glasses are reconnected.</string>
     <string name="glasses_still_unreachable" description="Said after VISOR restarted itself and still can't reach the glasses">VISOR still can\'t reach your glasses. Turn your glasses off and on again, then try again.</string>
+    <string name="glasses_still_trying" description="Said when a glasses picture can't be taken because the link is lost and VISOR restarted too recently to restart again">VISOR can\'t reach your glasses yet and will keep trying. Ask again in a moment.</string>
     <string name="mic_falling_back_to_phone" description="Said when the glasses' microphone keeps dropping and VISOR switches to the phone's for a few minutes">Your glasses\' microphone keeps dropping, so VISOR is listening through your phone for now.</string>
     <string name="notification_channel_listening" description="Name of the notification channel, in the phone's settings">Background listening</string>
     <string name="notification_channel_listening_description" description="What the notification channel is, in the phone\'s settings">Shows while VISOR listens with the screen off.</string>
+    <string name="notification_channel_glasses_connection" description="Name of the notification channel for VISOR restarting to reconnect the glasses, in the phone's settings">Glasses connection</string>
+    <string name="notification_channel_glasses_connection_description" description="What the glasses connection notification channel is, in the phone's settings">Shows while VISOR restarts to reconnect to your glasses.</string>
+    <string name="notification_restarting_title" description="Title of the notification shown while VISOR restarts itself to reconnect the glasses">VISOR is restarting</string>
+    <string name="notification_restarting_text" description="Text of the notification shown while VISOR restarts itself">Reconnecting to your glasses. VISOR will be back in a moment.</string>
     <string name="notification_action_repeat_answer" description="Notification button: says the last answer again">Repeat answer</string>
     <string name="notification_action_stop_listening" description="Notification button: turns background listening off">Stop listening</string>
     <string name="help_background_title" description="Help topic title">Using VISOR with the screen off</string>

@@ -7,9 +7,9 @@ import ucf.visor.wearables.GlassesRecovery.Step
 
 /**
  * What VISOR does when a glasses picture fails, step by step. Built from the
- * 2026-11-13 field logs and Meta's guidance (#138, #192): camera before
- * microphone, a fresh session when the SDK still sees the glasses, then
- * restarting VISOR, never in a loop.
+ * 2026-11-13/14 field logs and Meta's guidance (#138, #192): camera before
+ * microphone, a fresh session when the SDK still sees the glasses, telling
+ * the SDK they are there, then restarting VISOR, never in a loop.
  */
 class GlassesRecoveryTest {
 
@@ -18,6 +18,7 @@ class GlassesRecoveryTest {
         micOnGlasses = false,
         sdkSeesGlasses = false,
         retried = false,
+        nudged = true,
         screenShown = true,
         sinceLastRestartMs = null,
     )
@@ -40,9 +41,25 @@ class GlassesRecoveryTest {
         assertEquals(Step.GIVE_UP, GlassesRecovery.next(lost.copy(sdkSeesGlasses = true, retried = true)))
     }
 
+    /** First, in place: it works with the screen off and takes no restart. */
+    @Test
+    fun aLostLinkIsFirstReconnectedInPlace() {
+        val notNudged = lost.copy(nudged = false)
+        assertEquals(Step.NUDGE_SDK, GlassesRecovery.next(notNudged))
+        assertEquals(Step.NUDGE_SDK, GlassesRecovery.next(notNudged.copy(screenShown = false)))
+        // Even right after a restart: it costs nothing to try.
+        assertEquals(Step.NUDGE_SDK, GlassesRecovery.next(notNudged.copy(sinceLastRestartMs = 1_000L)))
+    }
+
+    /** Once the SDK is back, the picture is tried again, as with any link the SDK sees. */
+    @Test
+    fun aSuccessfulNudgeLeadsToARetry() {
+        assertEquals(Step.RETRY, GlassesRecovery.next(lost.copy(sdkSeesGlasses = true)))
+    }
+
     /** Restarting the SDK in-process does not reconnect on MWDAT 1.0.0; restarting VISOR does. */
     @Test
-    fun aLostLinkRestartsVisor() {
+    fun aLinkTheNudgeCantFixRestartsVisor() {
         assertEquals(Step.RESTART_VISOR, GlassesRecovery.next(lost))
     }
 

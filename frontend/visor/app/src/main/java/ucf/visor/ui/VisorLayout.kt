@@ -46,6 +46,7 @@ import ucf.visor.stt.CameraCommand
 import androidx.compose.ui.unit.dp
 import ucf.visor.ui.components.ConnectivityNotice
 import ucf.visor.ui.components.ErrorBanner
+import ucf.visor.ui.components.GlassesConnectionNotice
 import ucf.visor.ui.components.ReadingControlsBar
 import ucf.visor.ui.components.VisorNavigationBar
 import ucf.visor.ui.components.isScreenReaderOn
@@ -105,6 +106,7 @@ fun VisorLayout(
     val readingText by (reading?.readingText ?: remember { MutableStateFlow<String?>(null) })
         .collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
+    val glassesConnection by viewModel.glassesConnection.collectAsStateWithLifecycle()
 
     // DEBUG TOOL: Mock Device Kit Debug button
     val bottomSheetState =
@@ -442,6 +444,12 @@ fun VisorLayout(
                             isOnline = uiState.isOnline,
                             modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
                             talk = talk,
+                        )
+                        // What VISOR is doing about a lost glasses link,
+                        // including that it is about to restart itself.
+                        GlassesConnectionNotice(
+                            notice = glassesConnection,
+                            modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
                         )
                         ErrorBanner(
                             message = uiState.recentError,

@@ -42,6 +42,7 @@ import ucf.visor.motionlab.protocol.RunnerState
 import ucf.visor.motionlab.protocol.Trial
 import ucf.visor.motionlab.protocol.TrialOutcome
 import ucf.visor.motionlab.protocol.Trials
+import ucf.visor.wearables.GlassesLinkNudge
 import ucf.visor.wearables.VoiceLaunches
 import ucf.visor.wearables.preferredDevice
 import ucf.visor.wearables.toGlassesStatus
@@ -88,6 +89,19 @@ class MwdatMockDeviceTest {
             )
         }
         return glasses
+    }
+
+    /**
+     * VISOR reconnects the glasses in place by reaching the SDK's Bluetooth
+     * listener (GlassesLinkNudge). If an SDK update moves it, this fails here
+     * rather than in the field, where VISOR would fall back to restarting.
+     */
+    @Test
+    fun theSdkBluetoothListenerIsReachableForReconnecting() {
+        pairWornGlasses()
+        assertTrue("The SDK's Bluetooth listener wasn't found", GlassesLinkNudge.isAvailable)
+        // Telling it about every device it tracks must not throw.
+        GlassesLinkNudge.nudge(context)
     }
 
     @Test

@@ -7,6 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ucf.visor.background.ListeningNotificationText.Answer
 import ucf.visor.background.ListeningNotificationText.Glasses
+import ucf.visor.wearables.GlassesConnectionNotice
 
 /**
  * Background listening's notification, checked against the accessibility rules
@@ -90,13 +91,35 @@ class ListeningNotificationTextTest {
             throughGlasses = false,
             answer = Answer("Read text", "Exit on the left"),
             glasses = glasses,
-            linkLost = true,
+            connection = GlassesConnectionNotice.LOST,
         )
         assertEquals(ListeningNotificationText.LINK_LOST, content.text)
         assertTrue(content.bigText.startsWith(ListeningNotificationText.LINK_LOST))
         assertTrue(content.bigText.contains("Last answer, Read text: Exit on the left"))
         assertEquals(ListeningNotificationText.LINK_LOST, content.publicText)
         assertFalse(content.publicText.contains("Exit on the left"))
+    }
+
+    /** Each step of a reconnect is written out, first, so a glance at the shade says what VISOR is doing. */
+    @Test
+    fun reconnectingAndRestartingAreWrittenOut() {
+        val expected = mapOf(
+            GlassesConnectionNotice.RECONNECTING to "Reconnecting to your glasses.",
+            GlassesConnectionNotice.RESTARTING to "VISOR is restarting to reconnect to your glasses.",
+            GlassesConnectionNotice.RECONNECTED to "Your glasses are reconnected.",
+        )
+        for ((notice, line) in expected) {
+            val content = ListeningNotificationText.build(
+                throughGlasses = true,
+                answer = null,
+                glasses = glasses,
+                connection = notice,
+            )
+            assertEquals(line, content.text)
+            assertEquals(line, content.publicText)
+            assertTrue(content.bigText.endsWith("Glasses battery 40%."))
+        }
+        assertNull(ListeningNotificationText.connectionLine(GlassesConnectionNotice.NONE))
     }
 
     @Test
