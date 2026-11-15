@@ -48,13 +48,33 @@ class SceneQuestionController(
         speak("What's your question?")
         whenQuiet {
             handler.postDelayed(
-                { recognizer.listen { question -> onQuestion(question) } },
+                {
+                    awaitingQuestion = true
+                    recognizer.listen { question -> onQuestion(question) }
+                    // A recognizer that never answers must not leave "Ask a
+                    // question" busy, and the wake phrases off, for good.
+                    handler.postDelayed(giveUpListening, LISTEN_TIMEOUT_MS)
+                },
                 listenDelayMs,
             )
         }
     }
 
+    /** Whether a question is being listened for: its answer counts once. */
+    private var awaitingQuestion = false
+
+    private val giveUpListening = Runnable {
+        if (awaitingQuestion) {
+            Log.w("VISOR", "Scene question: nothing heard from the recognizer in $LISTEN_TIMEOUT_MS ms")
+            recognizer.cancel()
+            onQuestion(null)
+        }
+    }
+
     private fun onQuestion(question: String?) {
+        if (!awaitingQuestion) return
+        awaitingQuestion = false
+        handler.removeCallbacks(giveUpListening)
         if (question.isNullOrBlank()) {
             speak("Sorry, I didn't catch that.")
             finish()
@@ -94,5 +114,10 @@ class SceneQuestionController(
                 }
             }
         }, 400) 
+    }
+
+    private companion object {
+        /** How long a question may take to be heard, from when listening starts. */
+        const val LISTEN_TIMEOUT_MS = 20_000L
     }
 }

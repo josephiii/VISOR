@@ -45,6 +45,9 @@ import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.PhoneCameraSlot
 import ucf.visor.capture.PhotoSource
+import android.graphics.Bitmap
+import java.io.File
+import ucf.visor.BuildConfig
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
@@ -198,6 +201,7 @@ class VisorEngine(
             glassesPermissionRequester?.invoke(permission) ?: PermissionStatus.Denied
         },
         recoverLink = { recoverGlassesLink() },
+        skipStills = { state.glassesStatus.value?.displayCapable == true },
     )
 
     /** The camera chosen on the Pair screen (or by voice), as of right now. */
@@ -236,7 +240,29 @@ class VisorEngine(
         NotifyingPhotoSource(source) { state.onPictureTaken(command) }
 
     private val textReader: ReadRequester =
-        TextReader(cameraFor(CameraCommand.READ_TEXT, chosenReadingCamera), textReaderOCR)
+        TextReader(cameraFor(CameraCommand.READ_TEXT, keepingLastPicture(chosenReadingCamera)), textReaderOCR)
+
+    /**
+     * In debug builds only, keeps the last picture Read Text was given in
+     * VISOR's own cache (last_reading.jpg, replaced each time), so what the
+     * text reader saw can be looked at: `adb exec-out run-as edu.ucf.visor cat cache/last_reading.jpg`.
+     */
+    private fun keepingLastPicture(source: PhotoSource): PhotoSource =
+        if (!BuildConfig.DEBUG) source
+        else object : PhotoSource {
+            override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
+                source.capturePhoto(
+                    onPhoto = { bitmap ->
+                        runCatching {
+                            File(app.cacheDir, "last_reading.jpg").outputStream().use {
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)
+                            }
+                        }
+                        onPhoto(bitmap)
+                    },
+                    onError = onError,
+                )
+        }
 
     private val objectIdentifier: ReadRequester =
         ObjectIdentifier(cameraFor(CameraCommand.IDENTIFY_OBJECTS), objectDetector)
