@@ -54,6 +54,7 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
 import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
@@ -195,6 +196,9 @@ class VisorEngine(
     /** How much the camera features say: Settings > Speech > Detail. */
     private fun verbosity(): Verbosity = state.profile.value.verbosity
 
+    /** How VISOR fits the user's vision: Settings > About you, as of right now. */
+    private fun visionPlan(): VisionPlan = VisionPlan.from(state.profile.value)
+
     private fun isOnline(): Boolean = state.isOnline.value
 
     /**
@@ -238,6 +242,7 @@ class VisorEngine(
         scope = scope,
         fallback = objectDetector,
         verbosity = ::verbosity,
+        plan = ::visionPlan,
         isOnline = ::isOnline,
     )
 
@@ -246,6 +251,7 @@ class VisorEngine(
         client = HazardClient(accessToken = state.sessionStore::accessToken),
         scope = scope,
         verbosity = ::verbosity,
+        plan = ::visionPlan,
     )
 
     // ---------------------------------------------------------------------
@@ -288,6 +294,7 @@ class VisorEngine(
             vlm = VlmClient(accessToken = state.sessionStore::accessToken),
             scope = scope,
             verbosity = ::verbosity,
+            plan = ::visionPlan,
         ),
         beeper = thinkingBeeper,
         speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },

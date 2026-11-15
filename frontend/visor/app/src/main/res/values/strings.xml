@@ -123,6 +123,11 @@
     <string name="settings_section_vision_description" description="Heading over the free-text vision description field">In your own words</string>
     <string name="settings_name_label" description="Label for the user's name field">Your name</string>
     <string name="settings_vision_description_label" description="Label for the free-text vision description field">Describe your vision, in your own words (optional)</string>
+    <string name="settings_section_fits_you" description="Settings > About you heading: what VISOR does differently for this user">How VISOR fits you</string>
+    <string name="settings_share_description" description="Name of the switch that sends the user's own description to VISOR's AI">Share my description with VISOR\'s AI</string>
+    <string name="settings_share_description_detail">On, VISOR\'s AI reads your description with each scene description and question, so its answers fit you. Off, it stays on this phone.</string>
+    <string name="settings_apply_suggested_look" description="Button: switch to the dark, high-contrast look VISOR suggests for contrast and light sensitivity">Use the suggested dark, high-contrast look</string>
+    <string name="settings_suggested_look_applied" description="Said after the suggested look is applied">Dark, high-contrast look on.</string>
     <!-- Settings → Speech → How VISOR sounds: which of the phone's voices VISOR speaks in (tts/VoiceCatalog) -->
     <string name="voice_choice_section" description="Settings section: which voice VISOR speaks in">How VISOR sounds</string>
     <string name="voice_choice_current" description="The voice the user has chosen, e.g. Your voice: US English voice 2">"Your voice: <xliff:g id="voice">%1$s</xliff:g>"</string>
@@ -383,7 +388,16 @@
 
     <!-- DESCRIBE Step -->
     <string name="step_describe_title">Tell me about your vision, in your own words</string>
-    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or say skip.</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. I\'ll share it with VISOR\'s AI so its descriptions fit you; you can turn that off in Settings. Or say skip.</string>
+    <string name="step_describe_sharing_note" description="Under the setup field for the user's own description: where it goes">VISOR\'s AI uses what you write here to describe things the way that helps you. You can turn this off in Settings, About you.</string>
+
+    <!-- CONFIRM_TYPES Step: shown only when the user's own words name an eye condition (see data/VisionPlan) -->
+    <string name="step_confirm_types_title">Add this to your answers?</string>
+    <string name="step_confirm_types_reason" description="Why setup offers to add an answer, as in 'You mentioned glaucoma. That usually brings:'">You mentioned <xliff:g id="condition">%1$s</xliff:g>. That usually brings:</string>
+    <string name="step_confirm_types_spoken_prompt" description="Spoken offer, as in 'You mentioned glaucoma. That usually brings trouble seeing the sides. Should I add that to your answers? Say yes or no.'">You mentioned <xliff:g id="condition">%1$s</xliff:g>. That usually brings <xliff:g id="kinds">%2$s</xliff:g>. Should I add that to your answers? Say yes or no.</string>
+    <string name="step_confirm_types_and" description="Joins the last two kinds of vision loss in a spoken list">and</string>
+    <string name="step_confirm_types_yes">Yes, add it</string>
+    <string name="step_confirm_types_no">No, leave my answers as they are</string>
 
     <!-- SEVERITY Step -->
     <string name="step_severity_title">How much does it affect daily life?</string>
@@ -396,10 +410,28 @@
     <!-- VERBOSITY Step -->
     <string name="step_verbosity_title">How much detail do you want?</string>
     <string name="step_verbosity_spoken_prompt">When I describe things, how much detail do you want? Say: brief, standard, or detailed.</string>
+    <string name="step_verbosity_recommended" description="A Detail option setup suggests from how much the user's vision affects daily life, as in 'Detailed (recommended for you)'"><xliff:g id="option">%1$s</xliff:g> (recommended for you)</string>
+    <string name="step_verbosity_recommended_spoken" description="Said after the Detail question, as in 'For you, I would suggest detailed.'">For you, I\'d suggest <xliff:g id="option">%1$s</xliff:g>.</string>
 
     <!-- DONE Step -->
     <string name="step_done_title">You\'re all set!</string>
     <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me. Say start to begin using VISOR.</string>
+    <string name="step_done_fits_you" description="Heading over what VISOR does differently for this user, on setup's last step">Here\'s how VISOR fits you</string>
+    <string name="step_done_fits_you_spoken">Here\'s how I\'ll fit VISOR to you.</string>
+    <string name="step_done_look" description="Switch on setup's last step, on unless the user turns it off">Use a dark, high-contrast look</string>
+    <string name="step_done_look_spoken">Because light and contrast are hard for you, I\'ll use a dark, high-contrast look. Say no to keep the usual look.</string>
+    <string name="step_done_look_declined_spoken">Okay, I\'ll keep the usual look. Say start to begin using VISOR.</string>
+
+    <!-- How VISOR fits the user's vision (data/VisionPlan): setup's last step and Settings > About you -->
+    <string name="tailoring_ahead_first">Because the center is hard for you to see, I describe what\'s straight ahead first, and tell you about hazards straight ahead first.</string>
+    <string name="tailoring_sides_first">Because the sides are hard for you to see, I tell you what\'s on your left and right first, even when it\'s further away.</string>
+    <string name="tailoring_read_details">Because things look blurry to you, I read text and give exact numbers, like prices and times.</string>
+    <string name="tailoring_contrast_and_light">Because contrast and light are hard for you, I mention glare and dim light, things that blend into their background, and colors.</string>
+    <string name="tailoring_severe_more_safety">Because your vision affects daily life a lot, I mention more of what you could trip over or walk into, and a brief hazard check names up to five things.</string>
+    <string name="tailoring_mild_skip_obvious">Because your vision affects daily life a little, I skip what\'s obvious.</string>
+    <string name="tailoring_own_words">I also use your own words about your vision, so my descriptions fit you.</string>
+    <string name="tailoring_first_button" description="As in 'Read text is your first button on Home.'"><xliff:g id="feature">%1$s</xliff:g> is your first button on Home.</string>
+    <string name="tailoring_none">Tell VISOR about your vision here, and it will fit what it says, and the order of your buttons, to you.</string>
 
     <!-- Hardware Pairing Screen: updates the glasses need -->
     <string name="update_required_title" description="Update required warning title">Update required</string>

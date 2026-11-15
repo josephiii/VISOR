@@ -2,9 +2,13 @@ package ucf.visor.capture
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
+import ucf.visor.data.VisionType
 
 /** The Detail setting (Brief, Standard, Detailed) changes what VISOR asks for. */
 class ScenePromptsTest {
@@ -41,5 +45,37 @@ class ScenePromptsTest {
     @Test
     fun theQuestionIsPassedOnWordForWord() {
         assertTrue(ScenePrompts.question("Is the light on?", Verbosity.STANDARD).contains("\"Is the light on?\""))
+    }
+
+    private fun plan(vararg types: VisionType, description: String = "") = VisionPlan.from(
+        UserProfile(visionTypes = types.toSet().ifEmpty { setOf(VisionType.NOT_SURE) }, visionDescription = description)
+    )
+
+    @Test
+    fun withNothingToTailorToThePromptsAreAsTheyWere() {
+        Verbosity.entries.forEach {
+            assertEquals(ScenePrompts.describe(it), ScenePrompts.describe(it, plan()))
+            assertEquals(ScenePrompts.question("Is it on?", it), ScenePrompts.question("Is it on?", it, plan()))
+        }
+    }
+
+    @Test
+    fun theirVisionGoesIntoEveryPromptAndReadAloudStaysLast() {
+        val sides = plan(VisionType.PERIPHERAL_LOSS, description = "I have glaucoma")
+        Verbosity.entries.forEach {
+            listOf(ScenePrompts.describe(it, sides), ScenePrompts.question("Where is the door?", it, sides)).forEach { prompt ->
+                assertTrue(prompt, prompt.contains(sides.sceneGuidance))
+                assertTrue(prompt, prompt.contains("\"I have glaucoma\""))
+                assertTrue(prompt, prompt.endsWith("Use plain words; your answer will be read aloud."))
+            }
+        }
+    }
+
+    @Test
+    fun twoKindsOfVisionAskForDifferentThings() {
+        assertNotEquals(
+            ScenePrompts.describe(Verbosity.STANDARD, plan(VisionType.CENTRAL_LOSS)),
+            ScenePrompts.describe(Verbosity.STANDARD, plan(VisionType.PERIPHERAL_LOSS)),
+        )
     }
 }

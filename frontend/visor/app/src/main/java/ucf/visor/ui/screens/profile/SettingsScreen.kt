@@ -87,6 +87,7 @@ import ucf.visor.data.TextScale
 import ucf.visor.data.ThemeMode
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VisionType
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
@@ -371,6 +372,39 @@ private fun AboutYouSettings(profile: UserProfile, onProfileChange: (UserProfile
         shape = VisorShapes.Control,
         modifier = Modifier.fillMaxWidth(),
     )
+    Text(
+        stringResource(R.string.settings_share_description_detail),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    SwitchChip(
+        title = stringResource(R.string.settings_share_description),
+        on = profile.shareVisionDescription,
+        onToggle = { onProfileChange(profile.copy(shareVisionDescription = !profile.shareVisionDescription)) },
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    // What the answers above change, updated as they change (data/VisionPlan).
+    val plan = VisionPlan.from(profile)
+    SettingSection(stringResource(R.string.settings_section_fits_you))
+    VisionFitSummary(plan)
+    if (plan.suggestsDarkHighContrast) {
+        // Offered, never applied behind their back. Once on, the button gives
+        // way to a line saying so, which a screen reader announces.
+        if (profile.themeMode == ThemeMode.DARK && profile.appHighContrast) {
+            Text(
+                stringResource(R.string.settings_suggested_look_applied),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        } else {
+            SwitchButton(
+                label = stringResource(R.string.settings_apply_suggested_look),
+                outlined = true,
+                onClick = { onProfileChange(profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true)) },
+            )
+        }
+    }
 }
 
 /** "Speech": which voice VISOR speaks in, how fast it talks, and how much it says. */

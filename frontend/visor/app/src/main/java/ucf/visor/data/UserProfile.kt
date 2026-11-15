@@ -155,6 +155,12 @@ data class UserProfile(
     val displayName: String = "",
     val visionTypes: Set<VisionType> = setOf(VisionType.NOT_SURE),
     val visionDescription: String = "",
+    /**
+     * Send [visionDescription] to VISOR's AI with each scene description and
+     * question, so its answers fit how this user sees (see VisionPlan). On
+     * until turned off in Settings > About you; setup says so as it asks.
+     */
+    val shareVisionDescription: Boolean = true,
     val severity: Severity = Severity.MODERATE,
     val speechRate: Float = SpeechRates.Normal,
     /**

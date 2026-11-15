@@ -1,5 +1,6 @@
 package ucf.visor.tts
 
+import ucf.visor.data.VisionPlan
 import ucf.visor.network.Hazard
 import kotlin.math.roundToInt
 
@@ -90,14 +91,31 @@ object SpokenPhrases {
      * [imageWidth] pixels across: the left third is on the wearer's left, the
      * right third on their right, and the middle is straight ahead. Without a
      * width (0), no side is said.
+     *
+     * [focus] (from the user's VisionPlan) puts first the part of the picture
+     * they are likely to miss: the sides for someone with trouble seeing the
+     * sides, straight ahead for someone with trouble seeing the center. Those
+     * are never cut by [limit] for being further away: the nearest [limit]
+     * are said, and also the nearest [limit] in the focused part. Each is
+     * said the same way whatever the order, so it always sounds the same.
      */
     fun hazardsAhead(
         hazards: List<Hazard>,
         imageWidth: Int = 0,
         limit: Int = Int.MAX_VALUE,
-    ): String =
-        if (hazards.isEmpty()) NO_HAZARDS_FOUND
-        else hazards.sortedBy { it.depth }.take(limit.coerceAtLeast(1)).joinToString(" ") { hazard ->
+        focus: VisionPlan.HazardFocus = VisionPlan.HazardFocus.NEAREST,
+    ): String {
+        if (hazards.isEmpty()) return NO_HAZARDS_FOUND
+        val count = limit.coerceAtLeast(1)
+        val nearest = hazards.sortedBy { it.depth }
+        val inFocus: (Hazard) -> Boolean = when (focus) {
+            VisionPlan.HazardFocus.NEAREST -> { _ -> false }
+            VisionPlan.HazardFocus.SIDES_FIRST -> { h -> sideOf(h, imageWidth).let { it == Side.LEFT || it == Side.RIGHT } }
+            VisionPlan.HazardFocus.AHEAD_FIRST -> { h -> sideOf(h, imageWidth) == Side.AHEAD }
+        }
+        val said = (nearest.take(count) + nearest.filter(inFocus).take(count)).distinct()
+        // sortedBy is stable: within each part, still nearest first.
+        return said.sortedBy { if (inFocus(it)) 0 else 1 }.joinToString(" ") { hazard ->
             val feet = (hazard.depth * FEET_PER_METER).roundToInt().coerceAtLeast(1)
             val side = when (sideOf(hazard, imageWidth)) {
                 Side.LEFT -> " on your left"
@@ -106,9 +124,13 @@ object SpokenPhrases {
             }
             "${hazard.name}, $feet ${if (feet == 1) "foot" else "feet"} ahead$side."
         }
+    }
 
-    /** How many hazards a Brief answer names: the nearest, as the rest can wait. */
-    const val BRIEF_HAZARD_LIMIT = 3
+    /**
+     * How many hazards a Brief answer names: the nearest, as the rest can wait.
+     * Someone whose vision affects daily life a lot hears more (VisionPlan.briefHazardLimit).
+     */
+    const val BRIEF_HAZARD_LIMIT = VisionPlan.BriefHazardLimit
 
     private enum class Side { LEFT, AHEAD, RIGHT }
 

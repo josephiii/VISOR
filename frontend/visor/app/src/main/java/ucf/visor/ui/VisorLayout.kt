@@ -56,6 +56,7 @@ import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
 import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.ReadingState
@@ -270,8 +271,9 @@ fun VisorLayout(
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState, readingState) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, readingState))
+    val featureOrder = remember(profile.visionTypes) { VisionPlan.from(profile).featureOrder }
+    LaunchedEffect(glassesNav, currentRoute, uiState, readingState, featureOrder) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, readingState, featureOrder))
     }
 
     ///////////////////////////////////////////////////////////////////////////

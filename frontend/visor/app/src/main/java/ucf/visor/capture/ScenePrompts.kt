@@ -1,6 +1,7 @@
 package ucf.visor.capture
 
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 
 /**
  * What VISOR asks the vision language model, for "VISOR, what do you see?"
@@ -11,6 +12,10 @@ import ucf.visor.data.Verbosity
  * things are (on the left, ahead, on the right) for someone to look towards
  * or reach for, and Detailed adds what is hardest to see: color, text, and
  * what could be tripped over or walked into.
+ *
+ * Each prompt also carries the user's [VisionPlan.sceneGuidance]: what their
+ * own kind of vision loss makes them miss, so it is said first. With nothing
+ * to tailor to (setup skipped), the prompts are exactly as they always were.
  */
 object ScenePrompts {
 
@@ -19,8 +24,11 @@ object ScenePrompts {
 
     private const val ALOUD = "Use plain words; your answer will be read aloud."
 
-    /** The prompt for describing the scene in front of the user. */
-    fun describe(verbosity: Verbosity): String = when (verbosity) {
+    /** The prompt for describing the scene in front of the user, fitted to [plan]. */
+    fun describe(verbosity: Verbosity, plan: VisionPlan? = null): String =
+        tailored(describeFor(verbosity), plan)
+
+    private fun describeFor(verbosity: Verbosity): String = when (verbosity) {
         Verbosity.BRIEF ->
             "Describe this scene in one short sentence for a person with low vision. " +
                 "Name only the most important thing and where it is: on their left, ahead, or on their right. " +
@@ -37,8 +45,11 @@ object ScenePrompts {
                 "or walk into. $ALOUD"
     }
 
-    /** The prompt for answering [question], asked aloud about a fresh photo. */
-    fun question(question: String, verbosity: Verbosity): String {
+    /** The prompt for answering [question], asked aloud about a fresh photo, fitted to [plan]. */
+    fun question(question: String, verbosity: Verbosity, plan: VisionPlan? = null): String =
+        tailored(questionFor(question, verbosity), plan)
+
+    private fun questionFor(question: String, verbosity: Verbosity): String {
         val length = when (verbosity) {
             Verbosity.BRIEF -> "Answer it directly in one short sentence."
             Verbosity.STANDARD -> "Answer it directly in one to three short sentences."
@@ -48,5 +59,15 @@ object ScenePrompts {
             "Question: \"$question\" $length " +
             "When it helps, say where things are: on their left, ahead, or on their right. " +
             "If the image doesn't show enough to answer, say so. $ALOUD"
+    }
+
+    /**
+     * [prompt] with [plan]'s guidance put just before its last sentence
+     * ([ALOUD]), so "read aloud" stays the model's final instruction.
+     */
+    private fun tailored(prompt: String, plan: VisionPlan?): String {
+        val guidance = plan?.sceneGuidance.orEmpty()
+        if (guidance.isEmpty()) return prompt
+        return prompt.removeSuffix(ALOUD).trimEnd() + " " + guidance + " " + ALOUD
     }
 }

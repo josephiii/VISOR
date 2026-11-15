@@ -25,6 +25,7 @@ class ProfileStore(context: Context) {
             .putString(KEY_NAME, p.displayName)
             .putStringSet(KEY_VISION_TYPES, p.visionTypes.map { it.name }.toSet())
             .putString(KEY_DESCRIPTION, p.visionDescription)
+            .putBoolean(KEY_SHARE_DESCRIPTION, p.shareVisionDescription)
             .putString(KEY_SEVERITY, p.severity.name)
             .putFloat(KEY_SPEECH_RATE_MULTIPLIER, p.speechRate)
             // Null (the default voice) removes the key.
@@ -62,6 +63,7 @@ class ProfileStore(context: Context) {
                 ?: defaults.visionTypes,
             visionDescription = prefs.getString(KEY_DESCRIPTION, defaults.visionDescription)
                 ?: defaults.visionDescription,
+            shareVisionDescription = prefs.getBoolean(KEY_SHARE_DESCRIPTION, defaults.shareVisionDescription),
             severity = enumOrDefault(KEY_SEVERITY, defaults.severity),
             speechRate = speechRateOrDefault(defaults.speechRate),
             voiceName = prefs.getString(KEY_VOICE_NAME, null)?.ifBlank { null } ?: defaults.voiceName,
@@ -150,6 +152,7 @@ class ProfileStore(context: Context) {
         const val KEY_NAME = "displayName"
         const val KEY_VISION_TYPES = "visionTypes"
         const val KEY_DESCRIPTION = "visionDescription"
+        const val KEY_SHARE_DESCRIPTION = "shareVisionDescription"
         const val KEY_SEVERITY = "severity"
 
         // Legacy key: the pre-slider enum name. Read for migration, never written.

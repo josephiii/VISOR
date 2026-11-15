@@ -6,6 +6,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import ucf.visor.data.UserProfile
+import ucf.visor.data.VisionPlan
+import ucf.visor.data.VisionType
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingState
 import ucf.visor.ui.viewmodel.VisorUiState
@@ -58,6 +61,18 @@ class GlassesNavScreenTest {
             home.items.map { it.command },
         )
         assertFalse("all four fit with no More", home.page(0).hasMore)
+    }
+
+    @Test
+    fun homeListsTheCameraButtonsInTheOrderFittedToTheUsersVision() {
+        val centerLoss = VisionPlan.from(UserProfile(visionTypes = setOf(VisionType.CENTRAL_LOSS)))
+        val home = glassesNavScreenFor("home", loggedIn, featureOrder = centerLoss.featureOrder)
+
+        assertEquals(
+            listOf("Read text", "Identify objects", "Check for hazards", "Describe the scene"),
+            home.items.map { it.label },
+        )
+        assertFalse("all four still fit with no More", home.page(0).hasMore)
     }
 
     @Test

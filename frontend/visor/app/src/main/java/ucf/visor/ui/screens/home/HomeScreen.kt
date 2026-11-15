@@ -72,6 +72,7 @@ import ucf.visor.R
 import ucf.visor.capture.Availability
 import ucf.visor.capture.availability
 import ucf.visor.data.CameraChoice
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingControls
@@ -123,6 +124,7 @@ fun HomeScreen(
     val readingText by (reading?.readingText ?: remember { MutableStateFlow<String?>(null) })
         .collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val featureOrder = remember(profile.visionTypes) { VisionPlan.from(profile).featureOrder }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -156,8 +158,10 @@ fun HomeScreen(
             }
 
             // What Home is for, first: a button for each camera feature, each
-            // always in the same place and always doing the same thing, hazards
-            // at the top. Full width, one to a row, so a long name wraps at a
+            // always in the same place and always doing the same thing, the
+            // one most useful to the user's vision at the top (VisionPlan:
+            // hazards, unless setup said otherwise). The order only changes
+            // when they change their answers in Settings > About you. Full width, one to a row, so a long name wraps at a
             // large text size rather than shrinking. Then what VISOR last found.
             //
             // Offline, each stays in its place, so nothing moves under a finger
@@ -167,7 +171,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(CaptureGap),
             ) {
-                CameraCommand.entries.forEach { command ->
+                featureOrder.forEach { command ->
                     val label = stringResource(command.labelRes)
                     val availability = command.availability(uiState.isOnline)
                     CaptureControl(
