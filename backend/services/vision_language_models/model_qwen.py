@@ -11,7 +11,7 @@ class QwenVL(VLModel):
 
     def __init__(self):
         super().__init__()
-        self.MODEL_ID = "Qwen/Qwen3-VL-2B-Instruct" # can swap to 2, 4, and 8
+        self.MODEL_ID = "Qwen/Qwen3-VL-8B-Instruct" # can swap to 2, 4, and 8
 
     def load_model(self):
 
