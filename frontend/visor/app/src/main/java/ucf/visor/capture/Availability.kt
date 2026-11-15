@@ -21,7 +21,7 @@ enum class Availability {
 
 /**
  * What [this] camera feature can do with ([isOnline]) or without VISOR's
- * server. See documentation/research/phase1-offline-capabilities.md.
+ * server. See documentation/developer/offline-features.md.
  *
  *  - Read text and Identify objects run ML Kit on the phone, with its models
  *    in the app: they work the same offline.

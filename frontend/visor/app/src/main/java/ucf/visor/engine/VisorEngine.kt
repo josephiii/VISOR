@@ -63,6 +63,7 @@ import ucf.visor.recognition.TextReaderOCR
 import ucf.visor.stt.CameraCommand
 import ucf.visor.stt.CommandRecognizer
 import ucf.visor.stt.Listener
+import ucf.visor.stt.MicCheck
 import ucf.visor.stt.MicRoute
 import ucf.visor.stt.WakePhrases
 import ucf.visor.tts.Chimes
@@ -277,13 +278,36 @@ class VisorEngine(
 
     private val commandRecognizer = CommandRecognizer(app)
 
+    /**
+     * Whether a spoken command or question has the microphone (voice
+     * navigation or a scene question paused wake listening for it), so
+     * [micCheck] can tell the speech recognizer's recording apart.
+     */
+    @Volatile
+    private var commandMicOpen = false
+
+    /** Logs which microphone each recording really uses, for field tests (see MicCheck). */
+    private val micCheck = MicCheck(
+        app,
+        route = { micRoute.source.value },
+        wakeSessionId = { listener.audioSessionId },
+        commandListening = { commandMicOpen },
+        glassesName = { state.glassesStatus.value?.name },
+    )
+
     val voiceNav = VoiceNavigationController(
         context = app,
         speak = { speaker.speak(it, VoiceCategory.VOICE_COMMANDS) },
-        pauseWakeListening = { listener.stop() },
+        pauseWakeListening = {
+            commandMicOpen = true
+            listener.stop()
+        },
         // Not updateWakeListening(): this runs while voice navigation still
         // holds the microphone, which that waits out.
-        resumeWakeListening = { if (canListenNow()) listener.start() },
+        resumeWakeListening = {
+            commandMicOpen = false
+            if (canListenNow()) listener.start()
+        },
         isSpeaking = { speaker.isSpeaking() },
     )
 
@@ -300,8 +324,14 @@ class VisorEngine(
         speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
         sayAnswer = { text -> speaker.speak(text, VoiceCategory.ANSWERS) },
         isSpeaking = { speaker.isSpeaking() },
-        pauseWakeListening = { listener.stop() },
-        resumeWakeListening = { if (canListenNow()) listener.start() },
+        pauseWakeListening = {
+            commandMicOpen = true
+            listener.stop()
+        },
+        resumeWakeListening = {
+            commandMicOpen = false
+            if (canListenNow()) listener.start()
+        },
         onAsked = { state.onCaptureStarted(CameraCommand.ASK_QUESTION) },
         onAnswered = { question, answer -> state.onAnswered(CameraCommand.ASK_QUESTION, answer, question) },
         takingPicture = ::takingPicturePhrase,
@@ -375,7 +405,12 @@ class VisorEngine(
                 .drop(1)
                 .collect { gone -> if (gone) updateHeldSession() }
         }
-        scope.launch { micRoute.source.collect { state.setListeningThrough(it) } }
+        scope.launch {
+            micRoute.source.collect {
+                state.setListeningThrough(it)
+                micCheck.reportNow()
+            }
+        }
         // Turning "Listen through my glasses" back on is a request to try now.
         scope.launch {
             state.profile
