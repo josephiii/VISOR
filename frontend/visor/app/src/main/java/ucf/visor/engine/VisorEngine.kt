@@ -187,6 +187,7 @@ class VisorEngine(
             glassesPermissionRequester?.invoke(permission) ?: PermissionStatus.Denied
         },
         recoverLink = { recoverGlassesLink() },
+        skipStills = { state.glassesStatus.value?.displayCapable == true },
     )
 
     /** The camera chosen on the Pair screen (or by voice), as of right now. */
