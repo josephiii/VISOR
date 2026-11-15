@@ -41,7 +41,8 @@ import androidx.compose.ui.unit.dp
  * It glows steadily while VISOR says "Listening." ([VoiceNavState.PROMPTING])
  * and while it works out what was said, and breathes only while the
  * microphone is actually open ([VoiceNavState.LISTENING]): the breathing,
- * like the buzz, means "speak now".
+ * like the buzz, means "speak now". While VISOR asks a setup question
+ * ([VoiceNavState.ASKING]) it doesn't show at all, until the microphone opens.
  *
  * The breathing is slow, about one breath every two seconds, nowhere near the
  * three flashes a second Section 508 warns about. With the system's animations
@@ -53,7 +54,9 @@ fun VoiceListeningGlow(state: VoiceNavState, modifier: Modifier = Modifier) {
     val cornerRadius = screenCornerRadius()
 
     AnimatedVisibility(
-        visible = state != VoiceNavState.IDLE,
+        // Not while VISOR is still asking a setup question (ASKING): it would
+        // say "speak now" over the question.
+        visible = state != VoiceNavState.IDLE && state != VoiceNavState.ASKING,
         modifier = modifier,
         enter = fadeIn(),
         exit = fadeOut(),

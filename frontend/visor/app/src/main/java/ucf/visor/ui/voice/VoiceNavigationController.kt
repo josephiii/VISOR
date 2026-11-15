@@ -24,8 +24,17 @@ enum class VoiceNavState {
     IDLE,
 
     /**
-     * VISOR is saying "Listening." (or asking a setup question) and the
-     * microphone is about to open. Not yet the time to speak.
+     * VISOR is asking a setup question, and will open the microphone once it
+     * has finished. Neither shown nor felt: the glow and the buzz mean "speak
+     * now", and came on over the question when they began here. The
+     * microphone is spoken for all the same, so not [IDLE].
+     */
+    ASKING,
+
+    /**
+     * VISOR is saying "Listening." after "VISOR GO", and the microphone is
+     * about to open. Not yet the time to speak; the steady glow says the wake
+     * phrase was heard.
      */
     PROMPTING,
 
@@ -88,7 +97,7 @@ class VoiceNavigationController(
     fun activate() {
         if (!enabled) return
         speak("Listening.")
-        captureUtterance { text ->
+        captureUtterance(whileSpeaking = VoiceNavState.PROMPTING) { text ->
             val command = text?.let(VoiceCommandParser::parse) ?: VoiceCommand.Unrecognized
             if (command == VoiceCommand.Unrecognized) {
                 speak("Sorry, I didn't catch a command.")
@@ -108,25 +117,38 @@ class VoiceNavigationController(
      * moment earlier (e.g. the onboarding wizard's spoken question) before the
      * user ever heard it. Callers with nothing already spoken (see [activate])
      * should speak their own cue first.
+     *
+     * The microphone opens only once VISOR has finished speaking (Speaker's
+     * isSpeaking() counts from the moment something is queued, see
+     * tts.QueuedSpeech), at whatever speech rate, and a moment after that, so
+     * the recognizer hears the answer rather than the end of the question.
+     *
+     * @param whileSpeaking what [state] is until then: [VoiceNavState.ASKING]
+     *   (nothing shown) for a setup question, [VoiceNavState.PROMPTING] (a
+     *   steady glow) after "VISOR GO".
      */
-    fun captureUtterance(onResult: (String?) -> Unit) {
+    fun captureUtterance(
+        whileSpeaking: VoiceNavState = VoiceNavState.ASKING,
+        onResult: (String?) -> Unit,
+    ) {
         if (!enabled) {
             onResult(null)
             return
         }
-        _state.value = VoiceNavState.PROMPTING
+        _state.value = whileSpeaking
         pauseWakeListening()
         captureJob = scope.launch {
-            // Give a just-spoken prompt time to finish before the mic starts
-            // capturing, so the recognizer doesn't hear the tail of our own
-            // speech instead of the user's answer. Speaker has no completion
-            // callback, so this polls isSpeaking() — capped so a stuck TTS
-            // state can never block voice nav indefinitely.
+            // Capped, so a speech engine stuck "speaking" can never keep the
+            // microphone closed for good. Long enough for the longest setup
+            // question at the slowest speech rate.
             var waited = 0L
             while (isSpeaking() && waited < MAX_SPEECH_WAIT_MS) {
                 delay(SPEECH_POLL_MS)
                 waited += SPEECH_POLL_MS
             }
+            // isSpeaking() can turn false a beat before the last of the sound
+            // has played out of the speaker and died away.
+            delay(POST_SPEECH_GUARD_MS)
             commandRecognizer.listen(
                 // Listening means the microphone is open, not that VISOR has
                 // asked: the glow breathes, and the phone buzzes, only now.
@@ -199,7 +221,9 @@ class VoiceNavigationController(
 
     private companion object {
         const val SPEECH_POLL_MS = 100L
-        const val MAX_SPEECH_WAIT_MS = 6000L
+        // Was 6 s, which a setup question can outlast: the microphone then
+        // opened while VISOR was still asking it.
+        const val MAX_SPEECH_WAIT_MS = 45_000L
         const val POST_SPEECH_GUARD_MS = 400L
     }
 }

@@ -43,6 +43,7 @@ import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.engine.VisorEngine
 import ucf.visor.tts.Chimes.Chime
+import ucf.visor.tts.SpokenText
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.feedback.LocalHaptics
 import ucf.visor.ui.theme.VisorColors
@@ -176,7 +177,8 @@ class MainActivity : ComponentActivity() {
                 VoiceLaunches.get().pending.collect { launches ->
                     val launch = launches.firstOrNull() ?: return@collect
                     val result = performVoiceLaunch()
-                    VoiceLaunches.get().acknowledge(launch, result.success, result.spoken)
+                    // Said by the glasses: "Visor", not "V. I. S. O. R."
+                    VoiceLaunches.get().acknowledge(launch, result.success, SpokenText.forSpeech(result.spoken))
                 }
             }
         }

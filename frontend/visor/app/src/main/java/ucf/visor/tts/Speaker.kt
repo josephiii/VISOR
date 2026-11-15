@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -45,6 +46,12 @@ class Speaker(
 
     private var tts: TextToSpeech? = null
     private var isReady = false
+
+    /** What VISOR has queued and the engine hasn't finished saying: see [isSpeaking]. */
+    private val queuedSpeech = QueuedSpeech(SystemClock::elapsedRealtime)
+
+    /** Numbers each short utterance, so the engine's report that one ended names it. */
+    private var said = 0
 
     /** What was asked to be said before the engine was ready, in order. */
     private val pending = mutableListOf<() -> Unit>()
@@ -193,11 +200,14 @@ class Speaker(
         interruptReading()
         if (Volumes.isOff(volume)) {
             engine.stop()
+            queuedSpeech.cleared()
             return
         }
         val params = params(volume)
         val mode = leadIn(engine)
-        engine.speak(text, mode, params, UTTERANCE_ID)
+        val id = "$UTTERANCE_ID:${++said}"
+        queuedSpeech.queued(id)
+        engine.speak(SpokenText.forSpeech(text), mode, params, id)
     }
 
     /** Starts reading [text] from its first piece, in place of any other reading. */
@@ -216,14 +226,16 @@ class Speaker(
         val volume = readingVolume()
         if (pieces.isEmpty() || Volumes.isOff(volume)) {
             engine.stop()
+            queuedSpeech.cleared()
             endReading()
             return
         }
         generation++
         val params = params(volume)
+        queuedSpeech.queued(pieceId(generation, pieces.lastIndex))
         var mode = leadIn(engine)
         for (index in current until pieces.size) {
-            engine.speak(pieces[index], mode, params, pieceId(generation, index))
+            engine.speak(SpokenText.forSpeech(pieces[index]), mode, params, pieceId(generation, index))
             mode = TextToSpeech.QUEUE_ADD
         }
         _reading.value = ReadingState.READING
@@ -238,7 +250,8 @@ class Speaker(
      */
     private fun params(volume: Float) = Bundle().apply {
         putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, volume)
-        putString(TextToSpeech.Engine.KEY_FEATURE_NETWORK_TIMEOUT_MS, NETWORK_TIMEOUT_MS)
+        // A number: the engine ignored it when it was given as text.
+        putInt(TextToSpeech.Engine.KEY_FEATURE_NETWORK_TIMEOUT_MS, NETWORK_TIMEOUT_MS)
     }
 
     /**
@@ -272,6 +285,7 @@ class Speaker(
         if (_reading.value != ReadingState.READING) return
         interruptReading()
         tts?.stop()
+        queuedSpeech.cleared()
     }
 
     override fun resume() {
@@ -282,10 +296,17 @@ class Speaker(
     // interrupts speech w out killing engine, like a cancel btn mid-sentence
     override fun stop() {
         tts?.stop()
+        queuedSpeech.cleared()
         endReading()
     }
 
-    fun isSpeaking(): Boolean = tts?.isSpeaking == true
+    /**
+     * Whether VISOR is saying something: from the moment it is asked to (even
+     * before the engine is ready, or the sound has started) until the engine
+     * reports the last of it said. See [QueuedSpeech].
+     */
+    fun isSpeaking(): Boolean =
+        (!isReady && pending.isNotEmpty()) || queuedSpeech.isSpeaking(tts?.isSpeaking == true)
 
     // kills whole engine, should b used in OnDestroy in MainActivity
     fun shutdown() {
@@ -302,6 +323,7 @@ class Speaker(
         }
 
         override fun onDone(utteranceId: String) {
+            queuedSpeech.ended(utteranceId)
             main.post { onPieceEnded(utteranceId) }
         }
 
@@ -309,11 +331,19 @@ class Speaker(
         // itself, so a failed last piece can't leave the controls up forever.
         @Deprecated("Deprecated in Java")
         override fun onError(utteranceId: String) {
+            queuedSpeech.ended(utteranceId)
             main.post { onPieceEnded(utteranceId) }
         }
 
         override fun onError(utteranceId: String, errorCode: Int) {
+            queuedSpeech.ended(utteranceId)
             main.post { onPieceEnded(utteranceId) }
+        }
+
+        // Stopped, or flushed by something said after it: that later
+        // utterance is the one isSpeaking() now waits on.
+        override fun onStop(utteranceId: String, interrupted: Boolean) {
+            queuedSpeech.ended(utteranceId)
         }
     }
 
@@ -342,6 +372,6 @@ class Speaker(
         const val READING_ID = "VISOR_READING"
 
         /** See [params]: a sentence starting this late is better said by an on-phone voice. */
-        const val NETWORK_TIMEOUT_MS = "2000"
+        const val NETWORK_TIMEOUT_MS = 2000
     }
 }
