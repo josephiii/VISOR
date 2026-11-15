@@ -166,6 +166,25 @@ class GlassesPhotoSource(
         lingerJob?.cancel()
         val camera = streamingCamera(opened) ?: return Problem(SpokenPhrases.GLASSES_CAMERA_UNAVAILABLE, linkLost = true)
 
+        var problem = photoFrom(camera, onPhoto)
+        if (problem?.spoken == SpokenPhrases.GLASSES_PHOTO_FAILED) {
+            // The glasses refused the picture (CaptureFailed, field log 2026-11-15:
+            // their camera left CAPTURE_READY while the phone still showed the
+            // stream as running). The stream is no good; one new stream, one more try.
+            Log.i(TAG, "The picture failed; restarting the glasses camera for one more try")
+            stopActiveCamera()
+            delay(RESTART_DELAY_MS)
+            val restarted = streamingCamera(opened)
+                ?: return Problem(SpokenPhrases.GLASSES_CAMERA_UNAVAILABLE, linkLost = true)
+            problem = photoFrom(restarted, onPhoto)
+        }
+        // A camera that failed is not kept; one that worked streams on for a while.
+        if (problem != null) stopActiveCamera() else scheduleCameraStop()
+        return problem
+    }
+
+    /** One photo from [camera]'s stream to [onPhoto], or why there is none. */
+    private suspend fun photoFrom(camera: Camera, onPhoto: (Bitmap) -> Unit): Problem? {
         var problem: Problem? = null
         camera.stream.capturePhoto()
             .onSuccess { data ->
@@ -174,11 +193,9 @@ class GlassesPhotoSource(
                 else problem = Problem(SpokenPhrases.GLASSES_PHOTO_UNREADABLE)
             }
             .onFailure { error, _ ->
-                Log.e(TAG, "capturePhoto failed: $error")
+                Log.e(TAG, "capturePhoto failed: $error (stream ${camera.stream.state.value})")
                 problem = Problem(SpokenPhrases.GLASSES_PHOTO_FAILED)
             }
-        // A camera that failed is not kept; one that worked streams on for a while.
-        if (problem != null) stopActiveCamera() else scheduleCameraStop()
         return problem
     }
 
@@ -202,6 +219,10 @@ class GlassesPhotoSource(
             stopActiveCamera()
             return null
         }
+        // STREAMING is announced before the glasses have sent a frame, and a
+        // picture asked for before the first frame fails (CaptureFailed).
+        withTimeoutOrNull(FIRST_FRAME_TIMEOUT_MS) { attached.stream.videoStream.first() }
+            ?: Log.w(TAG, "No video frame within $FIRST_FRAME_TIMEOUT_MS ms of the stream starting")
         return attached
     }
 
@@ -265,6 +286,12 @@ class GlassesPhotoSource(
         const val TAG = "VisorGlassesCamera"
         const val STREAM_TIMEOUT_MS = 15_000L
         const val STOP_TIMEOUT_MS = 3_000L
+
+        /** How long a new stream may take to deliver its first frame before a picture is tried anyway. */
+        const val FIRST_FRAME_TIMEOUT_MS = 5_000L
+
+        /** The pause between stopping a stream that failed a picture and starting the next. */
+        const val RESTART_DELAY_MS = 500L
 
         /** How long the camera keeps streaming after a picture, for the next one. */
         const val CAMERA_LINGER_MS = 45_000L
