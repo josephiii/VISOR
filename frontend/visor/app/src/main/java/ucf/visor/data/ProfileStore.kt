@@ -101,8 +101,27 @@ class ProfileStore(context: Context) {
         )
     }
 
-    /** True once the user has completed (or skipped through) first-run setup. */
+    /**
+     * True once a profile has been saved on this phone, by setup or by any
+     * change to a setting (a "VISOR GO, faster" before logging in saves one
+     * too). So it doesn't say whether *this* account has been set up: see
+     * [needsSetup].
+     */
     fun hasProfile(): Boolean = prefs.contains(KEY_SEVERITY)
+
+    /**
+     * Whether logging in should go through setup before Home: nothing has been
+     * saved on this phone yet, or an account signed up here and its setup
+     * hasn't been finished (see [setSetupPending]).
+     */
+    fun needsSetup(): Boolean = setupNeeded(hasProfile(), isSetupPending())
+
+    /** A new account's setup has started here and not finished: set at sign-up, cleared at Start using VISOR. */
+    fun isSetupPending(): Boolean = prefs.getBoolean(KEY_SETUP_PENDING, false)
+
+    fun setSetupPending(pending: Boolean) {
+        prefs.edit().putBoolean(KEY_SETUP_PENDING, pending).apply()
+    }
 
     fun clear() = prefs.edit().clear().apply()   // for logout / delete account
 
@@ -188,5 +207,11 @@ class ProfileStore(context: Context) {
         const val KEY_CAMERA = "camera"
         const val KEY_BACKGROUND_LISTENING = "backgroundListeningEnabled"
         const val KEY_LISTEN_THROUGH_GLASSES = "listenThroughGlasses"
+
+        // Not part of the profile: whether a new account's setup is under way.
+        const val KEY_SETUP_PENDING = "setupPending"
     }
 }
+
+/** [ProfileStore.needsSetup], apart from SharedPreferences so it can be unit tested. */
+internal fun setupNeeded(hasProfile: Boolean, setupPending: Boolean): Boolean = !hasProfile || setupPending

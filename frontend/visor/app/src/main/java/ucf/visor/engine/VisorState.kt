@@ -29,6 +29,7 @@ import ucf.visor.data.ProfileStore
 import ucf.visor.data.ResponseHistory
 import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
+import ucf.visor.data.withoutPersonalAnswers
 import ucf.visor.network.Connectivity
 import ucf.visor.stt.CameraCommand
 import ucf.visor.stt.MicRoute
@@ -63,6 +64,24 @@ class VisorState(context: Context) {
     fun updateProfile(profile: UserProfile) {
         _profile.value = profile
         profileStore.save(profile)
+    }
+
+    /**
+     * An account has just signed up on this phone: setup is next, and is
+     * pending until [finishSetup], so leaving it part way (back, or closing
+     * VISOR) brings it back at the next login rather than going straight Home.
+     * Setup starts from the profile without the last user's answers about
+     * themselves (see [withoutPersonalAnswers]): not for a stranger to see.
+     */
+    fun startNewAccount() {
+        updateProfile(_profile.value.withoutPersonalAnswers())
+        profileStore.setSetupPending(true)
+    }
+
+    /** Setup's Start using VISOR: saves [profile], and setup is no longer pending. */
+    fun finishSetup(profile: UserProfile) {
+        updateProfile(profile)
+        profileStore.setSetupPending(false)
     }
 
     /** After the account is deleted: back to the defaults, saved nowhere. */

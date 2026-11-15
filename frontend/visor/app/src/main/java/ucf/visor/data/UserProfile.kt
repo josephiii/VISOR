@@ -229,6 +229,26 @@ data class UserProfile(
     val listenThroughGlasses: Boolean = true,
 )
 
+/**
+ * This profile for a new account on the same phone: without the answers about
+ * the person who used it before (their name and account, and what setup and
+ * Settings > About you asked about their vision), which setup is about to ask
+ * the new user for. The rest is kept: how VISOR looks, sounds and listens may
+ * be what is letting them use the phone at all, such as the high contrast
+ * they turned on by voice to sign up.
+ */
+fun UserProfile.withoutPersonalAnswers(): UserProfile {
+    val blank = UserProfile()
+    return copy(
+        userId = blank.userId,
+        displayName = blank.displayName,
+        visionTypes = blank.visionTypes,
+        visionDescription = blank.visionDescription,
+        shareVisionDescription = blank.shareVisionDescription,
+        severity = blank.severity,
+    )
+}
+
 // Human-readable labels — shared by the onboarding wizard and Settings' "About
 // you" section so both ever say exactly the same thing for each option.
 fun VisionType.label(): String = when (this) {

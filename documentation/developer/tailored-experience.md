@@ -15,6 +15,13 @@ VISOR changes two kinds of thing:
 
 If setup was skipped ("Not sure", "A moderate amount", no description), `VisionPlan.isUntailored` is true and VISOR behaves exactly as it did before this feature.
 
+## When setup runs
+
+- **Every new account goes through setup after signing up** (`VisorViewModel.onSignUpSuccess`), whatever the phone has saved. The profile lives on the phone, and logging out keeps it. VISOR used to skip setup whenever a profile had been saved before, by the last user, a tester, or one setting changed by voice. A new account then landed on Home with only the navigation bar to show for it.
+- **Setup starts from the phone's look and sound, not the last user's answers.** `UserProfile.withoutPersonalAnswers` clears the name and the answers about vision, so a new user never sees a stranger's. It keeps text size, contrast, colors, voice, volumes and commands, which may be what let the new user sign up at all.
+- **Setup stays pending until *Start using VISOR*** (the button, or "start" said aloud). That saves the answers and goes Home (`VisorViewModel.finishSetup`). A user may leave setup part way, by going back or by closing VISOR. Back from setup goes to the title screen, not the sign-up form. Their next login then returns to setup (`ProfileStore.needsSetup`).
+- **A login skips setup** once this phone has a profile and no setup is pending.
+
 ## What changes, per answer
 
 | Answer | Scene description and questions (VLM prompt) | Hazard check | First Home button | Suggested |
@@ -58,7 +65,8 @@ The description is health information. While *Share my description with VISOR's 
 
 ## Testing it
 
-- **Unit tests** (`./gradlew testDebugUnitTest`): `VisionPlanTest` (every rule, including two example users who get a different VISOR), `ScenePromptsTest` (untailored prompts are unchanged, and the guidance comes before "read aloud"), `SpokenPhrasesTest` (sides first, ahead first, the Brief limit), and `GlassesNavScreenTest` (the order on the glasses).
+- **Unit tests** (`./gradlew testDebugUnitTest`): `VisionPlanTest` (every rule, including two example users who get a different VISOR), `ScenePromptsTest` (untailored prompts are unchanged, and the guidance comes before "read aloud"), `SpokenPhrasesTest` (sides first, ahead first, the Brief limit), `GlassesNavScreenTest` (the order on the glasses), and `NewAccountSetupTest` (when a login goes through setup, and what a new account's setup keeps).
+- **Sign-up to setup, on a phone or the emulator:** finish setup once and log out, so a profile is saved. Sign up with a new account. Setup should open with an empty name, not Home. Press *Start using VISOR*, or say "start", and Home should open with the navigation bar.
 - **On a phone or the emulator:** debug menu → *Onboarding process*. Try two users side by side:
   - **Center loss, "A lot", "I can't read my mail".** Read text should be the first button, Detail should be recommended, and the hazard check should start with what is straight ahead.
   - **Side loss and contrast / light sensitivity, "I have glaucoma; sun washes everything out".** Check for hazards should be the first button, the dark, high-contrast look should be offered, and the hazard check should start with the sides.

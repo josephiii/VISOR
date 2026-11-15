@@ -226,9 +226,16 @@ fun VisorLayout(
     }
 
     // Observe Onboarding Process
+    // The sign-up or login form it came from is done with: back from setup
+    // goes to the title screen, not to a filled-in sign-up form that would
+    // only say the account already exists if sent again. Setup is pending
+    // until finished (ProfileStore.needsSetup), so logging in brings it back.
     LaunchedEffect(uiState.isOnboarding) {
         if (uiState.isOnboarding) {
-            navController.navigate("onboarding") { launchSingleTop = true }
+            navController.navigate("onboarding") {
+                launchSingleTop = true
+                popUpTo("title")
+            }
             viewModel.onNavigationHandled()
         }
     }

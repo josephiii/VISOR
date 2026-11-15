@@ -92,8 +92,9 @@ fun VisorNavHost(
                 talk = talk,
                 // DISABLED (email verification):
                 // onSignUpClick = { email -> viewModel.verifyAccount(email) },
-                // Sign-up logs the new user in; no saved profile -> onboarding.
-                onSignUpClick = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
+                // Sign-up logs the new user in, and a new account always goes
+                // through setup (onboarding), whatever this phone has saved.
+                onSignUpClick = { access, refresh -> viewModel.onSignUpSuccess(access, refresh) },
                 onLoginClick = { viewModel.login() }
             )
         }
@@ -197,7 +198,8 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 speak = talk,
                 voiceNav = voiceNav,
-                onSetupComplete = { viewModel.home() }
+                // Start using VISOR: saves the answers and goes Home.
+                onSetupComplete = { viewModel.finishSetup(it) }
             );
         }
 
