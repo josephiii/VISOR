@@ -23,6 +23,7 @@ import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingControls
+import ucf.visor.tts.VoiceChooser
 import ucf.visor.ui.screens.phase1.Phase1ModeConfigurationScreen
 import ucf.visor.ui.screens.profile.ProfileFlowHost
 import ucf.visor.ui.screens.auth.EnterCodeScreen
@@ -51,6 +52,7 @@ fun VisorNavHost(
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: (CameraCommand) -> Unit = {},
     reading: ReadingControls? = null,
+    voices: VoiceChooser? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -86,9 +88,10 @@ fun VisorNavHost(
             SignUpScreen(
                 viewModel = viewModel,
                 talk = talk,
-                // Register only creates the account — the new user must now
-                // verify the emailed code.
-                onSignUpClick = { email -> viewModel.verifyAccount(email) },
+                // DISABLED (email verification):
+                // onSignUpClick = { email -> viewModel.verifyAccount(email) },
+                // Sign-up logs the new user in; no saved profile -> onboarding.
+                onSignUpClick = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
                 onLoginClick = { viewModel.login() }
             )
         }
@@ -154,6 +157,7 @@ fun VisorNavHost(
                 talk = talk,
                 speakAt = speakAt,
                 playSample = playSample,
+                voices = voices,
                 onProfileChange = { viewModel.updateProfile(it) },
                 onLogout = { viewModel.logout() },
                 onDeleteAccount = { viewModel.confirmDeleteAccount() },

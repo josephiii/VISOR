@@ -23,6 +23,27 @@ object VoiceCommandParser {
         if (text.isEmpty()) return VoiceCommand.Unrecognized
 
         return when {
+            // Background listening. First: "stop listening in the background"
+            // also holds "back" (GoBack) and "stop" (StopReading).
+            containsAny(
+                text,
+                "stop listening",
+                "don't listen",
+                "do not listen",
+                "turn off background listening",
+                "stop background listening",
+            ) -> VoiceCommand.StopListening
+
+            containsAny(
+                text,
+                "keep listening",
+                "listen in the background",
+                "listen with the screen off",
+                "listen when the screen is off",
+                "turn on background listening",
+                "background listening on",
+            ) -> VoiceCommand.KeepListening
+
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
             containsAny(text, "settings", "setting") ->
                 settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
@@ -36,6 +57,16 @@ object VoiceCommandParser {
                 VoiceCommand.UseCamera(CameraChoice.PHONE)
             containsAny(text, "glasses camera", "glasses' camera", "use my glasses", "use the glasses") ->
                 VoiceCommand.UseCamera(CameraChoice.GLASSES)
+
+            // VISOR's voice. Ahead of "back", for "switch back to my usual voice".
+            containsAny(text, "default voice", "usual voice", "original voice", "normal voice", "reset voice", "reset your voice") ->
+                VoiceCommand.DefaultVoice
+            containsAny(text, "previous voice", "voice before") -> VoiceCommand.PreviousVoice
+            containsAny(
+                text,
+                "next voice", "change voice", "change your voice", "change the voice", "change voices",
+                "different voice", "another voice", "new voice", "switch voice", "switch voices",
+            ) -> VoiceCommand.NextVoice
 
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
@@ -131,7 +162,7 @@ object VoiceCommandParser {
     /** Which part of Settings "open … settings" names, if any. */
     private fun settingsSectionIn(text: String): SettingsSection? = when {
         containsAny(text, "sound", "volume", "loud", "vibration") -> SettingsSection.SOUND
-        containsAny(text, "speech", "speed", "talk") -> SettingsSection.SPEECH
+        containsAny(text, "speech", "speed", "talk", "voice") -> SettingsSection.SPEECH
         containsAny(text, "display", "text", "contrast", "dark", "light") -> SettingsSection.DISPLAY
         containsAny(text, "command") -> SettingsSection.COMMANDS
         containsAny(text, "account") -> SettingsSection.ACCOUNT
@@ -160,9 +191,11 @@ enum class VoiceCommandKind(val examples: List<String>) {
     GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
     SETTINGS(
         listOf(
-            "faster", "slower", "normal speed", "brief", "detailed", "standard detail",
+            "faster", "slower", "normal speed", "next voice", "previous voice", "default voice",
+            "brief", "detailed", "standard detail",
             "large text", "extra large text", "normal text", "high contrast",
             "use my phone camera", "use my glasses camera",
+            "keep listening", "stop listening",
         )
     ),
     ACCOUNT(listOf("log out", "delete my account")),

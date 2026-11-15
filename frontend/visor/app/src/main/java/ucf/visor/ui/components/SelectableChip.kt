@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.heightIn
@@ -79,6 +80,10 @@ import ucf.visor.ui.theme.VisorTheme
  *   and the phone buzzes three times rather than ticking.
  * @param icon drawn before the label, at the label's size, such as a session
  *   mode's icon. It only adds to the label, so a screen reader doesn't read it.
+ * @param supportingText a second, smaller line under [label], such as whether
+ *   a voice works offline, or why the chip is [locked] ("Needs the internet").
+ *   Part of the chip, so a screen reader reads it after the label, as
+ *   [VisorButton]'s does.
  */
 @Composable
 fun SelectableChip(
@@ -90,6 +95,7 @@ fun SelectableChip(
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
     locked: Boolean = false,
     icon: ImageVector? = null,
+    supportingText: String? = null,
     onClick: () -> Unit,
 ) {
     // Compose only says "selected" when no other state description is set, so
@@ -136,12 +142,19 @@ fun SelectableChip(
                 modifier = Modifier.size(iconSizeFor(textStyle)),
             )
         }
-        BoldWhenText(
-            text = label,
-            style = textStyle,
-            bold = selected,
-            modifier = Modifier.weight(1f),
-        )
+        if (supportingText == null) {
+            BoldWhenText(
+                text = label,
+                style = textStyle,
+                bold = selected,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            Column(modifier = Modifier.weight(1f)) {
+                BoldWhenText(text = label, style = textStyle, bold = selected)
+                Text(supportingText, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
         // The checkmark's room is kept when it is not shown, so selecting a
         // chip never narrows its label, re-wrapping it.
         val checkSize = iconSizeFor(textStyle)

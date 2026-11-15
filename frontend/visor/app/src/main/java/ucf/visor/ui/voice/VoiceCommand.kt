@@ -46,6 +46,15 @@ sealed class VoiceCommand {
     data class SetSpeechRate(val rate: Float) : VoiceCommand()
     object SpeakFaster : VoiceCommand()
     object SpeakSlower : VoiceCommand()
+
+    /**
+     * VISOR's voice (tts/VoiceCatalog): the next or previous voice that can
+     * be used now, in the order Settings lists them, or VISOR's default. The
+     * reply is said in the new voice, so it is heard as it is chosen.
+     */
+    object NextVoice : VoiceCommand()
+    object PreviousVoice : VoiceCommand()
+    object DefaultVoice : VoiceCommand()
     data class SetVerbosity(val verbosity: Verbosity) : VoiceCommand()
     data class SetTextScale(val scale: TextScale) : VoiceCommand()
 
@@ -63,6 +72,14 @@ sealed class VoiceCommand {
     object StopReading : VoiceCommand()
     object PauseReading : VoiceCommand()
     object ResumeReading : VoiceCommand()
+
+    /**
+     * Background listening (Settings > Commands): "keep listening" turns it on,
+     * and "stop listening" off, from anywhere, so nobody has to find the phone
+     * to silence VISOR. Android only lets it be turned on with VISOR on screen.
+     */
+    object KeepListening : VoiceCommand()
+    object StopListening : VoiceCommand()
 
     object Unrecognized : VoiceCommand()
 }

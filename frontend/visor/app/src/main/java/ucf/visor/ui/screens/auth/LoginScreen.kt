@@ -124,7 +124,8 @@ fun LoginScreen(
                     isLoading = false
                     // 403 = registered but never entered the emailed code:
                     // send a fresh one and go finish verifying.
-                    if (result.code == 403) {
+                    // DISABLED (email verification):
+                    if (false && result.code == 403) {
                         AuthApi.resendCode(email.trim())
                         onUnverified(email.trim())
                         return@launch

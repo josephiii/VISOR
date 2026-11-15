@@ -27,6 +27,8 @@ class ProfileStore(context: Context) {
             .putString(KEY_DESCRIPTION, p.visionDescription)
             .putString(KEY_SEVERITY, p.severity.name)
             .putFloat(KEY_SPEECH_RATE_MULTIPLIER, p.speechRate)
+            // Null (the default voice) removes the key.
+            .putString(KEY_VOICE_NAME, p.voiceName)
             .putFloat(KEY_MASTER_VOLUME, p.audio.master)
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
@@ -42,6 +44,8 @@ class ProfileStore(context: Context) {
             )
             .putBoolean(KEY_VIBRATION, p.vibrationEnabled)
             .putString(KEY_CAMERA, p.camera.name)
+            .putBoolean(KEY_BACKGROUND_LISTENING, p.backgroundListeningEnabled)
+            .putBoolean(KEY_LISTEN_THROUGH_GLASSES, p.listenThroughGlasses)
         for (category in AudioCategory.all) editor.putFloat(category.key, p.audio.level(category))
         editor.apply()
     }
@@ -60,6 +64,7 @@ class ProfileStore(context: Context) {
                 ?: defaults.visionDescription,
             severity = enumOrDefault(KEY_SEVERITY, defaults.severity),
             speechRate = speechRateOrDefault(defaults.speechRate),
+            voiceName = prefs.getString(KEY_VOICE_NAME, null)?.ifBlank { null } ?: defaults.voiceName,
             audio = audioMixOrDefault(defaults.audio),
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
@@ -79,6 +84,14 @@ class ProfileStore(context: Context) {
                 .toSet(),
             vibrationEnabled = prefs.getBoolean(KEY_VIBRATION, defaults.vibrationEnabled),
             camera = enumOrDefault(KEY_CAMERA, defaults.camera),
+            backgroundListeningEnabled = prefs.getBoolean(
+                KEY_BACKGROUND_LISTENING,
+                defaults.backgroundListeningEnabled
+            ),
+            listenThroughGlasses = prefs.getBoolean(
+                KEY_LISTEN_THROUGH_GLASSES,
+                defaults.listenThroughGlasses
+            ),
         )
     }
 
@@ -143,6 +156,9 @@ class ProfileStore(context: Context) {
         const val KEY_SPEECH_RATE = "speechRate"
         const val KEY_SPEECH_RATE_MULTIPLIER = "speechRateMultiplier"
 
+        // The chosen voice's name; absent for VISOR's default voice.
+        const val KEY_VOICE_NAME = "voiceName"
+
         // Legacy keys: the voice and beep volumes from before each kind of
         // sound had its own slider. Read for migration, never written.
         const val KEY_SPEECH_VOLUME = "speechVolume"
@@ -160,5 +176,7 @@ class ProfileStore(context: Context) {
         const val KEY_CAMERA_COMMANDS_OFF = "cameraCommandsOff"
         const val KEY_VIBRATION = "vibrationEnabled"
         const val KEY_CAMERA = "camera"
+        const val KEY_BACKGROUND_LISTENING = "backgroundListeningEnabled"
+        const val KEY_LISTEN_THROUGH_GLASSES = "listenThroughGlasses"
     }
 }

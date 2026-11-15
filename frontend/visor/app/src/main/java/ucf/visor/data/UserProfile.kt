@@ -157,6 +157,14 @@ data class UserProfile(
     val visionDescription: String = "",
     val severity: Severity = Severity.MODERATE,
     val speechRate: Float = SpeechRates.Normal,
+    /**
+     * The voice VISOR speaks in: the name of one of the phone's text-to-speech
+     * voices (see tts.VoiceCatalog), or null for VISOR's default voice, the
+     * one it has always used. Kept as chosen even while it can't be used (a
+     * voice that needs the internet, offline): VISOR speaks in a voice that
+     * works meanwhile, and goes back to this one when it can.
+     */
+    val voiceName: String? = null,
     /** How loud each kind of thing VISOR says and plays is — see [AudioMix]. */
     val audio: AudioMix = AudioMix(),
     val verbosity: Verbosity = Verbosity.STANDARD,
@@ -187,6 +195,22 @@ data class UserProfile(
      * the user turns it off, like the sounds it goes with.
      */
     val vibrationEnabled: Boolean = true,
+
+    /**
+     * Keep listening for wake phrases with the screen off or in another app,
+     * through a foreground service and its notification (see
+     * background.ListeningService). Off until the user turns it on: it uses
+     * more battery, and keeps a microphone open the user may not expect.
+     */
+    val backgroundListeningEnabled: Boolean = false,
+
+    /**
+     * With glasses connected, hear commands through their microphone, not the
+     * phone's (see stt.MicRoute). On by default: the glasses hear the wearer
+     * best, above all with the phone in a pocket. Turning it off keeps the
+     * glasses' speakers at full quality.
+     */
+    val listenThroughGlasses: Boolean = true,
 )
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About
