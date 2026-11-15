@@ -77,6 +77,23 @@ object VoiceCommandParser {
             containsAny(text, "glasses camera", "glasses' camera", "use my glasses", "use the glasses") ->
                 VoiceCommand.UseCamera(CameraChoice.GLASSES)
 
+            // Whose colors VISOR is drawn in. Ahead of "back", for "switch
+            // back to VISOR colors", and of "high contrast".
+            containsAny(
+                text,
+                "visor colors", "visor colours", "visor's colors", "visor's colours", "visors colors",
+                "default colors", "default colours", "usual colors", "usual colours",
+                "normal colors", "normal colours", "reset colors", "reset colours",
+                "reset my colors", "reset my colours", "original colors", "original colours",
+            ) -> VoiceCommand.UseVisorColors
+            containsAny(
+                text,
+                "my colors", "my colours", "my own colors", "my own colours",
+                "custom colors", "custom colours", "custom theme", "my theme",
+            ) && !containsAny(text, "edit", "change", "pick", "choose") -> VoiceCommand.UseCustomColors
+            containsAny(text, "color", "colour", "theme") && containsAny(text, "edit", "change", "pick", "choose") ->
+                VoiceCommand.OpenSettingsSection(SettingsSection.COLORS)
+
             // VISOR's voice. Ahead of "back", for "switch back to my usual voice".
             containsAny(text, "default voice", "usual voice", "original voice", "normal voice", "reset voice", "reset your voice") ->
                 VoiceCommand.DefaultVoice
@@ -198,6 +215,7 @@ object VoiceCommandParser {
     private fun settingsSectionIn(text: String): SettingsSection? = when {
         containsAny(text, "sound", "volume", "loud", "vibration") -> SettingsSection.SOUND
         containsAny(text, "speech", "speed", "talk", "voice") -> SettingsSection.SPEECH
+        containsAny(text, "color", "colour", "theme") -> SettingsSection.COLORS
         containsAny(text, "display", "text", "contrast", "dark", "light") -> SettingsSection.DISPLAY
         containsAny(text, "command") -> SettingsSection.COMMANDS
         containsAny(text, "account") -> SettingsSection.ACCOUNT
@@ -229,6 +247,7 @@ enum class VoiceCommandKind(val examples: List<String>) {
             "faster", "slower", "normal speed", "next voice", "previous voice", "default voice",
             "brief", "detailed", "standard detail",
             "large text", "extra large text", "normal text", "high contrast",
+            "use my colors", "use visor colors",
             "use my phone camera", "use my glasses camera",
             "keep listening", "stop listening",
         )

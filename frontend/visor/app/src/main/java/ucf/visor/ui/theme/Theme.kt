@@ -1,17 +1,20 @@
 package ucf.visor.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
+import ucf.visor.data.ThemeBase
 import ucf.visor.data.ThemeMode
 import ucf.visor.data.UserProfile
 
@@ -29,7 +32,18 @@ enum class AppTheme {
     val isDark: Boolean
         get() = this == ClarityDark || this == HighContrastDark
 
+    /** The same look, as a user's own colors name the one they start from. */
+    val base: ThemeBase
+        get() = when (this) {
+            ClarityLight -> ThemeBase.CLARITY_LIGHT
+            ClarityDark -> ThemeBase.CLARITY_DARK
+            HighContrastLight -> ThemeBase.HIGH_CONTRAST_LIGHT
+            HighContrastDark -> ThemeBase.HIGH_CONTRAST_DARK
+        }
+
     companion object {
+        fun of(base: ThemeBase): AppTheme = entries.first { it.base == base }
+
         /**
          * Maps the user's saved accessibility preferences onto one of the four
          * themes: High contrast or not, and light or dark, which follows the
@@ -48,6 +62,37 @@ enum class AppTheme {
                 else -> ClarityLight
             }
         }
+    }
+}
+
+/**
+ * Every color VISOR draws with, worked out: one of its four looks
+ * ([of]), or a user's own colors ([customVisorColors]). [VisorTheme]
+ * provides them; ContrastAudit checks them.
+ */
+@Immutable
+data class VisorColors(
+    val scheme: ColorScheme,
+    val status: VisorStatusColors,
+    val focusRing: Color,
+    /** Light text on a dark page: the status bar's icons are drawn light to match. */
+    val isDark: Boolean,
+) {
+    companion object {
+        fun of(theme: AppTheme) = VisorColors(
+            scheme = colorSchemeFor(theme),
+            status = statusColorsFor(theme),
+            focusRing = focusRingFor(theme),
+            isDark = theme.isDark,
+        )
+
+        /**
+         * The colors the user's settings ask for: their own, while My colors
+         * is on, otherwise one of VISOR's four looks ([AppTheme.forProfile]).
+         */
+        fun forProfile(profile: UserProfile, systemInDarkTheme: Boolean): VisorColors =
+            if (profile.useCustomColors) customVisorColors(profile.customColors)
+            else of(AppTheme.forProfile(profile, systemInDarkTheme))
     }
 }
 
@@ -295,10 +340,7 @@ private fun Typography.scaled(factor: Float): Typography = Typography(
 
 /**
  * @param appTheme which of the four VISOR themes to render. Defaults to
- *       Clarity Light/Dark based on the system setting, but is normally
- *       driven by the user's saved accessibility preference — see
- *       AppTheme.forProfile — so High Contrast can be picked independently
- *       of the OS theme.
+ *       Clarity Light/Dark based on the system setting.
  * @param textScale multiplier applied on top of the base type scale (1.0 =
  *       standard). Comes from the user's Settings > Text size preference.
  */
@@ -307,18 +349,40 @@ fun VisorTheme(
     appTheme: AppTheme = if (isSystemInDarkTheme()) AppTheme.ClarityDark else AppTheme.ClarityLight,
     textScale: Float = 1f,
     content: @Composable () -> Unit
-) {
-    val colorScheme = colorSchemeFor(appTheme)
-    val statusColors = statusColorsFor(appTheme)
-    val typography = if (textScale == 1f) Typography else Typography.scaled(textScale)
+) = VisorTheme(VisorColors.of(appTheme), textScale, content)
 
+/**
+ * @param colors every color to draw with: normally the user's, from
+ *       VisorColors.forProfile, which is one of the four VISOR themes or the
+ *       user's own colors (Settings > Text and display > My colors).
+ * @param textScale multiplier applied on top of the base type scale (1.0 =
+ *       standard). Comes from the user's Settings > Text size preference.
+ */
+@Composable
+fun VisorTheme(
+    colors: VisorColors,
+    textScale: Float = 1f,
+    content: @Composable () -> Unit
+) {
+    val typography = if (textScale == 1f) Typography else Typography.scaled(textScale)
+    MaterialTheme(typography = typography) {
+        VisorColorsProvider(colors, content)
+    }
+}
+
+/**
+ * Draws [content] in [colors], keeping the type the screen already has. The
+ * color editor's preview uses it to show colors not yet in use.
+ */
+@Composable
+fun VisorColorsProvider(colors: VisorColors, content: @Composable () -> Unit) {
     CompositionLocalProvider(
-        LocalVisorStatusColors provides statusColors,
-        LocalFocusRingColor provides focusRingFor(appTheme),
+        LocalVisorStatusColors provides colors.status,
+        LocalFocusRingColor provides colors.focusRing,
     ) {
         MaterialTheme(
-            colorScheme = colorScheme,
-            typography = typography,
+            colorScheme = colors.scheme,
+            typography = MaterialTheme.typography,
             content = content
         )
     }

@@ -53,6 +53,8 @@ class VoiceCommandKindTest {
             this == VoiceCommand.NextVoice ||
             this == VoiceCommand.PreviousVoice ||
             this == VoiceCommand.DefaultVoice ||
+            this == VoiceCommand.UseCustomColors ||
+            this == VoiceCommand.UseVisorColors ||
             this == VoiceCommand.KeepListening ||
             this == VoiceCommand.StopListening
 

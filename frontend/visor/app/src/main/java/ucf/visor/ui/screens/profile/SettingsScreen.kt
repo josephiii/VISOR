@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -154,8 +155,9 @@ fun SettingsScreen(
     // Each part opens at its top, not where the last one was scrolled to.
     val scrollState = key(section) { rememberScrollState() }
 
-    // Back from a part of Settings goes to the hub, not to the screen before Settings.
-    BackHandler(enabled = section != null) { viewModel.openSettingsSection(null) }
+    // Back from a part of Settings goes to the hub (or the part it opened
+    // from, for My colors), not to the screen before Settings.
+    BackHandler(enabled = section != null) { viewModel.openSettingsSection(section?.parent) }
 
     Column(
         modifier = Modifier
@@ -170,7 +172,7 @@ fun SettingsScreen(
     ) {
         if (section == null) {
             ScreenTitle(stringResource(R.string.settings_title))
-            SettingsSection.entries.forEach { part ->
+            SettingsSection.entries.filter { it.onHub }.forEach { part ->
                 SettingsTile(
                     icon = part.icon,
                     title = stringResource(part.titleRes),
@@ -186,10 +188,13 @@ fun SettingsScreen(
             )
         } else {
             SwitchButton(
-                label = stringResource(R.string.settings_back_to_hub),
+                label = stringResource(
+                    if (section.parent == SettingsSection.DISPLAY) R.string.settings_back_to_display
+                    else R.string.settings_back_to_hub
+                ),
                 outlined = true,
                 icon = Icons.AutoMirrored.Filled.ArrowBack,
-                onClick = { viewModel.openSettingsSection(null) },
+                onClick = { viewModel.openSettingsSection(section.parent) },
             )
             ScreenTitle(stringResource(section.titleRes))
             when (section) {
@@ -214,7 +219,17 @@ fun SettingsScreen(
                     )
                     VibrationSettings(profile, onProfileChange)
                 }
-                SettingsSection.DISPLAY -> DisplaySettings(profile, onProfileChange)
+                SettingsSection.DISPLAY -> DisplaySettings(
+                    profile = profile,
+                    onProfileChange = onProfileChange,
+                    onEditColors = { viewModel.openSettingsSection(SettingsSection.COLORS) },
+                )
+                SettingsSection.COLORS -> ThemeEditor(
+                    profile = profile,
+                    onProfileChange = onProfileChange,
+                    scrollState = scrollState,
+                    talk = talk,
+                )
                 SettingsSection.COMMANDS -> CommandSettings(profile, onProfileChange, listeningThrough)
                 SettingsSection.HISTORY -> HistorySettings(
                     entries = history,
@@ -390,7 +405,7 @@ private fun AboutYouSettings(profile: UserProfile, onProfileChange: (UserProfile
     if (plan.suggestsDarkHighContrast) {
         // Offered, never applied behind their back. Once on, the button gives
         // way to a line saying so, which a screen reader announces.
-        if (profile.themeMode == ThemeMode.DARK && profile.appHighContrast) {
+        if (profile.themeMode == ThemeMode.DARK && profile.appHighContrast && !profile.useCustomColors) {
             Text(
                 stringResource(R.string.settings_suggested_look_applied),
                 style = MaterialTheme.typography.bodyLarge,
@@ -401,7 +416,11 @@ private fun AboutYouSettings(profile: UserProfile, onProfileChange: (UserProfile
             SwitchButton(
                 label = stringResource(R.string.settings_apply_suggested_look),
                 outlined = true,
-                onClick = { onProfileChange(profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true)) },
+                onClick = {
+                    onProfileChange(
+                        profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true, useCustomColors = false)
+                    )
+                },
             )
         }
     }
@@ -650,9 +669,21 @@ private fun VibrationSettings(profile: UserProfile, onProfileChange: (UserProfil
     )
 }
 
-/** "Text & display": text size, light or dark, and High contrast. */
+/**
+ * "Text & display": text size, light or dark (or the user's own colors), and
+ * High contrast.
+ *
+ * My colors sits beside Match phone, Light and Dark: it is a fourth answer
+ * to "what should VISOR look like". Picking one of the other three leaves the
+ * user's colors saved for later. Until the user has picked some, My colors
+ * opens the editor rather than switching to colors identical to these.
+ */
 @Composable
-private fun DisplaySettings(profile: UserProfile, onProfileChange: (UserProfile) -> Unit) {
+private fun DisplaySettings(
+    profile: UserProfile,
+    onProfileChange: (UserProfile) -> Unit,
+    onEditColors: () -> Unit,
+) {
     SettingSection(stringResource(R.string.settings_section_text_size))
     ChoiceRow {
         TextScale.entries.forEach { scale ->
@@ -680,22 +711,51 @@ private fun DisplaySettings(profile: UserProfile, onProfileChange: (UserProfile)
                         ThemeMode.DARK -> R.string.settings_theme_dark
                     }
                 ),
-                selected = profile.themeMode == mode,
-            ) { onProfileChange(profile.copy(themeMode = mode)) }
+                selected = !profile.useCustomColors && profile.themeMode == mode,
+            ) { onProfileChange(profile.copy(themeMode = mode, useCustomColors = false)) }
+        }
+        SelectableChip(
+            label = stringResource(R.string.settings_theme_custom),
+            selected = profile.useCustomColors,
+        ) {
+            if (profile.customColors.isUnchanged) onEditColors()
+            else onProfileChange(profile.copy(useCustomColors = true))
         }
     }
-
-    SettingSection(stringResource(R.string.settings_section_contrast))
-    Text(
-        stringResource(R.string.settings_high_contrast_description),
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    SwitchChip(
-        title = stringResource(R.string.settings_high_contrast),
-        on = profile.appHighContrast,
-        onToggle = { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) },
+    SwitchButton(
+        label = stringResource(R.string.settings_edit_my_colors),
+        outlined = true,
+        icon = Icons.Filled.Palette,
+        onClick = onEditColors,
         modifier = Modifier.fillMaxWidth(),
     )
+
+    SettingSection(stringResource(R.string.settings_section_contrast))
+    if (profile.useCustomColors) {
+        // High contrast is one of VISOR's own looks: with the user's colors
+        // in use it would do nothing, so it isn't offered as a switch.
+        Text(
+            stringResource(R.string.settings_custom_colors_on_note),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SwitchButton(
+            label = stringResource(R.string.settings_use_visor_colors),
+            outlined = true,
+            onClick = { onProfileChange(profile.copy(useCustomColors = false)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    } else {
+        Text(
+            stringResource(R.string.settings_high_contrast_description),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        SwitchChip(
+            title = stringResource(R.string.settings_high_contrast),
+            on = profile.appHighContrast,
+            onToggle = { onProfileChange(profile.copy(appHighContrast = !profile.appHighContrast)) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 /**
@@ -733,6 +793,7 @@ private val SettingsSection.icon: ImageVector
         SettingsSection.SPEECH -> Icons.Filled.RecordVoiceOver
         SettingsSection.SOUND -> Icons.AutoMirrored.Filled.VolumeUp
         SettingsSection.DISPLAY -> Icons.Filled.TextFields
+        SettingsSection.COLORS -> Icons.Filled.Palette
         SettingsSection.COMMANDS -> Icons.Filled.Mic
         SettingsSection.HISTORY -> Icons.Filled.History
         SettingsSection.ACCOUNT -> Icons.Filled.AccountCircle
@@ -745,6 +806,7 @@ private val SettingsSection.titleRes: Int
         SettingsSection.SPEECH -> R.string.settings_hub_speech
         SettingsSection.SOUND -> R.string.settings_hub_sound
         SettingsSection.DISPLAY -> R.string.settings_hub_display
+        SettingsSection.COLORS -> R.string.settings_colors_title
         SettingsSection.COMMANDS -> R.string.settings_section_commands
         SettingsSection.HISTORY -> R.string.history_title
         SettingsSection.ACCOUNT -> R.string.settings_section_account
@@ -757,6 +819,7 @@ private val SettingsSection.descriptionRes: Int
         SettingsSection.SPEECH -> R.string.settings_hub_speech_description
         SettingsSection.SOUND -> R.string.settings_hub_sound_description
         SettingsSection.DISPLAY -> R.string.settings_hub_display_description
+        SettingsSection.COLORS -> R.string.colors_intro
         SettingsSection.COMMANDS -> R.string.settings_hub_commands_description
         SettingsSection.HISTORY -> R.string.settings_hub_history_description
         SettingsSection.ACCOUNT -> R.string.settings_hub_account_description
@@ -1130,7 +1193,7 @@ private fun PhraseList(phrases: List<String>) {
 }
 
 @Composable
-private fun SettingSection(title: String) {
+internal fun SettingSection(title: String) {
     Text(
         title,
         style = MaterialTheme.typography.titleLarge,

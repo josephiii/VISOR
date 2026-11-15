@@ -176,6 +176,16 @@ data class UserProfile(
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /**
+     * Draw VISOR in the user's own colors ([customColors], Settings > Text
+     * and display > My colors) rather than one of its four looks. Off until
+     * the user turns it on. Turning it off leaves [themeMode] and
+     * [appHighContrast] as they were, so VISOR's colors come back as the
+     * user had them.
+     */
+    val useCustomColors: Boolean = false,
+    /** The user's own colors: kept while not in use, so switching back finds them as they were. */
+    val customColors: CustomColors = CustomColors(),
     val textScale: TextScale = TextScale.EXTRA_LARGE,
 
     // Commands. Every one is on until the user turns it off.

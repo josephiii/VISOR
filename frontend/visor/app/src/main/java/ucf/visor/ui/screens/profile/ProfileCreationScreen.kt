@@ -113,7 +113,7 @@ fun ProfileCreationScreen(
 
     fun finish() {
         onFinished(
-            if (offersLook && useSuggestedLook) profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true)
+            if (offersLook && useSuggestedLook) profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true, useCustomColors = false)
             else profile
         )
     }

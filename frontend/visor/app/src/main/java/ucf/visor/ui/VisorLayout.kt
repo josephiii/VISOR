@@ -382,10 +382,25 @@ fun VisorLayout(
                     else -> viewModel.requestDeleteAccountConfirm()
                 }
 
+                // With the user's own colors in use, High contrast is VISOR's
+                // own look again, so "high contrast" turns it on.
                 VoiceCommand.ToggleHighContrast -> {
-                    val on = !profile.appHighContrast
-                    viewModel.updateProfile(profile.copy(appHighContrast = on))
+                    val on = profile.useCustomColors || !profile.appHighContrast
+                    viewModel.updateProfile(profile.copy(appHighContrast = on, useCustomColors = false))
                     reply(VoiceReplies.highContrast(on))
+                }
+
+                VoiceCommand.UseCustomColors ->
+                    if (profile.customColors.isUnchanged) {
+                        reply(VoiceReplies.NO_CUSTOM_COLORS_YET)
+                    } else {
+                        viewModel.updateProfile(profile.copy(useCustomColors = true))
+                        reply(VoiceReplies.CUSTOM_COLORS_ON)
+                    }
+
+                VoiceCommand.UseVisorColors -> {
+                    viewModel.updateProfile(profile.copy(useCustomColors = false))
+                    reply(VoiceReplies.VISOR_COLORS_ON)
                 }
 
                 is VoiceCommand.SetTextScale -> {

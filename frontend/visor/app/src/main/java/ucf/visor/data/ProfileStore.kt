@@ -34,6 +34,8 @@ class ProfileStore(context: Context) {
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_THEME_MODE, p.themeMode.name)
+            .putBoolean(KEY_USE_CUSTOM_COLORS, p.useCustomColors)
+            .putString(KEY_CUSTOM_COLORS, p.customColors.encode())
             .putString(KEY_TEXT_SCALE, p.textScale.name)
             .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
             .putBoolean(KEY_GLASSES_TAP_NAV, p.glassesTapNavigationEnabled)
@@ -71,6 +73,8 @@ class ProfileStore(context: Context) {
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
             themeMode = enumOrDefault(KEY_THEME_MODE, defaults.themeMode),
+            useCustomColors = prefs.getBoolean(KEY_USE_CUSTOM_COLORS, defaults.useCustomColors),
+            customColors = CustomColors.decode(prefs.getString(KEY_CUSTOM_COLORS, null)),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
             voiceNavigationEnabled = prefs.getBoolean(
                 KEY_VOICE_NAV,
@@ -173,6 +177,9 @@ class ProfileStore(context: Context) {
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_THEME_MODE = "themeMode"
+        const val KEY_USE_CUSTOM_COLORS = "useCustomColors"
+        // CustomColors.encode(): the look they start from, and each color the user picked.
+        const val KEY_CUSTOM_COLORS = "customColors"
         const val KEY_TEXT_SCALE = "textScale"
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
         const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"

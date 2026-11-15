@@ -61,6 +61,8 @@ class BackgroundPolicyTest {
             VoiceCommand.PairDevice,
             VoiceCommand.GoBack,
             VoiceCommand.ToggleHighContrast,
+            VoiceCommand.UseCustomColors,
+            VoiceCommand.UseVisorColors,
             VoiceCommand.SetTextScale(TextScale.LARGE),
         ).forEach { assertEquals(it.toString(), ON_SCREEN, handler(it)) }
     }

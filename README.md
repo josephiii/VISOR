@@ -59,6 +59,7 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - [Offline features](./documentation/developer/offline-features.md): what works without the internet, how locked features are shown and said, and how to test it.
 - [Voice options](./documentation/developer/voice-options.md): choosing VISOR's voice, how voices that need the internet behave offline, and the bar any new voice model must clear (including its license).
 - [Tailored experience](./documentation/developer/tailored-experience.md): how setup's answers about a user's vision change what VISOR says, which hazards it names first, the order of its buttons, and the look it suggests (`data/VisionPlan`).
+- [My colors](./documentation/developer/theme-editor.md): the theme editor in Settings > Text & display, where users pick their own color for each part of VISOR. Covers how VISOR keeps every color readable (`ui/theme/ContrastAudit`, shared with the build's contrast test), and the way back ("VISOR GO, use VISOR colors").
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout
@@ -102,7 +103,7 @@ VISOR/
 | `ui/feedback/` | How VISOR feels and moves: one vibration pattern per meaning (`Haptics`), the pressed and focused look every control shares (`ControlFeedback`), and the motion rules (`Motion`). |
 | `ui/glasses/` | Navigation rendered on the glasses' display and driven by taps. |
 | `ui/voice/` | "VISOR GO" voice navigation commands. |
-| `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. |
+| `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. A user's own colors (`CustomTheme`), the contrast check every color pair goes through (`ContrastAudit`), and the color math behind the picker (`ColorMath`). |
 
 | Other app folders | What they hold |
 | --- | --- |

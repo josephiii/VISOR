@@ -18,6 +18,8 @@ class SettingsCommandTest {
             "command settings" to SettingsSection.COMMANDS,
             "account settings" to SettingsSection.ACCOUNT,
             "open settings about me" to SettingsSection.ABOUT_YOU,
+            "open color settings" to SettingsSection.COLORS,
+            "theme settings" to SettingsSection.COLORS,
         ).forEach { (said, section) ->
             assertEquals(said, VoiceCommand.OpenSettingsSection(section), VoiceCommandParser.parse(said))
         }

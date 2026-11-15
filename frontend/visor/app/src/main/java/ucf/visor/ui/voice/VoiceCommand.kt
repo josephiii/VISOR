@@ -48,6 +48,15 @@ sealed class VoiceCommand {
     object DeleteAccount : VoiceCommand()
     object ToggleHighContrast : VoiceCommand()
 
+    /**
+     * "Use my colors": the user's own colors (Settings > Text and display >
+     * My colors), and "use VISOR colors", back to VISOR's own look as the
+     * user had it. The second is the way back from colors that turned out
+     * hard to see, for a user who can no longer read the screen to fix them.
+     */
+    object UseCustomColors : VoiceCommand()
+    object UseVisorColors : VoiceCommand()
+
     /** "Use my phone camera": the camera every camera feature uses, as on the Pair screen. */
     data class UseCamera(val camera: CameraChoice) : VoiceCommand()
     data class SetSpeechRate(val rate: Float) : VoiceCommand()

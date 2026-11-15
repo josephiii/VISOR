@@ -57,6 +57,8 @@ object BackgroundPolicy {
         VoiceCommand.PairDevice,
         VoiceCommand.GoBack,
         VoiceCommand.ToggleHighContrast,
+        VoiceCommand.UseCustomColors,
+        VoiceCommand.UseVisorColors,
         is VoiceCommand.SetTextScale,
         // The account, and the "Are you sure?" dialogs that guard it: never
         // from a phone nobody is looking at, which may be locked.
