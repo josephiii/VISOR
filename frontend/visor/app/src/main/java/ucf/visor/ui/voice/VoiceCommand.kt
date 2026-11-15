@@ -33,6 +33,12 @@ sealed class VoiceCommand {
      */
     data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
+    /** "Start hazard watch" / "stop hazard watch": the hazard watch on or off, as Home's switch. */
+    data class SetHazardWatch(val on: Boolean) : VoiceCommand()
+
+    /** "Is hazard watch on?": whether it is, and whether it can see. */
+    object AskHazardWatch : VoiceCommand()
+
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()
     object GoToForgotPassword : VoiceCommand()

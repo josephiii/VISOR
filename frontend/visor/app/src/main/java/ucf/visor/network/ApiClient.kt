@@ -49,9 +49,9 @@ object ApiClient {
     private val JPEG = "image/jpeg".toMediaType()
 
     /** A photo for the endpoints that take one, as JPEG, compressed off the main thread. */
-    suspend fun jpeg(bitmap: Bitmap): RequestBody = withContext(Dispatchers.Default) {
+    suspend fun jpeg(bitmap: Bitmap, quality: Int = 85): RequestBody = withContext(Dispatchers.Default) {
         ByteArrayOutputStream()
-            .also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+            .also { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
             .toByteArray()
             .toRequestBody(JPEG)
     }
@@ -59,11 +59,13 @@ object ApiClient {
     /**
      * Sends a request to [path] under [baseUrl] off the main thread;
      * [configure] sets its method and body. [accessToken], when given, goes
-     * out as a bearer token.
+     * out as a bearer token. [timeoutMs], when given, caps the whole call
+     * (connect, upload and answer), for a caller that can't wait on the defaults.
      */
     suspend fun send(
         path: String,
         accessToken: String? = null,
+        timeoutMs: Long? = null,
         configure: Request.Builder.() -> Request.Builder,
     ): ApiResult = withContext(Dispatchers.IO) {
         val built = Request.Builder()
@@ -73,7 +75,9 @@ object ApiClient {
             .build()
 
         try {
-            http.newCall(built).execute().use { response ->
+            val call = http.newCall(built)
+            if (timeoutMs != null) call.timeout().timeout(timeoutMs, TimeUnit.MILLISECONDS)
+            call.execute().use { response ->
                 val raw = response.body?.string().orEmpty()
                 if (response.isSuccessful) {
                     ApiResult.Success(raw)

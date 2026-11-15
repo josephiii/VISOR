@@ -176,10 +176,12 @@ class Speaker(
     /**
      * Says [text] at [volume], whatever the sliders are set to: for Settings
      * saying what a slider was just set to, and the head-motion lab's cues.
-     * Never what "repeat that" repeats.
+     * Not what "repeat that" repeats, unless [rememberAs] says how to say it
+     * again (the hazard watch's alerts: a warning half heard must be repeatable).
      */
-    fun speakAt(text: String, volume: Float) {
+    fun speakAt(text: String, volume: Float, rememberAs: VoiceCategory? = null) {
         if (text.isBlank()) return
+        if (rememberAs != null && !Volumes.isOff(volume)) lastUtterance = Utterance(text, rememberAs)
         whenReady { say(text, volume) }
     }
 

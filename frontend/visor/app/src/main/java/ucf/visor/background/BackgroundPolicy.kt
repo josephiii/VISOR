@@ -43,6 +43,9 @@ object BackgroundPolicy {
         VoiceCommand.PreviousVoice,
         VoiceCommand.DefaultVoice,
         is VoiceCommand.SetVerbosity,
+        // The hazard watch: made for walking with the phone in a pocket.
+        is VoiceCommand.SetHazardWatch,
+        VoiceCommand.AskHazardWatch,
         // Turning background listening itself on and off.
         VoiceCommand.KeepListening,
         VoiceCommand.StopListening,

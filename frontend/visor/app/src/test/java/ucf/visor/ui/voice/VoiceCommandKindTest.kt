@@ -66,5 +66,7 @@ class VoiceCommandKindTest {
         VoiceCommandKind.READING -> this == VoiceCommand.StopReading ||
             this == VoiceCommand.PauseReading ||
             this == VoiceCommand.ResumeReading
+
+        VoiceCommandKind.HAZARD_WATCH -> this is VoiceCommand.SetHazardWatch || this == VoiceCommand.AskHazardWatch
     }
 }

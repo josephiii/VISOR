@@ -51,9 +51,14 @@ enum class SoundCategory(override val key: String) : AudioCategory {
     THINKING_BEEPS("thinkingBeepsVolume"),
 
     /** As "Hey Meta, start VISOR" opens VISOR, ready for a question. */
-    READY_CHIME("sessionChimesVolume");
+    READY_CHIME("sessionChimesVolume"),
 
-    override val defaultLevel: Float get() = Volumes.DefaultSoundEffects
+    /** The hazard watch: its tones, its spoken warnings, and whether it can see. */
+    HAZARD_ALERTS("hazardAlertsVolume");
+
+    // Hazard alerts start at full volume: a warning that can't be heard protects no one.
+    override val defaultLevel: Float
+        get() = if (this == HAZARD_ALERTS) Volumes.Max else Volumes.DefaultSoundEffects
 }
 
 /**

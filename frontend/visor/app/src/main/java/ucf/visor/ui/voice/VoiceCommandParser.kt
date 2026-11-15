@@ -68,6 +68,18 @@ object VoiceCommandParser {
                 "different voice", "another voice", "new voice", "switch voice", "switch voices",
             ) -> VoiceCommand.NextVoice
 
+            // The hazard watch, on or off. Ahead of "back" ("hazard watch back on")
+            // and of "stop", which alone only stops a reading. "Hazard mode" is
+            // still not a command (RetiredCommandTest).
+            containsAny(text, "is hazard watch", "is the hazard watch", "hazard watch status", "hazard watch on?") ->
+                VoiceCommand.AskHazardWatch
+
+            containsAny(text, "hazard watch", "hazards watch") ->
+                VoiceCommand.SetHazardWatch(
+                    on = !containsAny(text, "stop", "turn off", "switch off", "end", "cancel") &&
+                        !containsWord(text, "off"),
+                )
+
             containsAny(text, "go back", "back", "previous screen") -> VoiceCommand.GoBack
 
             // Nothing here takes a picture or picks a "mode" ("hazard mode"):
@@ -201,4 +213,5 @@ enum class VoiceCommandKind(val examples: List<String>) {
     ACCOUNT(listOf("log out", "delete my account")),
     ANSWERING(listOf("yes", "no", "repeat that")),
     READING(listOf("stop", "pause", "resume")),
+    HAZARD_WATCH(listOf("start hazard watch", "stop hazard watch", "is hazard watch on")),
 }

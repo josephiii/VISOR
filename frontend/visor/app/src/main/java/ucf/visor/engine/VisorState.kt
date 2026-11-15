@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import ucf.visor.hazards.HazardWatchState
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -173,6 +174,27 @@ class VisorState(context: Context) {
 
     fun setBackgroundListeningActive(active: Boolean) {
         _backgroundListeningActive.value = active
+    }
+
+    // ---------------------------------------------------------------------
+    // The hazard watch (run by VisorEngine through HazardWatchController)
+
+    private val _hazardWatchOn = MutableStateFlow(false)
+
+    /** Whether the wearer has turned the hazard watch on: Home's switch, or "start hazard watch". */
+    val hazardWatchOn: StateFlow<Boolean> = _hazardWatchOn.asStateFlow()
+
+    fun setHazardWatch(on: Boolean) {
+        _hazardWatchOn.value = on
+    }
+
+    private val _hazardWatchState = MutableStateFlow(HazardWatchState.OFF)
+
+    /** What the running hazard watch reports: off, watching, or can't see. */
+    val hazardWatchState: StateFlow<HazardWatchState> = _hazardWatchState.asStateFlow()
+
+    fun setHazardWatchState(watchState: HazardWatchState) {
+        _hazardWatchState.value = watchState
     }
 
     // ---------------------------------------------------------------------

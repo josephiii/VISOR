@@ -36,6 +36,12 @@ class Haptics(context: Context, private val enabled: () -> Boolean) {
 
     fun listeningStarted() = status(waveform(Buzz))
 
+    /** Three long buzzes: a critical hazard. */
+    fun hazardCritical() = status(waveform(LongBuzz, Gap, LongBuzz, Gap, LongBuzz))
+
+    /** One medium buzz: a hazard warning. */
+    fun hazardWarning() = status(waveform(Buzz))
+
     fun listeningStopped() = status(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
 
     /** A response to the user's own touch. */
@@ -71,6 +77,7 @@ class Haptics(context: Context, private val enabled: () -> Boolean) {
         const val Pulse = 60L
         const val Gap = 90L
         const val Buzz = 120L
+        const val LongBuzz = 250L
     }
 }
 

@@ -40,9 +40,11 @@ class AudioMixTest {
         val mix = AudioMix()
 
         VoiceCategory.entries.forEach { assertEquals(Volumes.Max, mix.loudness(it), TOLERANCE) }
-        SoundCategory.entries.forEach {
+        (SoundCategory.entries - SoundCategory.HAZARD_ALERTS).forEach {
             assertEquals(Volumes.DefaultSoundEffects, mix.loudness(it), TOLERANCE)
         }
+        // A warning that can't be heard protects no one.
+        assertEquals(Volumes.Max, mix.loudness(SoundCategory.HAZARD_ALERTS), TOLERANCE)
     }
 
     @Test

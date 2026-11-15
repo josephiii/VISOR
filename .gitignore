@@ -61,3 +61,7 @@ documentation/testing/imu-balance-report.md
 **/.obsidian/
 **/*.sync-conflict-*
 .mcp.json
+
+# Hazard dataset photos and training runs (backend/scripts/train_yoloe.py): too big for git.
+backend/datasets/*/
+backend/runs/

@@ -80,6 +80,13 @@ import ucf.visor.ui.components.ReadingButtons
 import ucf.visor.ui.components.ReadingControlHeight
 import ucf.visor.ui.components.ScreenTitle
 import ucf.visor.ui.components.SwitchButton
+import ucf.visor.ui.components.SwitchChip
+import ucf.visor.hazards.HazardWatchState
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
 import ucf.visor.ui.components.isScreenReaderOn
@@ -124,6 +131,9 @@ fun HomeScreen(
         .collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val hazardWatchOn by viewModel.hazardWatchOn.collectAsStateWithLifecycle()
+    val hazardWatchState by viewModel.hazardWatchState.collectAsStateWithLifecycle()
+    val askForNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -167,6 +177,28 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(CaptureGap),
             ) {
+                // The hazard watch, above the camera buttons: on or off, never
+                // changing what any of them does. Check for hazards below is its
+                // one-picture fallback.
+                SwitchChip(
+                    title = stringResource(
+                        if (hazardWatchState == HazardWatchState.CANT_SEE) R.string.hazard_watch_switch_cant_see
+                        else R.string.hazard_watch_switch,
+                    ),
+                    on = hazardWatchOn,
+                    onToggle = {
+                        val turningOn = !hazardWatchOn
+                        // Its notification (with Stop) needs this on Android 13+.
+                        // The watch starts either way.
+                        if (turningOn && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            !NotificationManagerCompat.from(context).areNotificationsEnabled()
+                        ) {
+                            askForNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        viewModel.setHazardWatch(turningOn)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 CameraCommand.entries.forEach { command ->
                     val label = stringResource(command.labelRes)
                     val availability = command.availability(uiState.isOnline)

@@ -22,14 +22,23 @@ class HazardClient(
     /**
      * The objects in [bitmap], each with its distance. Null when the server
      * can't be reached or doesn't answer with a list of them (logged).
+     * [watch] asks for the hazard watch's filtered answer: only confident,
+     * nearby hazards, one box each (backend/services/HazardWatchFilter.py).
      */
-    suspend fun detect(bitmap: Bitmap): List<Hazard>? {
+    suspend fun detect(bitmap: Bitmap, watch: Boolean = false): List<Hazard>? {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap))
+            // The watch sends about two a second: quality 70 is a third the data
+            // of 85, and YOLO loses nothing at the watch's 640 px frames.
+            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap, quality = if (watch) 70 else 85))
             .build()
 
-        return when (val result = ApiClient.send("/yolo/runHazardDetection", accessToken()) { post(body) }) {
+        return when (val result = ApiClient.send(
+            path = if (watch) "$PATH?watch=1" else PATH,
+            accessToken = accessToken(),
+            // The watch checks again in a moment: an answer this late is no use to it.
+            timeoutMs = if (watch) WATCH_TIMEOUT_MS else null,
+        ) { post(body) }) {
             is ApiResult.Success -> try {
                 json.decodeFromString<List<Hazard>>(result.body)
             } catch (e: IllegalArgumentException) { // includes SerializationException
@@ -46,5 +55,7 @@ class HazardClient(
 
     private companion object {
         const val TAG = "VisorHazards"
+        const val PATH = "/yolo/runHazardDetection"
+        const val WATCH_TIMEOUT_MS = 2_500L
     }
 }

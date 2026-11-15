@@ -175,6 +175,7 @@ class MainActivity : ComponentActivity() {
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> engine.thinkingBeeper.beepOnce()
         SoundCategory.READY_CHIME -> engine.chimes.play(Chime.READY)
+        SoundCategory.HAZARD_ALERTS -> engine.chimes.play(Chime.HAZARD_WARNING)
     }
 
     override fun onStart() {

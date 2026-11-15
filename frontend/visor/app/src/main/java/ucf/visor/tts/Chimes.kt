@@ -41,7 +41,16 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
         READY(
             SoundCategory.READY_CHIME,
             listOf(Note(C5, 0.0, 0.1), Note(E5, 0.12, 0.1), Note(G5, 0.24, 0.18)),
-        );
+        ),
+
+        /** Three sharp pulses, before a critical hazard ("Stop. ..."). */
+        HAZARD_CRITICAL(
+            SoundCategory.HAZARD_ALERTS,
+            listOf(Note(A5, 0.0, 0.07), Note(A5, 0.11, 0.07), Note(A5, 0.22, 0.07)),
+        ),
+
+        /** One soft note, before a hazard warning. */
+        HAZARD_WARNING(SoundCategory.HAZARD_ALERTS, listOf(Note(E5, 0.0, 0.15)));
 
         /** How long it plays. Speech waits this long before starting ([Speaker]). */
         val durationMs: Long = (notes.maxOf { it.offsetSec + it.durationSec } * 1000).roundToLong()
@@ -60,8 +69,13 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
         }
     }
 
-    /** Plays [chime] at its category's volume, or not at all when that is off. */
-    fun play(chime: Chime) {
+    /**
+     * Plays [chime] at its category's volume, or not at all when that is off.
+     * [pan] leans it toward one ear, from -1 (left) to 1 (right), so a hazard
+     * alert's tone says which side before a word is spoken. The far ear still
+     * hears it, quieter, for a listener who hears well on one side only.
+     */
+    fun play(chime: Chime, pan: Float = 0f) {
         val volume = loudness(chime.category)
         if (Volumes.isOff(volume)) return
         val track = tracks[chime] ?: return
@@ -69,7 +83,12 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
             handler.removeCallbacksAndMessages(chime)
             if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
             track.reloadStaticData()
-            track.setVolume(volume)
+            val lean = pan.coerceIn(-1f, 1f)
+            @Suppress("DEPRECATION") // The only per-ear gain AudioTrack has.
+            track.setStereoVolume(
+                volume * (1f - FAR_EAR_DROP * lean.coerceAtLeast(0f)),
+                volume * (1f + FAR_EAR_DROP * lean.coerceAtMost(0f)),
+            )
             track.play()
             endsAt = SystemClock.elapsedRealtime() + chime.durationMs
             // A static track reports itself playing until it is stopped, long
@@ -146,6 +165,10 @@ class Chimes(private val loudness: (SoundCategory) -> Float) {
         const val C5 = 523.25
         const val E5 = 659.25
         const val G5 = 783.99
+        const val A5 = 880.0
+
+        /** How much quieter a panned chime is in the far ear: to 40%, never silent. */
+        const val FAR_EAR_DROP = 0.6f
 
         const val NOTE_GAIN = 0.5
         const val ATTACK_SEC = 0.005

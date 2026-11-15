@@ -36,6 +36,9 @@
     <!-- Hearing commands through the glasses' microphone (stt/MicRoute):
          Bluetooth HFP, set as the communication device. Granted at install. -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- The hazard watch keeps running with the screen off (hazards/HazardWatchService),
+         with the glasses camera, or the phone's own. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
     <!-- Lets SpeechRecognizer.isRecognitionAvailable() resolve the on-device recognizer
          service on Android 11+ (package-visibility rules) for voice navigation. -->
@@ -113,6 +116,11 @@
             android:name=".background.ListeningService"
             android:exported="false"
             android:foregroundServiceType="microphone|connectedDevice" />
+
+        <service
+            android:name=".hazards.HazardWatchService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice|camera" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

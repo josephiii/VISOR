@@ -81,6 +81,14 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
     /** Which microphone VISOR hears commands through right now (Settings > Commands). */
     val listeningThrough = state.listeningThrough
 
+    /** Whether the user has turned the hazard watch on (Home's switch, or by voice). VisorEngine runs it. */
+    val hazardWatchOn = state.hazardWatchOn
+
+    /** What the running hazard watch reports: watching, or can't see. */
+    val hazardWatchState = state.hazardWatchState
+
+    fun setHazardWatch(on: Boolean) = state.setHazardWatch(on)
+
     /** Whether VISOR is listening with the screen off right now (background listening). */
     val backgroundListeningActive = state.backgroundListeningActive
 
@@ -243,6 +251,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         }
         sessionStore.clear() // drops tokens + loggedIn flag
         state.onSessionChanged()
+        state.setHazardWatch(false)
         // It may be text read off someone's mail: not for the next person to log in.
         state.clearLastAnswer()
     }

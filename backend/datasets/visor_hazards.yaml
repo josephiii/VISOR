@@ -1,0 +1,44 @@
+# VISOR's hazard dataset, for scripts/train_yoloe.py. YOLO layout:
+#   datasets/visor_hazards/images/train/*.jpg   datasets/visor_hazards/labels/train/*.txt
+#   datasets/visor_hazards/images/val/*.jpg     datasets/visor_hazards/labels/val/*.txt
+# One label line per hazard: class x_center y_center width height (0 to 1).
+# Put about 1 photo in 5 in val/, never the same scene as in train/.
+# The photos themselves are not committed (.gitignore).
+#
+# The classes are HAZARD_WORDS in services/HazardWatchFilter.py, in the same
+# order: change both together, or the labels point at the wrong names.
+
+# No "path:": Ultralytics then reads these relative to this file's folder.
+train: visor_hazards/images/train
+val: visor_hazards/images/val
+
+names:
+  0: person
+  1: bicycle
+  2: car
+  3: motorcycle
+  4: bus
+  5: truck
+  6: scooter
+  7: stroller
+  8: dog
+  9: stairs
+  10: curb
+  11: open manhole
+  12: hole in the ground
+  13: pole
+  14: bollard
+  15: traffic cone
+  16: barrier
+  17: fence
+  18: wet floor sign
+  19: fire hydrant
+  20: trash can
+  21: bench
+  22: chair
+  23: table
+  24: couch
+  25: bed
+  26: door
+  27: glass door
+  28: tree

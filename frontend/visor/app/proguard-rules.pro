@@ -32,3 +32,8 @@
 # minified release crashes on launch with
 # NoSuchFieldError: "maxActivePaths" in KeywordSpotterConfig.
 -keep class com.k2fsa.sherpa.onnx.** { *; }
+
+# Meta Wearables SDK: GlassesLinkNudge finds fields inside the SDK by reflection
+# to reconnect lost glasses without restarting VISOR. Shrinking or renaming
+# them in a release build would silently turn every recovery into a restart.
+-keep class com.meta.wearable.dat.** { *; }

@@ -1,5 +1,6 @@
 package ucf.visor.engine
 
+import ucf.visor.hazards.HazardWatchController
 import android.Manifest.permission.RECORD_AUDIO
 import android.content.Context
 import android.content.Intent
@@ -241,12 +242,32 @@ class VisorEngine(
         isOnline = ::isOnline,
     )
 
+    private val hazardClient = HazardClient(accessToken = state.sessionStore::accessToken)
+
     private val hazardDetector: ReadRequester = HazardDetector(
         photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
-        client = HazardClient(accessToken = state.sessionStore::accessToken),
+        client = hazardClient,
         scope = scope,
         verbosity = ::verbosity,
     )
+
+    // The hazard watch: on and off as state.hazardWatchOn says (Home's switch,
+    // "start hazard watch"); Check for hazards above is its one-picture fallback.
+    // Its pictures come from the chosen camera, so the glasses' held session.
+    private val hazardWatch = HazardWatchController(
+        app = app,
+        scope = scope,
+        state = state,
+        camera = chosenCamera,
+        client = hazardClient,
+        speaker = speaker,
+        chimes = chimes,
+        haptics = haptics,
+        isOnline = ::isOnline,
+    )
+
+    /** The next hazard watch start follows a restart of VISOR: it says it is back on. */
+    private var hazardWatchResuming = false
 
     // ---------------------------------------------------------------------
     // Listening
@@ -437,6 +458,22 @@ class VisorEngine(
 
         watchGlassesLink()
 
+        // The hazard watch, on and off. It keeps the glasses session held while on.
+        scope.launch {
+            state.hazardWatchOn.collect { on ->
+                if (on) {
+                    if (!hazardWatch.start(quiet = hazardWatchResuming)) state.setHazardWatch(false)
+                } else {
+                    hazardWatch.stop()
+                }
+                hazardWatchResuming = false
+                updateHeldSession()
+            }
+        }
+        scope.launch {
+            state.profile.map { it.camera }.distinctUntilChanged().collect(hazardWatch::onCameraChanged)
+        }
+
         // A low glasses battery is said aloud while listening in the background:
         // the notification that also shows it can't be seen from a pocket.
         scope.launch {
@@ -521,7 +558,7 @@ class VisorEngine(
         val profile = state.profile.value
         val glasses = state.glassesStatus.value
         return wearablesReady && state.isLoggedIn() && profile.camera == CameraChoice.GLASSES &&
-            (isScreenShown || serviceRunning) &&
+            (isScreenShown || serviceRunning || state.hazardWatchOn.value) &&
             !(glasses?.displayCapable == true && profile.glassesTapNavigationEnabled)
     }
 
@@ -703,6 +740,8 @@ class VisorEngine(
             .putBoolean(KEY_ANNOUNCE_AFTER_RESTART, true)
             .putString(KEY_REPLAY_COMMAND, replay?.name)
             .putLong(KEY_REPLAY_AT, System.currentTimeMillis())
+            // The restart ends the hazard watch: it is turned back on after.
+            .putBoolean(KEY_RESTORE_HAZARD_WATCH, state.hazardWatchOn.value)
             .commit()
         showConnection(GlassesConnectionNotice.RESTARTING)
         GlassesRestartNotification.show(app)
@@ -711,7 +750,11 @@ class VisorEngine(
             withTimeoutOrNull(RESTART_SPEECH_WAIT_MS) { while (speaker.isSpeaking()) delay(100) }
             if (sdkSeesGlasses()) {
                 Log.i(RECOVERY_TAG, "The glasses came back by themselves: no restart")
-                recoveryPrefs.edit().putBoolean(KEY_ANNOUNCE_AFTER_RESTART, false).remove(KEY_REPLAY_COMMAND).apply()
+                recoveryPrefs.edit()
+                    .putBoolean(KEY_ANNOUNCE_AFTER_RESTART, false)
+                    .remove(KEY_REPLAY_COMMAND)
+                    .remove(KEY_RESTORE_HAZARD_WATCH)
+                    .apply()
                 GlassesRestartNotification.cancel(app)
                 return@launch
             }
@@ -733,10 +776,17 @@ class VisorEngine(
         val replay = recoveryPrefs.getString(KEY_REPLAY_COMMAND, null)
             ?.let { name -> runCatching { CameraCommand.valueOf(name) }.getOrNull() }
             ?.takeIf { System.currentTimeMillis() - recoveryPrefs.getLong(KEY_REPLAY_AT, 0L) < REPLAY_WITHIN_MS }
+        val restoreHazardWatch = recoveryPrefs.getBoolean(KEY_RESTORE_HAZARD_WATCH, false)
         recoveryPrefs.edit()
             .putBoolean(KEY_ANNOUNCE_AFTER_RESTART, false)
             .remove(KEY_REPLAY_COMMAND)
+            .remove(KEY_RESTORE_HAZARD_WATCH)
             .apply()
+        // The wearer still thinks the hazard watch is on: it must be, and say so.
+        if (restoreHazardWatch && state.isLoggedIn()) {
+            hazardWatchResuming = true
+            state.setHazardWatch(true)
+        }
         if (!sdkSeesGlasses()) showConnection(GlassesConnectionNotice.RECONNECTING)
         scope.launch {
             val back = withTimeoutOrNull(ANNOUNCE_WAIT_MS) {
@@ -1058,6 +1108,12 @@ class VisorEngine(
 
             // As the Pair screen's choice is, so post-login like it; said
             // back, with how to hold the phone when that is the camera.
+            is VoiceCommand.SetHazardWatch ->
+                if (loggedIn) state.setHazardWatch(command.on)
+                else reply("Log in first to use hazard watch.")
+
+            VoiceCommand.AskHazardWatch -> reply(SpokenPhrases.hazardWatchStatus(state.hazardWatchState.value))
+
             is VoiceCommand.UseCamera ->
                 if (loggedIn) {
                     state.updateProfile(profile.copy(camera = command.camera))
@@ -1183,6 +1239,7 @@ class VisorEngine(
         const val KEY_ANNOUNCE_AFTER_RESTART = "announceAfterRestart"
         const val KEY_REPLAY_COMMAND = "replayCommand"
         const val KEY_REPLAY_AT = "replayAt"
+        const val KEY_RESTORE_HAZARD_WATCH = "restoreHazardWatch"
 
         /** A cut-off command is carried on with after a restart only if it was this recent. */
         const val REPLAY_WITHIN_MS = 60_000L
