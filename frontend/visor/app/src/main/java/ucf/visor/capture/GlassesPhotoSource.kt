@@ -2,6 +2,9 @@ package ucf.visor.capture
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
 import android.util.Log
 import com.meta.wearable.dat.camera.Camera
 import com.meta.wearable.dat.camera.addCamera
@@ -21,6 +24,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -32,6 +37,8 @@ import ucf.visor.wearables.HeldGlassesSession
 import ucf.visor.wearables.cameraPermissionProblem
 import ucf.visor.wearables.describeSessionError
 import ucf.visor.wearables.preferredDevice
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 
 /**
  * Takes one photo with the glasses camera for each request, inside the glasses
@@ -75,6 +82,10 @@ class GlassesPhotoSource(
     private var activeCamera: Camera? = null
     private var activeSession: DeviceSession? = null
     private var lingerJob: Job? = null
+    private var streamErrorJob: Job? = null
+
+    /** The glasses failed a still and a video frame served instead: frames are used from then on. */
+    private var stillsFail = false
 
     override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
         launchCapture(DEFAULT_STREAM, onPhoto, onError)
@@ -183,20 +194,77 @@ class GlassesPhotoSource(
         return problem
     }
 
-    /** One photo from [camera]'s stream to [onPhoto], or why there is none. */
+    /**
+     * One photo from [camera]'s stream to [onPhoto], or why there is none.
+     *
+     * The glasses are asked for a still first. Meta Ray-Ban Display never
+     * answers that while streaming (CaptureFailed after the SDK's own wait,
+     * field logs 2026-11-15, on MWDAT 1.0.0 and 1.0.1), so a still that fails
+     * is replaced by the next video frame, and once that has happened the
+     * frame is used straight away for the rest of this run of VISOR.
+     */
     private suspend fun photoFrom(camera: Camera, onPhoto: (Bitmap) -> Unit): Problem? {
         var problem: Problem? = null
-        camera.stream.capturePhoto()
-            .onSuccess { data ->
-                val bitmap = toBitmap(data)
-                if (bitmap != null) onPhoto(bitmap)
-                else problem = Problem(SpokenPhrases.GLASSES_PHOTO_UNREADABLE)
+        if (!stillsFail) {
+            var failed = false
+            camera.stream.capturePhoto()
+                .onSuccess { data ->
+                    val bitmap = toBitmap(data)
+                    if (bitmap != null) onPhoto(bitmap)
+                    else problem = Problem(SpokenPhrases.GLASSES_PHOTO_UNREADABLE)
+                }
+                .onFailure { error, _ ->
+                    Log.e(TAG, "capturePhoto failed: $error (stream ${camera.stream.state.value})")
+                    failed = true
+                }
+            if (!failed) return problem
+        }
+        val frame = videoFrameBitmap(camera)
+        if (frame == null) {
+            Log.e(TAG, "No usable video frame within $FRAME_TIMEOUT_MS ms either")
+            return Problem(SpokenPhrases.GLASSES_PHOTO_FAILED)
+        }
+        if (!stillsFail) Log.i(TAG, "Using video frames as pictures from now on")
+        stillsFail = true
+        Log.i(TAG, "Picture taken from a ${frame.width} x ${frame.height} video frame")
+        onPhoto(frame)
+        return null
+    }
+
+    /** The next uncompressed frame of [camera]'s video as a bitmap, or null when none comes in time. */
+    private suspend fun videoFrameBitmap(camera: Camera): Bitmap? = withTimeoutOrNull(FRAME_TIMEOUT_MS) {
+        // Converted inside the collector: the SDK may reuse a frame's buffer afterwards.
+        camera.stream.videoStream
+            .mapNotNull { frame ->
+                if (frame.isCompressed || frame.isCodecConfig) null
+                else i420ToBitmap(frame.buffer, frame.width, frame.height)
             }
-            .onFailure { error, _ ->
-                Log.e(TAG, "capturePhoto failed: $error (stream ${camera.stream.state.value})")
-                problem = Problem(SpokenPhrases.GLASSES_PHOTO_FAILED)
-            }
-        return problem
+            .flowOn(Dispatchers.Default)
+            .first()
+    }
+
+    /** An I420 frame (Y plane, then U, then V at quarter size) as a bitmap, or null if [buffer] is short. */
+    private fun i420ToBitmap(buffer: ByteBuffer, width: Int, height: Int): Bitmap? {
+        val source = buffer.duplicate().apply { rewind() }
+        val luma = width * height
+        val chroma = (width / 2) * (height / 2)
+        if (width <= 0 || height <= 0 || source.remaining() < luma + 2 * chroma) {
+            Log.w(TAG, "Video frame $width x $height has only ${source.remaining()} bytes")
+            return null
+        }
+        // YuvImage reads NV21: the Y plane, then V and U interleaved.
+        val nv21 = ByteArray(luma + 2 * chroma)
+        source.get(nv21, 0, luma)
+        val u = ByteArray(chroma).also { source.get(it) }
+        val v = ByteArray(chroma).also { source.get(it) }
+        for (i in 0 until chroma) {
+            nv21[luma + 2 * i] = v[i]
+            nv21[luma + 2 * i + 1] = u[i]
+        }
+        val jpeg = ByteArrayOutputStream()
+        YuvImage(nv21, ImageFormat.NV21, width, height, null)
+            .compressToJpeg(Rect(0, 0, width, height), FRAME_JPEG_QUALITY, jpeg)
+        return BitmapFactory.decodeByteArray(jpeg.toByteArray(), 0, jpeg.size())
     }
 
     /** The kept camera if it is still streaming in [opened], or a newly started one, or null. */
@@ -211,6 +279,9 @@ class GlassesPhotoSource(
         val attached = withContext(Dispatchers.IO) { opened.addCamera(SHARED_STREAM) }.getOrNull() ?: return null
         activeCamera = attached
         activeSession = opened
+        streamErrorJob = scope.launch {
+            attached.stream.errorStream.collect { Log.e(TAG, "Glasses stream error: $it") }
+        }
         withContext(Dispatchers.IO) { attached.stream.start() }
         val streaming = withTimeoutOrNull(STREAM_TIMEOUT_MS) {
             attached.stream.state.first { it == StreamState.STREAMING }
@@ -221,8 +292,9 @@ class GlassesPhotoSource(
         }
         // STREAMING is announced before the glasses have sent a frame, and a
         // picture asked for before the first frame fails (CaptureFailed).
-        withTimeoutOrNull(FIRST_FRAME_TIMEOUT_MS) { attached.stream.videoStream.first() }
-            ?: Log.w(TAG, "No video frame within $FIRST_FRAME_TIMEOUT_MS ms of the stream starting")
+        val first = withTimeoutOrNull(FIRST_FRAME_TIMEOUT_MS) { attached.stream.videoStream.first() }
+        if (first == null) Log.w(TAG, "No video frame within $FIRST_FRAME_TIMEOUT_MS ms of the stream starting")
+        else Log.i(TAG, "First video frame: ${first.width} x ${first.height}, compressed=${first.isCompressed}")
         return attached
     }
 
@@ -243,6 +315,7 @@ class GlassesPhotoSource(
         val camera = activeCamera ?: return
         activeCamera = null
         activeSession = null
+        streamErrorJob?.cancel()
         stopCameraQuietly(camera)
     }
 
@@ -293,6 +366,10 @@ class GlassesPhotoSource(
         /** The pause between stopping a stream that failed a picture and starting the next. */
         const val RESTART_DELAY_MS = 500L
 
+        /** How long to wait for a video frame to use as the picture. */
+        const val FRAME_TIMEOUT_MS = 4_000L
+        const val FRAME_JPEG_QUALITY = 95
+
         /** How long the camera keeps streaming after a picture, for the next one. */
         const val CAMERA_LINGER_MS = 45_000L
 
@@ -309,7 +386,9 @@ class GlassesPhotoSource(
         // Reading text: Meta's sharpest stream (720 x 1280). The low frame rate
         // gives each frame more of the Bluetooth bandwidth, so it is compressed
         // less, which Meta's docs recommend for image quality.
-        val READING_STREAM = StreamConfiguration(videoQuality = VideoQuality.HIGH, frameRate = 7)
+        // Uncompressed, so a video frame can stand in for a still (see photoFrom).
+        val READING_STREAM =
+            StreamConfiguration(videoQuality = VideoQuality.HIGH, frameRate = 7, compressVideo = false)
 
         /**
          * The one stream every feature shares, so a kept camera serves the next
