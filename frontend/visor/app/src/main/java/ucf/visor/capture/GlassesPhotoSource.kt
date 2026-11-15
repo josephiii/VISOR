@@ -102,6 +102,34 @@ class GlassesPhotoSource(
         }
     }
 
+    /**
+     * Opens the glasses session and starts the camera streaming, with no
+     * picture yet. Returns null once it is streaming, or why it couldn't be,
+     * fit to speak.
+     *
+     * Look around calls this before attaching Motion to the same session:
+     * the head-motion lab found a capability added before the device has
+     * really arrived fails, and a streaming camera is the proof it has
+     * (motionlab/LabGlassesLink). The stream then serves the scan's pictures.
+     */
+    suspend fun prepareStream(): String? = captureLock.withLock {
+        cameraPermissionProblem(requestPermission)?.let { return@withLock it }
+        if (preferredDevice() == null) return@withLock SpokenPhrases.NO_GLASSES_TRY_PHONE
+        when (val result = session.withSession { opened -> streamingCamera(opened) != null }) {
+            is HeldGlassesSession.Result.Done ->
+                if (result.value) {
+                    scheduleCameraStop()
+                    null
+                } else {
+                    SpokenPhrases.GLASSES_CAMERA_UNAVAILABLE
+                }
+            is HeldGlassesSession.Result.Unavailable -> when {
+                result.failure.paused -> SpokenPhrases.GLASSES_PAUSED
+                else -> result.failure.error?.let(::describeSessionError) ?: SpokenPhrases.GLASSES_CAMERA_UNAVAILABLE
+            }
+        }
+    }
+
     /** Why a picture could not be taken, said to the wearer as [spoken]. */
     private data class Problem(
         val spoken: String,

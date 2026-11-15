@@ -56,6 +56,10 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
+import ucf.visor.lookaround.GuideTonePlayer
+import ucf.visor.lookaround.LookAround
+import ucf.visor.lookaround.LookAroundPhrases
+import ucf.visor.motion.HeadMotion
 import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
@@ -75,6 +79,7 @@ import ucf.visor.tts.VoiceCatalog
 import ucf.visor.ui.feedback.Haptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.labelRes
+import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.voice.SceneQuestionController
 import ucf.visor.ui.voice.VoiceCommand
 import ucf.visor.ui.voice.VoiceNavState
@@ -180,8 +185,12 @@ class VisorEngine(
     private val textReaderOCR = TextReaderOCR()
     private val objectDetector = ObjectDetector()
 
-    /** The glasses session held while VISOR is in use; every glasses picture is taken in it. */
-    private val heldSession = HeldGlassesSession(scope)
+    /**
+     * The glasses session held while VISOR is in use; every glasses picture is
+     * taken in it. Internal for the MockDeviceKit tests, which run Look around
+     * in it with a stand-in for the server.
+     */
+    internal val heldSession = HeldGlassesSession(scope)
 
     val glassesCamera = GlassesPhotoSource(
         session = heldSession,
@@ -247,13 +256,69 @@ class VisorEngine(
         isOnline = ::isOnline,
     )
 
+    private val hazardClient = HazardClient(accessToken = state.sessionStore::accessToken)
+
     private val hazardDetector: ReadRequester = HazardDetector(
         photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
-        client = HazardClient(accessToken = state.sessionStore::accessToken),
+        client = hazardClient,
         scope = scope,
         verbosity = ::verbosity,
         plan = ::visionPlan,
     )
+
+    // ---------------------------------------------------------------------
+    // Look around: the glasses camera and their motion sensors, in one session
+
+    /** The glasses' head movement (MWDAT Motion), attached to the held session while Look around needs it. */
+    private val headMotion = HeadMotion()
+
+    private val guideTones = GuideTonePlayer(loudness = { audio().loudness(SoundCategory.GUIDANCE_TONES) })
+
+    /** Settings' preview of the guidance tones' volume: two beeps, near and far. */
+    fun playGuidanceSample() = guideTones.sample(scope)
+
+    val lookAround = LookAround(
+        scope = scope,
+        session = heldSession,
+        camera = glassesCamera,
+        motion = headMotion,
+        detect = { bitmap -> hazardClient.detect(bitmap) },
+        tones = guideTones,
+        say = object : LookAround.Say {
+            override fun step(text: String) = speaker.speak(text, VoiceCategory.VOICE_COMMANDS)
+            override fun answer(text: String) = speaker.speak(text, VoiceCategory.ANSWERS)
+        },
+        plan = { visionPlan().lookAroundPlan },
+        limit = {
+            if (verbosity() == Verbosity.BRIEF) visionPlan().briefHazardLimit else Int.MAX_VALUE
+        },
+        guideHint = { verbosity() != Verbosity.BRIEF },
+        isSpeaking = { speaker.isSpeaking() },
+        events = object : LookAround.Events {
+            override fun onScanStarted() {
+                state.onCaptureStarted(CameraCommand.LOOK_AROUND)
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.LOOKING_AROUND)
+            }
+
+            override fun onScanThinking() {
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.THINKING)
+                thinkingBeeper.start()
+            }
+
+            override fun onAnswered(text: String) {
+                state.onAnswered(CameraCommand.LOOK_AROUND, text)
+                if (state.captures.value.isEmpty()) thinkingBeeper.stop()
+            }
+
+            override fun onGuideStarted() {
+                state.onCaptureStarted(CameraCommand.LOOK_AROUND)
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.GUIDING)
+            }
+        },
+    )
+
+    /** "Guide me to [what]", from "VISOR GO". */
+    private fun guideTo(what: String) = lookAround.guideTo(what)
 
     // ---------------------------------------------------------------------
     // Listening
@@ -1028,6 +1093,18 @@ class VisorEngine(
                 sceneQuestion.activate()
                 return
             }
+            // The head's movement is the glasses': with the phone's camera
+            // chosen there is none to follow. Its own steps, like a question's.
+            CameraCommand.LOOK_AROUND -> {
+                if (cameraChoice() != CameraChoice.GLASSES) {
+                    haptics.rejected()
+                    speaker.speak(LookAroundPhrases.NEEDS_GLASSES, VoiceCategory.ANSWERS)
+                    state.showAnswer(LookAroundPhrases.NEEDS_GLASSES, command)
+                } else {
+                    lookAround.start()
+                }
+                return
+            }
         }
         state.onCaptureStarted(command)
         takingPicturePhrase()?.let { speaker.speak(it, VoiceCategory.STATUS_UPDATES) }
@@ -1098,6 +1175,10 @@ class VisorEngine(
                 if (loggedIn) runCameraFeature(command.command)
                 else reply("Log in first to take a picture.")
 
+            is VoiceCommand.GuideTo ->
+                if (loggedIn) guideTo(command.what)
+                else reply("Log in first to take a picture.")
+
             // As the Pair screen's choice is, so post-login like it; said
             // back, with how to hold the phone when that is the camera.
             is VoiceCommand.UseCamera ->
@@ -1162,8 +1243,11 @@ class VisorEngine(
             // "VISOR GO" itself paused the reading ("Listening." was said
             // over it), so by now a reading being read is a paused one.
             // Resuming says nothing first: the reading carrying on is the reply.
+            // "Stop" also stops Look around turning the head, or leading it.
             VoiceCommand.StopReading ->
-                if (speaker.reading.value != ReadingState.NONE) {
+                if (lookAround.stop()) {
+                    Unit
+                } else if (speaker.reading.value != ReadingState.NONE) {
                     speaker.stop()
                     reply(VoiceReplies.READING_STOPPED)
                 } else {

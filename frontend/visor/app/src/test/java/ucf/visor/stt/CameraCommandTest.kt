@@ -16,6 +16,8 @@ class CameraCommandTest {
                 CameraCommand.IDENTIFY_OBJECTS,
                 CameraCommand.DESCRIBE_SCENE,
                 CameraCommand.ASK_QUESTION,
+                // Added last, so no button users know moved.
+                CameraCommand.LOOK_AROUND,
             ),
             CameraCommand.entries,
         )

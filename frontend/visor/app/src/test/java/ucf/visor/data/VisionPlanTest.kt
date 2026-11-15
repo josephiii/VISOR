@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import ucf.visor.data.VisionPlan.HazardFocus
 import ucf.visor.data.VisionPlan.Tailoring
+import ucf.visor.lookaround.ScanPlan
 import ucf.visor.stt.CameraCommand
 
 /** How setup's answers about someone's vision change what VISOR does for them. */
@@ -68,6 +69,18 @@ class VisionPlanTest {
         assertEquals(CameraCommand.CHECK_HAZARDS, dev.featureOrder[0])
         assertEquals(HazardFocus.SIDES_FIRST, dev.hazardFocus)
         assertTrue(dev.sceneGuidance.contains("left and right"))
+    }
+
+    @Test
+    fun sideLossGetsTheWideLookAroundNextToHazards() {
+        assertEquals(ScanPlan.WIDE, dev.lookAroundPlan)
+        val sidesOnly = plan(VisionType.PERIPHERAL_LOSS)
+        assertEquals(listOf(CameraCommand.CHECK_HAZARDS, CameraCommand.LOOK_AROUND), sidesOnly.featureOrder.take(2))
+        assertTrue(Tailoring.WIDE_LOOK_AROUND in dev.tailorings)
+        // Everyone else gets the standard scan, and no Look around line.
+        assertEquals(ScanPlan.STANDARD, maria.lookAroundPlan)
+        assertFalse(Tailoring.WIDE_LOOK_AROUND in maria.tailorings)
+        assertEquals(ScanPlan.STANDARD, VisionPlan.from(UserProfile()).lookAroundPlan)
     }
 
     @Test

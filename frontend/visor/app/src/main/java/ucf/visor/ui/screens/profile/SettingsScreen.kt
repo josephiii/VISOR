@@ -1173,12 +1173,14 @@ private fun VoiceCategory.descriptionRes(): Int = when (this) {
 private fun SoundCategory.titleRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_title
     SoundCategory.READY_CHIME -> R.string.settings_volume_ready_chime_title
+    SoundCategory.GUIDANCE_TONES -> R.string.settings_volume_guidance_tones_title
 }
 
 @StringRes
 private fun SoundCategory.descriptionRes(): Int = when (this) {
     SoundCategory.THINKING_BEEPS -> R.string.settings_volume_thinking_beeps_description
     SoundCategory.READY_CHIME -> R.string.settings_volume_ready_chime_description
+    SoundCategory.GUIDANCE_TONES -> R.string.settings_volume_guidance_tones_description
 }
 
 @StringRes

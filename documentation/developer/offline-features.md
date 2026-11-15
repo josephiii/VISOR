@@ -11,6 +11,7 @@ VISOR keeps working without the internet. It shows which features still work, an
 | Describe the scene | **Limited**: names objects only | Uses the server's VLM; offline it goes straight to ML Kit labels and says *"You're offline, so I can only name objects."* first |
 | Check for hazards | **Locked** | YOLO and depth run on the server |
 | Ask a question | **Locked** | Uses the server's VLM |
+| Look around | **Locked** | Each picture goes to the server's hazard detection (YOLO and depth). See [Look around](./look-around.md) |
 | Log in, sign up, email code | **Locked** | Backend calls |
 | Delete account | **Locked** | Backend call. Log out works offline: it only clears the phone. |
 | Settings, voice commands, wake phrases, glasses, Phase 1 scripts | Works | All on the phone |

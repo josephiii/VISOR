@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.R
+import ucf.visor.lookaround.LookAroundControls
 import ucf.visor.stt.CameraCommand
 import androidx.compose.ui.unit.dp
 import ucf.visor.ui.components.ConnectivityNotice
@@ -96,6 +97,7 @@ fun VisorLayout(
     glassesNav: GlassesNavigationController? = null,
     screenCommands: Flow<VoiceCommand> = emptyFlow(),
     reading: ReadingControls? = null,
+    lookAround: LookAroundControls? = null,
     voices: VoiceChooser? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -547,6 +549,7 @@ fun VisorLayout(
                             onRequestWearablesPermission = onRequestWearablesPermission,
                             onCapture = onCapture,
                             reading = reading,
+                            lookAround = lookAround,
                             voices = voices,
                         )
                     }

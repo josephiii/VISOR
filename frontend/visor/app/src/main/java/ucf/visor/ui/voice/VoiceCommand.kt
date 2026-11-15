@@ -33,6 +33,13 @@ sealed class VoiceCommand {
      */
     data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
+    /**
+     * "Guide me to the chair": after Look around, leads the head round to
+     * face [what] by tone (lookaround/LookAround). [what] is as said, "the
+     * chair"; blank when nothing was named.
+     */
+    data class GuideTo(val what: String) : VoiceCommand()
+
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()
     object GoToForgotPassword : VoiceCommand()

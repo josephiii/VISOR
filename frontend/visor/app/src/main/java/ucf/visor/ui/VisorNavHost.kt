@@ -21,6 +21,7 @@ import ucf.visor.R
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
+import ucf.visor.lookaround.LookAroundControls
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.VoiceChooser
@@ -52,6 +53,7 @@ fun VisorNavHost(
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: (CameraCommand) -> Unit = {},
     reading: ReadingControls? = null,
+    lookAround: LookAroundControls? = null,
     voices: VoiceChooser? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -141,6 +143,7 @@ fun VisorNavHost(
                 talk = talk,
                 onCapture = onCapture,
                 reading = reading,
+                lookAround = lookAround,
             )
         }
 

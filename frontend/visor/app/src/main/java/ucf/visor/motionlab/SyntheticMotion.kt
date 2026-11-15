@@ -62,6 +62,74 @@ object SyntheticMotion {
         }
     }
 
+    /** One leg of a scripted head movement: turn to [yawDeg] over [moveSec], then hold still for [holdSec]. */
+    data class Leg(val yawDeg: Double, val moveSec: Double, val holdSec: Double)
+
+    /**
+     * A wearer doing Look around (lookaround/LookAround), over and over: hold
+     * still ahead, turn left past both left stops, then right past both right
+     * stops, holding still at each, then face ahead again. It covers the wide
+     * scan's stops and so the standard one's too. Each turn is a smooth
+     * minimum-jerk move, and every hold is far under the lab's stillness
+     * threshold, so a scan driven by it completes within a cycle or two
+     * whatever moment it starts in.
+     *
+     * Long by default, so MockDeviceKit's looping (which jumps the clock back)
+     * doesn't happen within a demo.
+     */
+    fun lookAround(
+        durationSec: Double = 300.0,
+        rateHz: Int = 30,
+        legs: List<Leg> = LookAroundLegs,
+    ): List<MotionSample> {
+        val cycleSec = legs.sumOf { it.moveSec + it.holdSec }
+        val count = (durationSec * rateHz).toInt()
+        return List(count) { i ->
+            val t = (i.toDouble() / rateHz) % cycleSec
+            var from = legs.last().yawDeg
+            var start = 0.0
+            var yawDeg = from
+            var rateDeg = 0.0
+            for (leg in legs) {
+                val moveEnd = start + leg.moveSec
+                if (t < moveEnd) {
+                    val s = (t - start) / leg.moveSec
+                    val shape = s * s * s * (10 - 15 * s + 6 * s * s)
+                    val slope = 30 * s * s * (1 - s) * (1 - s) / leg.moveSec
+                    yawDeg = from + (leg.yawDeg - from) * shape
+                    rateDeg = (leg.yawDeg - from) * slope
+                    break
+                }
+                if (t < moveEnd + leg.holdSec) {
+                    yawDeg = leg.yawDeg
+                    rateDeg = 0.0
+                    break
+                }
+                from = leg.yawDeg
+                start = moveEnd + leg.holdSec
+            }
+            val yaw = yawDeg * PI / 180
+            MotionSample(
+                timestampNs = (i * 1_000_000_000L) / rateHz,
+                accelerometer = Vector3(0f, GRAVITY, 0f),
+                gyroscope = Vector3(0f, (rateDeg * PI / 180).toFloat(), 0f),
+                magnetometer = null,
+                orientation = Quaternion(x = 0f, y = sin(yaw / 2).toFloat(), z = 0f, w = cos(yaw / 2).toFloat()),
+                source = MotionSource.GLASSES,
+            )
+        }
+    }
+
+    /** Ahead, 38° and 72° left, 38° and 72° right, ahead: past each of the wide scan's stops. */
+    private val LookAroundLegs = listOf(
+        Leg(yawDeg = 0.0, moveSec = 1.5, holdSec = 2.0),
+        Leg(yawDeg = 38.0, moveSec = 1.5, holdSec = 2.0),
+        Leg(yawDeg = 72.0, moveSec = 1.2, holdSec = 2.0),
+        Leg(yawDeg = -38.0, moveSec = 2.5, holdSec = 2.0),
+        Leg(yawDeg = -72.0, moveSec = 1.2, holdSec = 2.0),
+        Leg(yawDeg = 0.0, moveSec = 2.0, holdSec = 3.0),
+    )
+
     /**
      * Head impulses, alternately left and right, one every [periodSec]: a quick
      * minimum-jerk turn of [amplitudeDeg] over [turnSec] (peak speed

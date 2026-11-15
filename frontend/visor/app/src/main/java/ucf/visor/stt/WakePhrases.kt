@@ -59,6 +59,17 @@ enum class CameraCommand(val phrases: List<String>, val suggested: String) {
     ASK_QUESTION(
         listOf("VISOR, question", "VISOR, I have a question"),
         suggested = "VISOR, I have a question",
+    ),
+
+    /**
+     * Look around (lookaround/LookAround): the wearer turns their head, VISOR
+     * takes a picture at each stop and says what is around them by clock
+     * hour. Glasses only: it follows the head with their motion sensors.
+     * Last, so adding it moved none of the buttons users already know.
+     */
+    LOOK_AROUND(
+        listOf("VISOR, look around", "VISOR, what is around me"),
+        suggested = "VISOR, look around",
     );
 
     companion object {

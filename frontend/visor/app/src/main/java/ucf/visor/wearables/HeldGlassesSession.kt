@@ -96,6 +96,30 @@ class HeldGlassesSession(private val scope: CoroutineScope) {
         if (hold) lingerJob?.cancel() else scheduleClose()
     }
 
+    /** Features holding the session open whatever [setKeep] says (see [pin]). */
+    private val pins = mutableSetOf<String>()
+
+    /**
+     * Keeps the session open for [owner] until [unpin], even where VISOR would
+     * otherwise close it after each picture (display glasses with tap
+     * navigation): Look around streams the glasses' motion in it between its
+     * pictures, and the room's directions are only good while that stream
+     * lasts. A session the glasses end is still ended; the pin does not reopen it.
+     */
+    @Synchronized
+    fun pin(owner: String) {
+        pins += owner
+        lingerJob?.cancel()
+    }
+
+    @Synchronized
+    fun unpin(owner: String) {
+        if (pins.remove(owner) && !keep && pins.isEmpty()) scheduleClose()
+    }
+
+    @Synchronized
+    private fun isPinned(): Boolean = pins.isNotEmpty()
+
     /**
      * Runs [block] in a started session, opening one if needed. Returns the
      * block's result, or the [Failure] that kept it from running.
@@ -112,7 +136,7 @@ class HeldGlassesSession(private val scope: CoroutineScope) {
             Result.Done(block(opened))
         } finally {
             _busy.value = false
-            if (!keep) scheduleClose()
+            if (!keep && !isPinned()) scheduleClose()
         }
     }
 
@@ -228,7 +252,7 @@ class HeldGlassesSession(private val scope: CoroutineScope) {
         if (session == null) return
         lingerJob = scope.launch {
             delay(lingerMs)
-            withContext(NonCancellable) { if (!keep && !_busy.value) close() }
+            withContext(NonCancellable) { if (!keep && !isPinned() && !_busy.value) close() }
         }
     }
 

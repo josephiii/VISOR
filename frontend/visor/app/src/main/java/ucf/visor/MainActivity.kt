@@ -146,6 +146,7 @@ class MainActivity : ComponentActivity() {
                             glassesNav = engine.glassesNav,
                             screenCommands = engine.screenCommands,
                             reading = engine.speaker,
+                            lookAround = engine.lookAround,
                             voices = engine.speaker,
                         )
                     }
@@ -175,6 +176,7 @@ class MainActivity : ComponentActivity() {
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> engine.thinkingBeeper.beepOnce()
         SoundCategory.READY_CHIME -> engine.chimes.play(Chime.READY)
+        SoundCategory.GUIDANCE_TONES -> engine.playGuidanceSample()
     }
 
     override fun onStart() {

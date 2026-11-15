@@ -118,6 +118,14 @@ class VisorState(context: Context) {
         _captures.update { it + (command to CaptureStatus.TAKING_PICTURE) }
     }
 
+    /**
+     * [command], already started ([onCaptureStarted]), is now at [status]:
+     * Look around's steps, which are not one picture and one answer.
+     */
+    fun setCaptureStatus(command: CameraCommand, status: CaptureStatus) {
+        _captures.update { if (command in it) it + (command to status) else it }
+    }
+
     /** The glasses have taken [command]'s picture: VISOR is working out what is in it. */
     fun onPictureTaken(command: CameraCommand) {
         _captures.update {

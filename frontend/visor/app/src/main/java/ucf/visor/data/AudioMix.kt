@@ -51,7 +51,10 @@ enum class SoundCategory(override val key: String) : AudioCategory {
     THINKING_BEEPS("thinkingBeepsVolume"),
 
     /** As "Hey Meta, start VISOR" opens VISOR, ready for a question. */
-    READY_CHIME("sessionChimesVolume");
+    READY_CHIME("sessionChimesVolume"),
+
+    /** The beeps that lead the head while looking around (lookaround/GuideTonePlayer). */
+    GUIDANCE_TONES("guidanceTonesVolume");
 
     override val defaultLevel: Float get() = Volumes.DefaultSoundEffects
 }

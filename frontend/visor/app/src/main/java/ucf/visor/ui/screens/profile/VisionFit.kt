@@ -42,6 +42,7 @@ private val VisionPlan.Tailoring.textRes: Int
     get() = when (this) {
         VisionPlan.Tailoring.AHEAD_FIRST -> R.string.tailoring_ahead_first
         VisionPlan.Tailoring.SIDES_FIRST -> R.string.tailoring_sides_first
+        VisionPlan.Tailoring.WIDE_LOOK_AROUND -> R.string.tailoring_wide_look_around
         VisionPlan.Tailoring.READ_DETAILS -> R.string.tailoring_read_details
         VisionPlan.Tailoring.CONTRAST_AND_LIGHT -> R.string.tailoring_contrast_and_light
         VisionPlan.Tailoring.SEVERE_MORE_SAFETY -> R.string.tailoring_severe_more_safety

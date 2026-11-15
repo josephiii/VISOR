@@ -1,5 +1,6 @@
 package ucf.visor.data
 
+import ucf.visor.lookaround.ScanPlan
 import ucf.visor.stt.CameraCommand
 
 /**
@@ -53,6 +54,7 @@ data class VisionPlan(
     enum class Tailoring {
         AHEAD_FIRST,
         SIDES_FIRST,
+        WIDE_LOOK_AROUND,
         READ_DETAILS,
         CONTRAST_AND_LIGHT,
         SEVERE_MORE_SAFETY,
@@ -149,6 +151,14 @@ data class VisionPlan(
             return CameraCommand.entries.sortedByDescending { points.getValue(it) }
         }
 
+    /**
+     * Where Look around takes its pictures. Someone with trouble seeing the
+     * sides gets the wide scan, out to about 90° each side: what a single
+     * picture leaves out is the part of the room they are most likely to miss.
+     */
+    val lookAroundPlan: ScanPlan
+        get() = if (VisionType.PERIPHERAL_LOSS in types) ScanPlan.WIDE else ScanPlan.STANDARD
+
     /** The Detail level setup marks "Recommended for you". */
     val recommendedVerbosity: Verbosity
         get() = when (severity) {
@@ -172,6 +182,7 @@ data class VisionPlan(
                 HazardFocus.SIDES_FIRST -> add(Tailoring.SIDES_FIRST)
                 HazardFocus.NEAREST -> Unit
             }
+            if (VisionType.PERIPHERAL_LOSS in types) add(Tailoring.WIDE_LOOK_AROUND)
             if (VisionType.BLUR_LOW_ACUITY in types) add(Tailoring.READ_DETAILS)
             if (VisionType.CONTRAST_LIGHT in types) add(Tailoring.CONTRAST_AND_LIGHT)
             when (severity) {
@@ -196,7 +207,11 @@ data class VisionPlan(
         /** Points each kind of vision loss gives the features it needs most (see [featureOrder]). */
         private val FeaturePoints: Map<VisionType, Map<CameraCommand, Int>> = mapOf(
             VisionType.CENTRAL_LOSS to mapOf(CameraCommand.READ_TEXT to 3, CameraCommand.IDENTIFY_OBJECTS to 2),
-            VisionType.PERIPHERAL_LOSS to mapOf(CameraCommand.CHECK_HAZARDS to 3, CameraCommand.DESCRIBE_SCENE to 1),
+            VisionType.PERIPHERAL_LOSS to mapOf(
+                CameraCommand.CHECK_HAZARDS to 3,
+                CameraCommand.LOOK_AROUND to 2,
+                CameraCommand.DESCRIBE_SCENE to 1,
+            ),
             VisionType.BLUR_LOW_ACUITY to mapOf(CameraCommand.READ_TEXT to 3, CameraCommand.IDENTIFY_OBJECTS to 1),
             VisionType.CONTRAST_LIGHT to mapOf(CameraCommand.DESCRIBE_SCENE to 3, CameraCommand.CHECK_HAZARDS to 1),
         )

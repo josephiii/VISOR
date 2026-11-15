@@ -176,6 +176,8 @@
     <string name="settings_volume_thinking_beeps_description" description="When the thinking beeps play">While VISOR works on an answer.</string>
     <string name="settings_volume_ready_chime_title" description="Volume slider: the chime as Hey Meta opens VISOR, ready for a question">Ready chime</string>
     <string name="settings_volume_ready_chime_description" description="When the ready chime plays">As \"Hey Meta, start VISOR\" opens VISOR, ready for your first question.</string>
+    <string name="settings_volume_guidance_tones_title" description="Volume slider: the beeps that lead your head while looking around">Guidance tones</string>
+    <string name="settings_volume_guidance_tones_description" description="When the guidance tones play">While Look around leads your head: faster and higher as you get closer.</string>
     <string name="settings_volume_off" description="Volume slider, silent end">Off</string>
     <string name="settings_volume_louder" description="Volume slider, loud end">Louder</string>
     <string name="settings_volume_down_button" description="Screen reader name of the minus button beside a volume slider. The placeholder is the slider's title">Turn <xliff:g id="title">%1$s</xliff:g> down</string>
@@ -204,6 +206,7 @@
     <string name="camera_command_identify_objects" description="Camera feature: takes a picture and names the objects in it">Identify objects</string>
     <string name="camera_command_describe_scene" description="Camera feature: takes a picture and describes it">Describe the scene</string>
     <string name="camera_command_ask_question" description="Camera feature: asks what you want to know, takes a picture and answers your question">Ask a question</string>
+    <string name="camera_command_look_around" description="Camera feature: you turn your head, VISOR takes a picture at each stop and says what is around you by clock hour">Look around</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
@@ -318,6 +321,12 @@
     <!-- Under Home's title while the phone's camera is chosen on the Pair screen -->
     <string name="home_using_phone_camera" description="Home: the camera buttons use the phone's camera, not the glasses">Using your phone\'s camera</string>
     <string name="home_capture_thinking" description="In place of a camera button on Home while VISOR works out what is in its picture">Thinking…</string>
+    <string name="home_capture_looking_around" description="In place of the Look around button while the wearer turns their head and VISOR takes its pictures">Looking around… Tap to stop</string>
+    <string name="home_capture_guiding" description="In place of the Look around button while VISOR leads the head to something it found">Guiding… Tap to stop</string>
+    <string name="home_found_title" description="Heading of the card on Home listing what Look around found">Around you</string>
+    <string name="home_found_description" description="Under the Around you heading">Clock hours from where you faced when Look around finished: 12 is straight ahead. Tap one to be led to it by tone.</string>
+    <string name="home_found_item" description="One thing Look around found, as a button that guides the head to it">"<xliff:g id="name">%1$s</xliff:g>, <xliff:g id="hour">%2$d</xliff:g> o'clock, <xliff:g id="feet">%3$d</xliff:g> ft"</string>
+    <string name="home_found_item_spoken" description="What a screen reader says for one thing Look around found">"Guide me to the <xliff:g id="name">%1$s</xliff:g>, at <xliff:g id="hour">%2$d</xliff:g> o'clock, <xliff:g id="feet">%3$d</xliff:g> feet away"</string>
     <string name="home_last_answer_title" description="Heading of the card on Home that shows VISOR's last answer">Last answer</string>
     <string name="home_last_answer_from" description="Above the last answer: which camera feature gave it, and when">"<xliff:g id="feature">%1$s</xliff:g> · <xliff:g id="time">%2$s</xliff:g>"</string>
     <string name="home_last_answer_from_spoken" description="What a screen reader says for which camera feature gave the last answer, and when">"<xliff:g id="feature">%1$s</xliff:g>, <xliff:g id="time">%2$s</xliff:g>"</string>
@@ -425,6 +434,7 @@
     <!-- How VISOR fits the user's vision (data/VisionPlan): setup's last step and Settings > About you -->
     <string name="tailoring_ahead_first">Because the center is hard for you to see, I describe what\'s straight ahead first, and tell you about hazards straight ahead first.</string>
     <string name="tailoring_sides_first">Because the sides are hard for you to see, I tell you what\'s on your left and right first, even when it\'s further away.</string>
+    <string name="tailoring_wide_look_around">Because the sides are hard for you to see, Look around turns further to each side, so it covers almost everything beside you.</string>
     <string name="tailoring_read_details">Because things look blurry to you, I read text and give exact numbers, like prices and times.</string>
     <string name="tailoring_contrast_and_light">Because contrast and light are hard for you, I mention glare and dim light, things that blend into their background, and colors.</string>
     <string name="tailoring_severe_more_safety">Because your vision affects daily life a lot, I mention more of what you could trip over or walk into, and a brief hazard check names up to five things.</string>
@@ -449,6 +459,7 @@
     <string name="pair_rayban_display" description="Pair a mock Meta Ray-Ban Display (MWDAT 1.0)">Pair Meta Ray-Ban Display</string>
     <string name="mock_motion_feed_start" description="Replay a synthetic IMU feed on the mock glasses">Replay synthetic head motion (1 Hz)</string>
     <string name="mock_motion_feed_running" description="Synthetic IMU feed is replaying; tap to restart it">Head motion replaying (tap to restart)</string>
+    <string name="mock_look_around_feed_start" description="Debug: replays a wearer doing Look around on the mock glasses' motion sensors">Replay a look-around head turn</string>
     <string name="mock_battery_low" description="Set mock glasses battery low">Battery 12%</string>
     <string name="mock_battery_full" description="Set mock glasses battery high">Battery 95%</string>
     <string name="mock_thermal_hot" description="Set mock glasses thermal level high">Make hot</string>
@@ -698,6 +709,14 @@
         <item>I see bottle, kitchen.</item>
     </string-array>
 
+    <string-array name="look_around_scripts">
+        <!-- L 01 — Living room -->
+        <item>"From left to right: Couch at 10 o'clock, 6 feet away. Dining table at 12 o'clock, 4 feet away. Person at 2 o'clock, 9 feet away."</item>
+        <!-- L 02 — Office -->
+        <item>"From left to right: Chair at 11 o'clock, 3 feet away. Laptop at 1 o'clock, 2 feet away. Potted plant at 3 o'clock, 5 feet away."</item>
+        <!-- L 03 — Guided -->
+        <item>Chair, straight ahead, 3 feet away.</item>
+    </string-array>
     <string-array name="question_scripts">
         <!-- Q 01 — Door -->
         <item>You asked: Is the door open? The door ahead is closed. A silver handle is on the right side.</item>

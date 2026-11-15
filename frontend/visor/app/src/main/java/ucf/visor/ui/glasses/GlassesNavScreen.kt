@@ -226,6 +226,10 @@ private fun cameraItem(command: CameraCommand, isOnline: Boolean): GlassesNavIte
  * Null for Ask a question, which has no button here: a fifth would push
  * Describe the scene behind More, and asking means speaking anyway, where
  * "VISOR, I have a question" is as quick as a tap.
+ *
+ * Null for Look around too, for the same fifth-button reason: it is started
+ * by "VISOR, look around" or on the phone, and then needs no screen at all,
+ * only the wearer's head turning.
  */
 private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command) {
     CameraCommand.CHECK_HAZARDS ->
@@ -237,4 +241,5 @@ private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command)
     CameraCommand.DESCRIBE_SCENE ->
         GlassesNavItem("Describe the scene", IconName.MOUNTAIN_SQUARE, VoiceCommand.RunCamera(command))
     CameraCommand.ASK_QUESTION -> null
+    CameraCommand.LOOK_AROUND -> null
 }

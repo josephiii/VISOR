@@ -4,6 +4,7 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -43,6 +44,12 @@ object VoiceCommandParser {
                 "turn on background listening",
                 "background listening on",
             ) -> VoiceCommand.KeepListening
+
+            // Look around, and being led to what it found. Ahead of "go home"
+            // and the rest: "guide me to the table" names a thing, not a screen.
+            guideTarget(text) != null -> VoiceCommand.GuideTo(guideTarget(text).orEmpty())
+            containsAny(text, "look around", "what's around me", "what is around me", "whats around me") ->
+                VoiceCommand.RunCamera(CameraCommand.LOOK_AROUND)
 
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
             // Settings > History, with or without "settings". Ahead of "back"
@@ -170,6 +177,22 @@ object VoiceCommandParser {
             else -> VoiceCommand.Unrecognized
         }
     }
+
+    /**
+     * What "guide me to the chair", "where is the door" or "find my cup"
+     * names ("the chair"), or null when [text] asks for no guidance. Blank
+     * when it asks without naming anything ("guide me").
+     */
+    internal fun guideTarget(text: String): String? {
+        val prefix = GuidePrefixes.firstOrNull { text.startsWith(it) || text.contains(" $it") } ?: return null
+        return text.substringAfter(prefix).trim().trimEnd('?', '.', '!')
+    }
+
+    private val GuidePrefixes = listOf(
+        "guide me to", "lead me to", "point me to", "turn me to", "guide me",
+        "where is the", "where's the", "wheres the", "where is my", "where's my",
+        "find the", "find my",
+    )
 
     /** Which part of Settings "open … settings" names, if any. */
     private fun settingsSectionIn(text: String): SettingsSection? = when {

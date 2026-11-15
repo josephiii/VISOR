@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Warning
@@ -23,13 +24,14 @@ val CameraCommand.labelRes: Int
         CameraCommand.IDENTIFY_OBJECTS -> R.string.camera_command_identify_objects
         CameraCommand.DESCRIBE_SCENE -> R.string.camera_command_describe_scene
         CameraCommand.ASK_QUESTION -> R.string.camera_command_ask_question
+        CameraCommand.LOOK_AROUND -> R.string.camera_command_look_around
     }
 
 /**
  * The feature's icon, beside its name on Home's button. Never the only sign of
  * what a button does: a warning sign for hazards, a book for reading, shapes
  * for identifying objects, a landscape for the scene, a speech bubble for a
- * question.
+ * question, a compass for looking around.
  */
 val CameraCommand.icon: ImageVector
     get() = when (this) {
@@ -38,4 +40,5 @@ val CameraCommand.icon: ImageVector
         CameraCommand.IDENTIFY_OBJECTS -> Icons.Filled.Category
         CameraCommand.DESCRIBE_SCENE -> Icons.Filled.Landscape
         CameraCommand.ASK_QUESTION -> Icons.Filled.QuestionAnswer
+        CameraCommand.LOOK_AROUND -> Icons.Filled.Explore
     }

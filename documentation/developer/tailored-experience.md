@@ -41,6 +41,10 @@ When someone picks more than one kind of vision loss, each kind gives points to 
 | `ui/screens/profile/VisionFit` | The "Because you…" lines (`tailoring_*` in strings.xml), shown and spoken. |
 | Settings → About you | The *Share my description with VISOR's AI* switch, *How VISOR fits you*, and *Use the suggested dark, high-contrast look*. |
 
+### Look around
+
+*Trouble seeing the sides* also gives Look around the **wide** scan: five pictures out to about 90° each side instead of three out to about 56° (`VisionPlan.lookAroundPlan`), with its own "Because you…" line (`tailoring_wide_look_around`). Look around is their second button on Home, after Check for hazards. See [Look around](./look-around.md).
+
 ## Setup
 
 - **In your own words:** a note under the field, and the spoken question, say that VISOR's AI will use the description and that this can be turned off in Settings.

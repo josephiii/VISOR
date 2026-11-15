@@ -27,6 +27,9 @@ import com.meta.wearable.acdc.sdk.state.broadcast.BluetoothConnectivityIndicator
  * VISOR tells the indicator "connected" for each device it tracks, the same
  * call a real Android broadcast would lead to, and the SDK reconnects.
  *
+ * Checked again on MWDAT 1.0.1: its `mwdat-core` has the same classes, and
+ * these two classes the same fields, as 1.0.0's.
+ *
  * VISOR finds the receiver as the SDK registers it (`VisorApp.registerReceiver`
  * passes every receiver to [onRegistered]). It reads two private fields, the
  * indicator and its device map, by their types. If a later SDK changes them,
