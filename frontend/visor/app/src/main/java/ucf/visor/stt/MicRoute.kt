@@ -72,10 +72,13 @@ class MicRoute(
             held = null
             changedAt = SystemClock.elapsedRealtime()
             _source.value = Source.PHONE
-            // Nobody holds the route now: leave the call mode VISOR set.
-            if (device == null && audio.mode == AudioManager.MODE_IN_COMMUNICATION) {
-                audio.mode = AudioManager.MODE_NORMAL
-            }
+            // VISOR no longer has the glasses: withdraw its request for them and
+            // leave the call mode it set, whatever Android fell back to. Left in
+            // call mode with the phone itself as the device (field log,
+            // 2026-11-15: "Communication device changed to B1680V", the phone),
+            // VISOR's voice came out of the earpiece, too quiet to hear.
+            audio.clearCommunicationDevice()
+            if (audio.mode == AudioManager.MODE_IN_COMMUNICATION) audio.mode = AudioManager.MODE_NORMAL
             if (backoff.onDropped(SystemClock.elapsedRealtime())) {
                 Log.w(TAG, "The glasses' microphone keeps dropping; using the phone's for a while")
                 onGaveUp()
