@@ -39,16 +39,22 @@ class SceneDescriber(
         private const val MAX_IMAGE_SIDE = 1024
     }
 
-    override fun requestRead(onText: (String) -> Unit) =
-        run(ScenePrompts.describe(verbosity(), plan()), isQuestion = false, onText = onText)
+    override fun requestRead(onText: (String) -> Unit) {
+        val plan = plan()
+        run(ScenePrompts.describe(verbosity(), plan), plan?.ownWords, isQuestion = false, onText = onText)
+    }
 
     /** Takes a picture and answers a spoken question about it. */
-    fun ask(question: String, onText: (String) -> Unit) =
-        run(ScenePrompts.question(question, verbosity(), plan()), isQuestion = true, onText = onText)
+    fun ask(question: String, onText: (String) -> Unit) {
+        val plan = plan()
+        run(ScenePrompts.question(question, verbosity(), plan), plan?.ownWords, isQuestion = true, onText = onText)
+    }
 
-    private fun run(promptToUse: String, isQuestion: Boolean, onText: (String) -> Unit) {
+    // ownWords: the user's description as this prompt sent it, so an answer
+    // that opens by repeating it can have it taken out (see VisionEcho).
+    private fun run(promptToUse: String, ownWords: String?, isQuestion: Boolean, onText: (String) -> Unit) {
         photoSource.capturePhoto(
-            onPhoto = { bitmap -> describe(bitmap, promptToUse, isQuestion, onText) },
+            onPhoto = { bitmap -> describe(bitmap, promptToUse, ownWords, isQuestion, onText) },
             onError = { message -> onText(message) },
         )
     }
@@ -56,6 +62,7 @@ class SceneDescriber(
     private fun describe(
         bitmap: Bitmap,
         promptToUse: String,
+        ownWords: String?,
         isQuestion: Boolean,
         deliver: (String) -> Unit,
     ) {
@@ -68,7 +75,8 @@ class SceneDescriber(
             }
             when (val result = vlm.ask(downscale(bitmap, MAX_IMAGE_SIDE), promptToUse)) {
                 is ApiResult.Success -> deliver(
-                    result.body.ifBlank {
+                    // The model may open with the user's own words; they never need to hear them back.
+                    VisionEcho.strip(result.body, ownWords).ifBlank {
                         if (isQuestion) QUESTION_NO_ANSWER else SpokenPhrases.SCENE_NOT_DESCRIBED
                     }
                 )

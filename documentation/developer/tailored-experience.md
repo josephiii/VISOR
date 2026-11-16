@@ -42,6 +42,7 @@ When someone picks more than one kind of vision loss, each kind gives points to 
 |---|---|
 | `capture/ScenePrompts` | Adds `VisionPlan.sceneGuidance` to every Describe the scene and Ask a question prompt, just before the final "read aloud" sentence. |
 | `capture/SceneDescriber`, `capture/HazardDetector` | Read the plan at each capture, as they already did for Detail. Wired in `engine/VisorEngine` (`visionPlan()`). |
+| `capture/VisionEcho` | Removes the user's own words when an answer opens by repeating them ("I have glaucoma, sun washes everything out. Ahead is…"). Smaller models do this despite "don't repeat it back". Only an in-order repeat at the start is removed (with "I" said back as "you" and framing such as "In your own words,"), so scene details are never dropped. |
 | `tts/SpokenPhrases.hazardsAhead(focus = …)` | Puts first the hazards in the part of the picture the user is likely to miss. A Brief limit never drops those for being further away: it says the nearest *n* plus the nearest *n* in that part. Each hazard is worded the same in any order. |
 | `ui/screens/home/HomeScreen`, `ui/glasses/GlassesNavScreen` | List the camera buttons in `VisionPlan.featureOrder`. The glasses show the four that start straight away, in the phone's order. |
 | `ui/screens/profile/ProfileCreationScreen` | Setup: the note under the description, the step that confirms a named condition, the recommended Detail level, and "Here's how VISOR fits you". |
@@ -65,7 +66,7 @@ The description is health information. While *Share my description with VISOR's 
 
 ## Testing it
 
-- **Unit tests** (`./gradlew testDebugUnitTest`): `VisionPlanTest` (every rule, including two example users who get a different VISOR), `ScenePromptsTest` (untailored prompts are unchanged, and the guidance comes before "read aloud"), `SpokenPhrasesTest` (sides first, ahead first, the Brief limit), `GlassesNavScreenTest` (the order on the glasses), and `NewAccountSetupTest` (when a login goes through setup, and what a new account's setup keeps).
+- **Unit tests** (`./gradlew testDebugUnitTest`): `VisionPlanTest` (every rule, including two example users who get a different VISOR), `ScenePromptsTest` (untailored prompts are unchanged, and the guidance comes before "read aloud"), `VisionEchoTest` (their words are never read back, and a description that shares a few words is left alone), `SpokenPhrasesTest` (sides first, ahead first, the Brief limit), `GlassesNavScreenTest` (the order on the glasses), and `NewAccountSetupTest` (when a login goes through setup, and what a new account's setup keeps).
 - **Sign-up to setup, on a phone or the emulator:** finish setup once and log out, so a profile is saved. Sign up with a new account. Setup should open with an empty name, not Home. Press *Start using VISOR*, or say "start", and Home should open with the navigation bar.
 - **On a phone or the emulator:** debug menu → *Onboarding process*. Try two users side by side:
   - **Center loss, "A lot", "I can't read my mail".** Read text should be the first button, Detail should be recommended, and the hazard check should start with what is straight ahead.
