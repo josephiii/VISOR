@@ -26,6 +26,9 @@ class PhoneCameraSlot : PhotoSource {
     override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
         camera?.capturePhoto(onPhoto, onError) ?: onError(SpokenPhrases.PHONE_CAMERA_NEEDS_SCREEN)
 
+    /** The same camera for the hazard watch (no difference for the phone's camera). */
+    val forWatch: PhotoSource get() = this
+
     /** The same camera at its reading size. */
     val forReading: PhotoSource = object : PhotoSource {
         override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =

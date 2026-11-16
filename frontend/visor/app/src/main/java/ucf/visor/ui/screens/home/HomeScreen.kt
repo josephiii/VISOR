@@ -86,6 +86,7 @@ import ucf.visor.tts.ReadingState
 import ucf.visor.ui.components.ReadingButtons
 import ucf.visor.ui.components.ReadingControlHeight
 import ucf.visor.ui.components.ScreenTitle
+import ucf.visor.ui.components.SwitchChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
@@ -127,6 +128,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val captures by viewModel.captures.collectAsStateWithLifecycle()
+    val hazardWatchOn by viewModel.hazardWatchOn.collectAsStateWithLifecycle()
     val found by (lookAround?.found ?: remember { MutableStateFlow<LookAround.Found?>(null) })
         .collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
@@ -205,6 +207,14 @@ fun HomeScreen(
                     )
                 }
             }
+
+            // On or off, not a mode: looks for hazards every few seconds and says what is new.
+            SwitchChip(
+                title = stringResource(R.string.home_hazard_watch),
+                on = hazardWatchOn,
+                onToggle = { viewModel.setHazardWatch(!hazardWatchOn) },
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             // What Look around found, while it can still be guided to.
             found?.takeIf { it.sightings.isNotEmpty() }?.let { map ->

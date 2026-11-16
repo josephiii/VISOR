@@ -30,6 +30,7 @@ object BackgroundPolicy {
     fun handler(command: VoiceCommand): Handler = when (command) {
         // Pictures and answers: what background listening is for.
         is VoiceCommand.RunCamera,
+        is VoiceCommand.SetHazardWatch,
         is VoiceCommand.GuideTo,
         VoiceCommand.RepeatLast,
         VoiceCommand.StopReading,

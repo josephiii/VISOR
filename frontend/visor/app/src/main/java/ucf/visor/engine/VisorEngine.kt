@@ -29,7 +29,9 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import kotlinx.coroutines.withTimeoutOrNull
 import ucf.visor.R
 import ucf.visor.background.BackgroundPolicy
@@ -41,6 +43,12 @@ import ucf.visor.capture.Availability
 import ucf.visor.capture.ChosenPhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
+import ucf.visor.capture.scaledDownToWidth
+import ucf.visor.hazards.HAZARD_WATCH_FRAME_WIDTH
+import ucf.visor.hazards.HAZARD_WATCH_JPEG_QUALITY
+import ucf.visor.hazards.HazardAnnouncer
+import ucf.visor.hazards.HazardWatch
+import ucf.visor.hazards.HazardWatchSpeaker
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.PhoneCameraSlot
@@ -59,6 +67,7 @@ import ucf.visor.data.SpeechRates
 import ucf.visor.data.Verbosity
 import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
+import ucf.visor.data.Volumes
 import ucf.visor.lookaround.GuideTonePlayer
 import ucf.visor.lookaround.LookAround
 import ucf.visor.lookaround.LookAroundPhrases
@@ -231,6 +240,9 @@ class VisorEngine(
     // phone (the emulator's camera works too), or pair mock glasses in the
     // debug menu and pick the photo they should "take" (Select image).
     private val chosenCamera = ChosenPhotoSource(glassesCamera, phoneCamera, ::cameraChoice)
+    // Hazard watch takes a picture every few seconds: video frames from the
+    // glasses (no shutter sound), and no link recovery from inside the loop.
+    private val chosenWatchCamera = ChosenPhotoSource(glassesCamera.forWatch, phoneCamera.forWatch, ::cameraChoice)
     private val chosenReadingCamera =
         ChosenPhotoSource(glassesCamera.forReading, phoneCamera.forReading, ::cameraChoice)
 
@@ -291,6 +303,59 @@ class VisorEngine(
         verbosity = ::verbosity,
         plan = ::visionPlan,
     )
+
+    // ---------------------------------------------------------------------
+    // Hazard watch: looks every few seconds, says only what is new
+
+    private val hazardAnnouncer = HazardAnnouncer()
+
+    private val hazardWatch = HazardWatch<Bitmap>(
+        speaker = object : HazardWatchSpeaker {
+            override fun say(text: String) = speaker.speak(text, VoiceCategory.ANSWERS)
+            override fun isSpeaking() = speaker.isSpeaking()
+        },
+        announcer = hazardAnnouncer,
+        capture = ::captureForHazardWatch,
+        detect = { bitmap -> hazardClient.detect(bitmap, jpegQuality = HAZARD_WATCH_JPEG_QUALITY) },
+        widthOf = { it.width },
+        isOnline = ::isOnline,
+        // Any camera feature at work (Look around too) goes first.
+        busy = { state.captures.value.isNotEmpty() },
+        clockMs = SystemClock::elapsedRealtime,
+        // As the one-shot check says them (HazardDetector).
+        limit = { if (verbosity() == Verbosity.BRIEF) visionPlan().briefHazardLimit else Int.MAX_VALUE },
+        focus = { visionPlan().hazardFocus },
+    )
+
+    private var hazardWatchJob: Job? = null
+    private var hazardWatchWasOn = false
+
+    /** A picture from the camera chosen on the Pair screen, scaled down for the watch; null if none could be taken. */
+    private suspend fun captureForHazardWatch(): Bitmap? {
+        val photo = suspendCancellableCoroutine<Bitmap?> { cont ->
+            chosenWatchCamera.capturePhoto(
+                onPhoto = { if (cont.isActive) cont.resume(it) },
+                onError = { if (cont.isActive) cont.resume(null) },
+            )
+        }
+        return photo?.let { withContext(Dispatchers.Default) { it.scaledDownToWidth(HAZARD_WATCH_FRAME_WIDTH) } }
+    }
+
+    /** Starts or stops the watch's loop to match [VisorState.hazardWatchOn]. */
+    private fun onHazardWatchChanged(on: Boolean) {
+        hazardWatchJob?.cancel()
+        hazardWatchJob = null
+        hazardAnnouncer.reset()
+        updateHeldSession()
+        if (on) {
+            reply(SpokenPhrases.HAZARD_WATCH_ON)
+            if (Volumes.isOff(audio().loudness(VoiceCategory.ANSWERS))) reply(SpokenPhrases.HAZARD_WATCH_MUTED)
+            hazardWatchJob = scope.launch { hazardWatch.run() }
+        } else if (hazardWatchWasOn) {
+            reply(SpokenPhrases.HAZARD_WATCH_OFF)
+        }
+        hazardWatchWasOn = on
+    }
 
     // ---------------------------------------------------------------------
     // Look around: the glasses camera and their motion sensors, in one session
@@ -558,6 +623,10 @@ class VisorEngine(
                 .collect { idle -> if (idle) updateWakeListening() }
         }
 
+        scope.launch { state.hazardWatchOn.collect(::onHazardWatchChanged) }
+        // Nobody to watch for: turned off at logout.
+        scope.launch { state.loggedIn.collect { if (!it) state.setHazardWatch(false) } }
+
         // Commands said after "VISOR GO", and taps on the glasses' own display.
         scope.launch { merge(voiceNav.commands, glassesNav.commands).collect(::dispatch) }
 
@@ -654,7 +723,7 @@ class VisorEngine(
         val profile = state.profile.value
         val glasses = state.glassesStatus.value
         return wearablesReady && state.isLoggedIn() && profile.camera == CameraChoice.GLASSES &&
-            (isScreenShown || serviceRunning) &&
+            (isScreenShown || serviceRunning || state.hazardWatchOn.value) &&
             !(glasses?.displayCapable == true && profile.glassesTapNavigationEnabled)
     }
 
@@ -1200,6 +1269,10 @@ class VisorEngine(
             is VoiceCommand.RunCamera ->
                 if (loggedIn) runCameraFeature(command.command)
                 else reply("Log in first to take a picture.")
+
+            is VoiceCommand.SetHazardWatch ->
+                if (loggedIn) state.setHazardWatch(command.on)
+                else reply("Log in first to start hazard watch.")
 
             is VoiceCommand.GuideTo ->
                 if (loggedIn) guideTo(command.what)

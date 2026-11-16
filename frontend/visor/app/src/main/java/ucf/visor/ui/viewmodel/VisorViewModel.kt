@@ -75,6 +75,11 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     val captures = state.captures
 
+    /** Whether hazard watch is on, for its switch on Home. */
+    val hazardWatchOn = state.hazardWatchOn
+
+    fun setHazardWatch(on: Boolean) = state.setHazardWatch(on)
+
     /** What a camera feature last answered, for Home's Last answer card. */
     val lastAnswer = state.lastAnswer
 

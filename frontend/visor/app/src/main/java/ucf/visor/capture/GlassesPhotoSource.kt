@@ -94,6 +94,9 @@ class GlassesPhotoSource(
     /** The glasses failed a still and a video frame served instead: frames are used from then on. */
     private var stillsFail = false
 
+    /** The picture being taken is for the hazard watch: a video frame, so no shutter sound. */
+    private var framesOnly = false
+
     override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
         launchCapture(DEFAULT_STREAM, onPhoto, onError)
 
@@ -111,10 +114,13 @@ class GlassesPhotoSource(
      * answers and could restart VISOR (field log, 2026-11-15). The watch says
      * it can't see and tries again; VisorEngine.watchGlassesLink still
      * recovers a link that is really lost.
+     *
+     * Its pictures are video frames, never stills: a still makes the glasses
+     * play their shutter sound, which every few seconds would be a nuisance.
      */
     val forWatch: PhotoSource = object : PhotoSource {
         override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
-            launchCapture(DEFAULT_STREAM, onPhoto, onError, persist = false)
+            launchCapture(DEFAULT_STREAM, onPhoto, onError, persist = false, framesOnly = true)
     }
 
     private fun launchCapture(
@@ -122,9 +128,12 @@ class GlassesPhotoSource(
         onPhoto: (Bitmap) -> Unit,
         onError: (String) -> Unit,
         persist: Boolean = true,
+        framesOnly: Boolean = false,
     ) {
         scope.launch {
             captureLock.withLock {
+                // Set under the lock: only one capture is ever in flight.
+                this@GlassesPhotoSource.framesOnly = framesOnly
                 try {
                     capture(configuration, onPhoto, onError, persist)
                 } catch (e: Exception) {
@@ -280,7 +289,7 @@ class GlassesPhotoSource(
     private fun pixels(bitmap: Bitmap?): Int = bitmap?.let { it.width * it.height } ?: 0
 
     /** Whether pictures are coming from video frames, not stills (see [photoFrom]). */
-    private fun usesFrames(): Boolean = stillsFail || skipStills()
+    private fun usesFrames(): Boolean = stillsFail || skipStills() || framesOnly
 
     /**
      * One photo from [camera]'s stream to [onPhoto], or why there is none.
@@ -293,7 +302,7 @@ class GlassesPhotoSource(
      */
     private suspend fun photoFrom(camera: Camera, fullSize: Boolean, onPhoto: (Bitmap) -> Unit): Problem? {
         var problem: Problem? = null
-        if (!stillsFail && !skipStills()) {
+        if (!stillsFail && !skipStills() && !framesOnly) {
             var failed = false
             camera.stream.capturePhoto()
                 .onSuccess { data ->
@@ -312,7 +321,7 @@ class GlassesPhotoSource(
             Log.e(TAG, "No usable video frame within $FRAME_TIMEOUT_MS ms either")
             return Problem(SpokenPhrases.GLASSES_PHOTO_FAILED)
         }
-        if (!stillsFail && !skipStills()) {
+        if (!stillsFail && !skipStills() && !framesOnly) {
             Log.i(TAG, "Using video frames as pictures from now on")
             stillsFail = true
         }

@@ -45,6 +45,12 @@ object VoiceCommandParser {
                 "background listening on",
             ) -> VoiceCommand.KeepListening
 
+            // Hazard watch, on or off. Ahead of "stop" and the rest: "stop
+            // hazard watch" names the watch, not a reading. ("hazard mode" is
+            // not a command: VISOR has no modes.)
+            text.contains("hazard watch") ->
+                VoiceCommand.SetHazardWatch(on = !containsWord(text, "stop", "off", "end", "cancel"))
+
             // Look around, and being led to what it found. Ahead of "go home"
             // and the rest: "guide me to the table" names a thing, not a screen.
             guideTarget(text) != null -> VoiceCommand.GuideTo(guideTarget(text).orEmpty())

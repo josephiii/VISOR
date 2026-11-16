@@ -22,11 +22,12 @@ class HazardClient(
     /**
      * The objects in [bitmap], each with its distance. Null when the server
      * can't be reached or doesn't answer with a list of them (logged).
+     * [jpegQuality] is lower for hazard watch, which sends a picture every few seconds.
      */
-    suspend fun detect(bitmap: Bitmap): List<Hazard>? {
+    suspend fun detect(bitmap: Bitmap, jpegQuality: Int = ApiClient.DEFAULT_JPEG_QUALITY): List<Hazard>? {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap))
+            .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap, jpegQuality))
             .build()
 
         return when (val result = ApiClient.send("/yolo/runHazardDetection", accessToken()) { post(body) }) {

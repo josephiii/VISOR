@@ -127,4 +127,21 @@ class SpokenPhrasesTest {
             SpokenPhrases.hazardsAhead(around, focus = VisionPlan.HazardFocus.SIDES_FIRST),
         )
     }
+
+    @Test
+    fun hazardWatchLinesAreShortAndDistinct() {
+        val lines = listOf(
+            SpokenPhrases.HAZARD_WATCH_ON,
+            SpokenPhrases.HAZARD_WATCH_OFF,
+            SpokenPhrases.HAZARD_WATCH_MUTED,
+            SpokenPhrases.HAZARD_WATCH_PAUSED_OFFLINE,
+            SpokenPhrases.HAZARD_WATCH_BACK,
+            SpokenPhrases.HAZARD_WATCH_CANT_SEE,
+        )
+        assertEquals(lines.size, lines.toSet().size)
+        assertEquals("Hazard watch on", SpokenPhrases.HAZARD_WATCH_ON)
+        assertEquals("Hazard watch off", SpokenPhrases.HAZARD_WATCH_OFF)
+        assertEquals("Hazard watch paused, no connection", SpokenPhrases.HAZARD_WATCH_PAUSED_OFFLINE)
+        assertEquals("Hazard watch can't see", SpokenPhrases.HAZARD_WATCH_CANT_SEE)
+    }
 }

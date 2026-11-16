@@ -47,6 +47,7 @@ class BackgroundPolicyTest {
     /** Nobody should have to find the phone to silence VISOR. */
     @Test
     fun backgroundListeningCanBeStoppedFromAPocket() {
+        assertEquals(ANYWHERE, handler(VoiceCommand.SetHazardWatch(on = true)))
         assertEquals(ANYWHERE, handler(VoiceCommand.StopListening))
         assertEquals(ANYWHERE, handler(VoiceCommand.KeepListening))
     }

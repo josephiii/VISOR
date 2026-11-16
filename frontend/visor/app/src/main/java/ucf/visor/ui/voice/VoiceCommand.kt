@@ -34,6 +34,13 @@ sealed class VoiceCommand {
     data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
     /**
+     * "Start hazard watch" / "stop hazard watch": the camera feature that looks
+     * for hazards every few seconds and says what is new (hazards/HazardWatch).
+     * Not a mode: it is on or off, like Home's switch for it.
+     */
+    data class SetHazardWatch(val on: Boolean) : VoiceCommand()
+
+    /**
      * "Guide me to the chair": after Look around, leads the head round to
      * face [what] by tone (lookaround/LookAround). [what] is as said, "the
      * chair"; blank when nothing was named.

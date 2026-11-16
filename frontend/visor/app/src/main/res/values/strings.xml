@@ -394,6 +394,7 @@
     <!-- A camera button on Home turns into these while VISOR works on it, so it can be seen working -->
     <string name="home_capture_taking_picture" description="In place of a camera button on Home while the glasses take its picture">Taking picture…</string>
     <!-- Under Home's title while the phone's camera is chosen on the Pair screen -->
+    <string name="home_hazard_watch" description="Home: switch for hazard watch, which looks for hazards every few seconds">Hazard watch</string>
     <string name="home_using_phone_camera" description="Home: the camera buttons use the phone's camera, not the glasses">Using your phone\'s camera</string>
     <string name="home_capture_thinking" description="In place of a camera button on Home while VISOR works out what is in its picture">Thinking…</string>
     <string name="home_capture_looking_around" description="In place of the Look around button while the wearer turns their head and VISOR takes its pictures">Looking around… Tap to stop</string>

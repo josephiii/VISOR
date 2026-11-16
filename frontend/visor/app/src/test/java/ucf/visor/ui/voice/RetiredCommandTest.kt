@@ -33,6 +33,12 @@ class RetiredCommandTest {
     }
 
     @Test
+    fun hazardWatchIsACommandButHazardModeStaysRetired() {
+        assertEquals(VoiceCommand.SetHazardWatch(on = true), VoiceCommandParser.parse("hazard watch"))
+        assertEquals(VoiceCommand.Unrecognized, VoiceCommandParser.parse("hazard mode"))
+    }
+
+    @Test
     fun noSpokenCommandTakesAPicture() {
         // Pictures come from wake phrases ("VISOR, read this"), Home's buttons,
         // and the glasses' buttons, never from what is said after "VISOR GO".

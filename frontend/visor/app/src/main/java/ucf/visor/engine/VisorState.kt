@@ -122,6 +122,18 @@ class VisorState(context: Context) {
      */
     val captures: StateFlow<Map<CameraCommand, CaptureStatus>> = _captures.asStateFlow()
 
+    private val _hazardWatchOn = MutableStateFlow(false)
+
+    /**
+     * Whether hazard watch is on: VisorEngine looks for hazards every few
+     * seconds and says what is new (hazards/HazardWatch). Off at every start.
+     */
+    val hazardWatchOn: StateFlow<Boolean> = _hazardWatchOn.asStateFlow()
+
+    fun setHazardWatch(on: Boolean) {
+        _hazardWatchOn.value = on
+    }
+
     private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
 
     /** What a camera feature last answered, for Home's Last answer card and the notification. */

@@ -48,10 +48,12 @@ object ApiClient {
 
     private val JPEG = "image/jpeg".toMediaType()
 
+    const val DEFAULT_JPEG_QUALITY = 85
+
     /** A photo for the endpoints that take one, as JPEG, compressed off the main thread. */
-    suspend fun jpeg(bitmap: Bitmap): RequestBody = withContext(Dispatchers.Default) {
+    suspend fun jpeg(bitmap: Bitmap, quality: Int = DEFAULT_JPEG_QUALITY): RequestBody = withContext(Dispatchers.Default) {
         ByteArrayOutputStream()
-            .also { bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it) }
+            .also { bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it) }
             .toByteArray()
             .toRequestBody(JPEG)
     }

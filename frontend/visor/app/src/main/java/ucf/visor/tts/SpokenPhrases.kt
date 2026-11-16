@@ -76,6 +76,16 @@ object SpokenPhrases {
     const val NO_HAZARDS_FOUND = "I didn't recognize any objects ahead."
     const val HAZARDS_NOT_CHECKED = "Sorry, I couldn't check for hazards."
 
+    // Hazard watch (hazards/HazardWatch): said as it starts and stops, and when it
+    // can't do its job. Never "no hazards": it only speaks when there is
+    // something new to say.
+    const val HAZARD_WATCH_ON = "Hazard watch on"
+    const val HAZARD_WATCH_OFF = "Hazard watch off"
+    const val HAZARD_WATCH_MUTED = "Hazard watch is on, but answers are muted, so you won't hear hazards."
+    const val HAZARD_WATCH_PAUSED_OFFLINE = "Hazard watch paused, no connection"
+    const val HAZARD_WATCH_BACK = "Hazard watch back"
+    const val HAZARD_WATCH_CANT_SEE = "Hazard watch can't see"
+
     private const val FEET_PER_METER = 3.28084
 
     /** "I see a cup, a table." from on-device labels, most confident first. */
@@ -132,10 +142,10 @@ object SpokenPhrases {
      */
     const val BRIEF_HAZARD_LIMIT = VisionPlan.BriefHazardLimit
 
-    private enum class Side { LEFT, AHEAD, RIGHT }
+    internal enum class Side { LEFT, AHEAD, RIGHT }
 
     /** Which third of the picture [hazard]'s box is centered in, or null if that can't be told. */
-    private fun sideOf(hazard: Hazard, imageWidth: Int): Side? {
+    internal fun sideOf(hazard: Hazard, imageWidth: Int): Side? {
         if (imageWidth <= 0 || hazard.coords.size < 4) return null
         val center = (hazard.coords[0] + hazard.coords[2]) / 2 / imageWidth
         return when {
