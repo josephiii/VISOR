@@ -17,6 +17,12 @@ const val HAZARD_WATCH_INTERVAL_MS = 3_000L
 /** After this many failed looks in a row, hazard watch says it can't see (once). */
 const val HAZARD_WATCH_FAILURES_BEFORE_SAYING = 3
 
+/**
+ * How long hazard watch waits between looks once it has said it can't see:
+ * glasses that are refusing sessions are not asked every few seconds.
+ */
+const val HAZARD_WATCH_RETRY_INTERVAL_MS = 15_000L
+
 /** The width, in pixels, a picture is scaled down to before hazard watch sends it. */
 const val HAZARD_WATCH_FRAME_WIDTH = 640
 
@@ -50,6 +56,7 @@ class HazardWatch<P>(
     private val limit: () -> Int = { Int.MAX_VALUE },
     private val focus: () -> VisionPlan.HazardFocus = { VisionPlan.HazardFocus.NEAREST },
     private val intervalMs: Long = HAZARD_WATCH_INTERVAL_MS,
+    private val retryIntervalMs: Long = HAZARD_WATCH_RETRY_INTERVAL_MS,
 ) {
     private var failures = 0
     private var pausedOffline = false
@@ -59,7 +66,7 @@ class HazardWatch<P>(
         pausedOffline = false
         while (currentCoroutineContext().isActive) {
             checkOnce()
-            delay(intervalMs)
+            delay(if (failures >= HAZARD_WATCH_FAILURES_BEFORE_SAYING) retryIntervalMs else intervalMs)
         }
     }
 

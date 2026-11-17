@@ -46,7 +46,7 @@ the app uses the hosted server.
 | `scripts/` | Try a model without the server: `python -m scripts.try_vlm`, `python -m scripts.try_depth`, `python -m scripts.try_yolo` (hazard detection). |
 | `samples/` | Test images for the scripts. |
 | `notebooks/` | Exploratory notebooks (the earlier Qwen2-VL test). |
-| `weights/` | YOLO weights: `yolo11n.pt` is the hazard detector (`services/YoloService.py`); `yolo11_indoor.pt` is kept for planned custom object recognition. |
+| `weights/` | Detector weights. `services/YoloService.py` uses the first present of `yoloe_visor.pt` (fine-tuned YOLOE), `yoloe-26s-seg.pt` (base YOLOE, prompted with `HAZARD_WORDS`; needs Ultralytics 8.4+), `yolo11m.pt`, `yolo11n.pt`. Only `yolo11n.pt` is in the repo; `yolo11_indoor.pt` is kept for planned custom object recognition. |
 | `other/` | `CustomObjectDetectorTrainer.py`, a draft for training the app's custom object detector (commented out). |
 
 More on the models: [documentation/developer/VLM.md](../documentation/developer/VLM.md).

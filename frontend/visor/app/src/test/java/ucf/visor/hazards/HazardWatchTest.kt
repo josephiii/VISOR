@@ -104,15 +104,18 @@ class HazardWatchTest {
     fun threeFailuresSayCantSeeOnceAndSuccessResetsTheCount() = runTest {
         val rig = Rig(answer = { null })
         val job = launch { watch(rig) { currentTime }.run() }
-        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS * 6)
+        // Fails at 0, 3 and 6 s; then it looks less often: next at 21 s.
+        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS * 2 + HAZARD_WATCH_RETRY_INTERVAL_MS - 1)
         assertEquals(listOf(SpokenPhrases.HAZARD_WATCH_CANT_SEE), rig.speaker.said)
+        assertEquals(3, rig.captures)
 
         rig.answer = { emptyList() } // one success: nothing said, count back to zero
-        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS)
+        advanceTimeBy(2)
+        assertEquals(4, rig.captures)
         assertEquals(1, rig.speaker.said.size)
 
-        rig.answer = { null }
-        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS * 3)
+        rig.answer = { null } // back to every 3 s: fails at 24, 27 and 30 s
+        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS * 3 + 1)
         job.cancel()
         assertEquals(2, rig.speaker.said.count { it == SpokenPhrases.HAZARD_WATCH_CANT_SEE })
     }

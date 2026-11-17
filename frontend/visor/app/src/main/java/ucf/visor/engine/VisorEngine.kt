@@ -332,6 +332,15 @@ class VisorEngine(
 
     /** A picture from the camera chosen on the Pair screen, scaled down for the watch; null if none could be taken. */
     private suspend fun captureForHazardWatch(): Bitmap? {
+        if (cameraChoice() == CameraChoice.GLASSES) {
+            // The SDK has lost the glasses, or VISOR is getting them back
+            // (watchGlassesLink): asking for a session every few seconds on
+            // top of that only gets in the way of the reconnect. A failed
+            // look, with nothing sent to the glasses.
+            if (!sdkSeesGlasses()) return null
+            // As before any glasses stream: after a change of microphone has settled.
+            micRoute.awaitSettled()
+        }
         val photo = suspendCancellableCoroutine<Bitmap?> { cont ->
             chosenWatchCamera.capturePhoto(
                 onPhoto = { if (cont.isActive) cont.resume(it) },
@@ -346,6 +355,14 @@ class VisorEngine(
         hazardWatchJob?.cancel()
         hazardWatchJob = null
         hazardAnnouncer.reset()
+        // One glasses session for as long as the watch is on. On display
+        // glasses with tap navigation VISOR otherwise closes its session after
+        // every picture, to give the display its own back; a session closed
+        // and another opened every few seconds lost the SDK's link to the
+        // glasses within two pictures (field log, 2026-11-16), and VISOR
+        // restarted itself each time. The glasses' own display is blank
+        // meanwhile; it comes back when the watch is turned off.
+        if (on) heldSession.pin(HAZARD_WATCH_PIN) else heldSession.unpin(HAZARD_WATCH_PIN)
         updateHeldSession()
         if (on) {
             reply(SpokenPhrases.HAZARD_WATCH_ON)
@@ -740,9 +757,16 @@ class VisorEngine(
     private fun updateHeldSession() {
         val want = wantsHeldSession()
         val glasses = state.glassesStatus.value
+        // Display glasses with tap navigation: the display wants its session
+        // back, but not after every picture. Closing at once lost the SDK's
+        // link within two pictures (field log, 2026-11-16), so a run of
+        // commands shares one session, and the display is blank that long.
         heldSession.lingerMs =
-            if (glasses?.displayCapable == true && state.profile.value.glassesTapNavigationEnabled) 0L
-            else HeldGlassesSession.LINGER_MS
+            if (glasses?.displayCapable == true && state.profile.value.glassesTapNavigationEnabled) {
+                HeldGlassesSession.DISPLAY_LINGER_MS
+            } else {
+                HeldGlassesSession.LINGER_MS
+            }
         heldSession.setKeep(want)
         if (!want || heldSession.state.value != null || openingJob?.isActive == true) return
         if (!sdkSeesGlasses()) return
@@ -1387,6 +1411,7 @@ class VisorEngine(
 
     private companion object {
         const val TAG = "VISOR"
+        const val HAZARD_WATCH_PIN = "hazard_watch"
         val NAV_WAKE_PHRASE = WakePhrases.keyword(WakePhrases.VOICE_NAVIGATION)
         const val COMMAND_WAKE_LOCK_MS = 60_000L
 

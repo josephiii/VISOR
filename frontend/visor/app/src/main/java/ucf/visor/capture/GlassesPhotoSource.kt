@@ -94,6 +94,9 @@ class GlassesPhotoSource(
     /** The glasses failed a still and a video frame served instead: frames are used from then on. */
     private var stillsFail = false
 
+    /** How many of the watch's pictures in a row found no frame on a camera that was still streaming. */
+    private var watchMisses = 0
+
     /** The picture being taken is for the hazard watch: a video frame, so no shutter sound. */
     private var framesOnly = false
 
@@ -282,7 +285,21 @@ class GlassesPhotoSource(
         }
         taken?.let(onPhoto)
         // A camera that failed is not kept; one that worked streams on for a while.
-        if (problem != null) stopActiveCamera() else scheduleCameraStop()
+        // The watch asks every few seconds: one missed frame on a camera still
+        // streaming is not worth a new stream, since every stream stopped and
+        // started is a handoff that can cost the link (see the class comment).
+        // It gets a new one only after [WATCH_MISSES_BEFORE_RESTART] in a row.
+        if (problem == null) watchMisses = 0 else if (!persist) watchMisses++
+        val keepDespiteMiss = !persist && problem != null &&
+            watchMisses < WATCH_MISSES_BEFORE_RESTART && isStreaming(activeCamera)
+        when {
+            keepDespiteMiss -> scheduleCameraStop()
+            problem != null -> {
+                watchMisses = 0
+                stopActiveCamera()
+            }
+            else -> scheduleCameraStop()
+        }
         return problem
     }
 
@@ -540,6 +557,9 @@ class GlassesPhotoSource(
 
         /** How long reading looks at frames for its best one (about 8 frames at 7 a second). */
         const val READING_WINDOW_MS = 1_200L
+
+        /** The watch's missed frames in a row before its stream is stopped for a new one. */
+        const val WATCH_MISSES_BEFORE_RESTART = 3
 
         /** How long the camera keeps streaming after a picture, for the next one. */
         const val CAMERA_LINGER_MS = 45_000L

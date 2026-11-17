@@ -64,8 +64,8 @@ class HeldGlassesSession(private val scope: CoroutineScope) {
 
     /**
      * How long a session opened for a picture stays open when it is not held
-     * ([setKeep] off). Zero on display glasses with tap navigation, which
-     * needs its own session back at once.
+     * ([setKeep] off). Shorter ([DISPLAY_LINGER_MS]) on display glasses with
+     * tap navigation, which wants its own session back.
      */
     @Volatile
     var lingerMs: Long = LINGER_MS
@@ -262,6 +262,13 @@ class HeldGlassesSession(private val scope: CoroutineScope) {
 
         /** How long a session opened for a picture stays open when VISOR is not holding one. */
         const val LINGER_MS = 2 * 60_000L
+
+        /**
+         * The same on display glasses with tap navigation: long enough for a
+         * run of commands to share the session, short enough that the
+         * glasses' display is not blank for long after the last one.
+         */
+        const val DISPLAY_LINGER_MS = 15_000L
 
         const val START_TIMEOUT_MS = 15_000L
 
