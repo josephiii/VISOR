@@ -63,15 +63,25 @@ class DepthEstService:
         Adds "depth" (meters) to each of YoloService's objects, from the depth
         map runModel returned for the same image.
         """
+        height, width = grid.shape[:2]
+        measured = []
         for obj in objects:
-            # The object's box, at least one pixel wide and tall: a thinner box
-            # would be an empty slice, which has no percentile.
+            # The object's box, inside the picture (a box can reach a pixel past
+            # the edge, and a negative index would count from the other side)
+            # and at least one pixel wide and tall: an empty slice has no percentile.
             x1, y1, x2, y2 = map(int, obj["coords"])
-            rawObjectDepth = grid[y1:max(y2, y1 + 1), x1:max(x2, x1 + 1)]
+            x1 = min(max(x1, 0), width - 1)
+            y1 = min(max(y1, 0), height - 1)
+            x2 = min(max(x2, x1 + 1), width)
+            y2 = min(max(y2, y1 + 1), height)
             # The 25th percentile: the nearer part of the box, not the background behind the object.
-            objdepth = np.percentile(rawObjectDepth, 25)
-            obj["depth"] = float(objdepth)
-        return objects
+            objdepth = float(np.percentile(grid[y1:y2, x1:x2], 25))
+            # A distance that isn't a number can't be sent (JSON has no NaN) or said.
+            if not np.isfinite(objdepth):
+                continue
+            obj["depth"] = objdepth
+            measured.append(obj)
+        return measured
 
 
 @cache

@@ -89,6 +89,24 @@ class HazardAnnouncerTest {
     }
 
     @Test
+    fun timeWithoutALookForgetsNothing() {
+        // No looks for 10 s (VISOR was speaking): the chair is not news again.
+        at(0, left("chair", 2.4f))
+        assertTrue(at(10, left("chair", 2.4f)).isEmpty())
+        // The repeat window still applies.
+        assertEquals(1, at(21, left("chair", 2.4f)).size)
+    }
+
+    @Test
+    fun onlyTheNearestUpToTheLimitAreSaidAndTheRestAreStillNews() {
+        val frame = listOf(left("chair", 2.0f), left("table", 1.5f), left("couch", 2.4f))
+        assertEquals(listOf("table", "chair"), announcer.next(frame, width, 0, limit = 2).map { it.name })
+        // The couch was not said, so it is said at the next look; the others are not repeated.
+        assertEquals(listOf("couch"), announcer.next(frame, width, 3000, limit = 2).map { it.name })
+        assertTrue(announcer.next(frame, width, 6000, limit = 2).isEmpty())
+    }
+
+    @Test
     fun nothingNewIsAnEmptyList() {
         assertTrue(at(0).isEmpty())
     }

@@ -44,6 +44,7 @@ import ucf.visor.capture.ChosenPhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
 import ucf.visor.capture.scaledDownToWidth
+import ucf.visor.hazards.HAZARD_WATCH_DETECT_TIMEOUT_MS
 import ucf.visor.hazards.HAZARD_WATCH_FRAME_WIDTH
 import ucf.visor.hazards.HAZARD_WATCH_JPEG_QUALITY
 import ucf.visor.hazards.HazardAnnouncer
@@ -316,11 +317,21 @@ class VisorEngine(
         },
         announcer = hazardAnnouncer,
         capture = ::captureForHazardWatch,
-        detect = { bitmap -> hazardClient.detect(bitmap, jpegQuality = HAZARD_WATCH_JPEG_QUALITY) },
+        detect = { bitmap ->
+            hazardClient.detect(
+                bitmap,
+                jpegQuality = HAZARD_WATCH_JPEG_QUALITY,
+                timeoutMs = HAZARD_WATCH_DETECT_TIMEOUT_MS,
+            )
+        },
         widthOf = { it.width },
         isOnline = ::isOnline,
-        // Any camera feature at work (Look around too) goes first.
-        busy = { state.captures.value.isNotEmpty() },
+        // Any camera feature at work (Look around too) goes first, and the
+        // watch never talks into an open microphone: not while "VISOR GO" is
+        // listening or being answered, nor while a question is being asked.
+        busy = {
+            state.captures.value.isNotEmpty() || voiceNav.state.value != VoiceNavState.IDLE || commandMicOpen
+        },
         clockMs = SystemClock::elapsedRealtime,
         // As the one-shot check says them (HazardDetector).
         limit = { if (verbosity() == Verbosity.BRIEF) visionPlan().briefHazardLimit else Int.MAX_VALUE },

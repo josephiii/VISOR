@@ -32,8 +32,10 @@ fun distanceBucketOf(depthMeters: Float): DistanceBucket {
  * A hazard is remembered by its name, side and [DistanceBucket]. It is said
  * when it is new, when it has come closer, when it has been there a while
  * ([repeatMs]), and, while very close, a little more often ([criticalRepeatMs]).
- * One that has not been seen for [forgetMs] is forgotten, so it is said again
- * if it comes back.
+ * One that a look did not find, and that has not been seen for [forgetMs], is
+ * forgotten, so it is said again if it comes back. Time alone forgets
+ * nothing: while the watch is not looking (VISOR is speaking, another feature
+ * has the camera) the chair is as likely still there as not.
  *
  * Pure Kotlin. Time is passed in, never read, so tests control it.
  */
@@ -45,7 +47,10 @@ class HazardAnnouncer(
 
     private data class Key(val name: String, val side: SpokenPhrases.Side?, val bucket: DistanceBucket)
 
-    private class Seen(var lastSeenMs: Long, var lastSpokenMs: Long)
+    private class Seen(var lastSeenMs: Long, var lastSpokenMs: Long) {
+        /** A look since [lastSeenMs] did not find it. */
+        var missed = false
+    }
 
     private val memory = mutableMapOf<Key, Seen>()
 
@@ -56,9 +61,13 @@ class HazardAnnouncer(
      * The hazards in [hazards] (a picture [imageWidth] pixels wide, taken at
      * [nowMs]) that are worth saying now, nearest first: empty when nothing is
      * new. Items with the same name, side and bucket become one (the nearest).
+     *
+     * At most [limit] are returned, the nearest. Only those count as said:
+     * the rest are still news at the next look.
      */
-    fun next(hazards: List<Hazard>, imageWidth: Int, nowMs: Long): List<Hazard> {
-        memory.entries.removeAll { nowMs - it.value.lastSeenMs > forgetMs }
+    fun next(hazards: List<Hazard>, imageWidth: Int, nowMs: Long, limit: Int = Int.MAX_VALUE): List<Hazard> {
+        memory.entries.removeAll { it.value.missed && nowMs - it.value.lastSeenMs > forgetMs }
+        val room = limit.coerceAtLeast(1)
 
         val items = hazards
             .groupBy { Key(it.name, SpokenPhrases.sideOf(it, imageWidth), distanceBucketOf(it.depth)) }
@@ -68,7 +77,7 @@ class HazardAnnouncer(
         val toSpeak = mutableListOf<Hazard>()
         for ((key, hazard) in items) {
             val seen = memory[key]
-            val speak = if (seen != null) {
+            val due = if (seen != null) {
                 val sinceSpoken = nowMs - seen.lastSpokenMs
                 sinceSpoken > repeatMs ||
                     (key.bucket == DistanceBucket.VERY_CLOSE && sinceSpoken > criticalRepeatMs)
@@ -77,6 +86,15 @@ class HazardAnnouncer(
                 // than anything remembered. If it moved away it is not news.
                 val others = memory.filterKeys { it.name == key.name && it.side == key.side }
                 others.isEmpty() || key.bucket < others.keys.minOf { it.bucket }
+            }
+            val speak = due && toSpeak.size < room
+            if (due && !speak) {
+                // Over the limit: not said, so not remembered as said.
+                seen?.let {
+                    it.lastSeenMs = nowMs
+                    it.missed = false
+                }
+                continue
             }
             if (speak) toSpeak += hazard
 
@@ -87,9 +105,12 @@ class HazardAnnouncer(
                     .values.maxOf { it.lastSpokenMs },
             )
             entry.lastSeenMs = nowMs
+            entry.missed = false
             if (speak) entry.lastSpokenMs = nowMs
             memory[key] = entry
         }
+        val present = items.mapTo(mutableSetOf()) { it.first }
+        memory.forEach { (key, entry) -> if (key !in present) entry.missed = true }
         return toSpeak
     }
 

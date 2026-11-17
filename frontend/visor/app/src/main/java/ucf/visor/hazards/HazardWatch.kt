@@ -23,6 +23,15 @@ const val HAZARD_WATCH_FAILURES_BEFORE_SAYING = 3
  */
 const val HAZARD_WATCH_RETRY_INTERVAL_MS = 15_000L
 
+/**
+ * Below this the detector is guessing, and a watch that speaks by itself
+ * should not guess. A starting point, to be tuned on real photos.
+ */
+const val HAZARD_WATCH_MIN_CONFIDENCE = 0.35f
+
+/** How long the server may take over one of the watch's pictures before the look counts as failed. */
+const val HAZARD_WATCH_DETECT_TIMEOUT_MS = 10_000L
+
 /** The width, in pixels, a picture is scaled down to before hazard watch sends it. */
 const val HAZARD_WATCH_FRAME_WIDTH = 640
 
@@ -41,7 +50,7 @@ interface HazardWatchSpeaker {
  *
  * One look at a time: the next waits for the last to finish. A look is
  * skipped while VISOR is speaking, while another camera feature is working
- * ([busy]), and while offline. [P] is the picture ([capture] returns null
+ * or VISOR is listening for a command ([busy]), and while offline. [P] is the picture ([capture] returns null
  * when it could not take one); [widthOf] is its width in pixels.
  */
 class HazardWatch<P>(
@@ -55,6 +64,7 @@ class HazardWatch<P>(
     private val clockMs: () -> Long,
     private val limit: () -> Int = { Int.MAX_VALUE },
     private val focus: () -> VisionPlan.HazardFocus = { VisionPlan.HazardFocus.NEAREST },
+    private val minConfidence: Float = HAZARD_WATCH_MIN_CONFIDENCE,
     private val intervalMs: Long = HAZARD_WATCH_INTERVAL_MS,
     private val retryIntervalMs: Long = HAZARD_WATCH_RETRY_INTERVAL_MS,
 ) {
@@ -107,8 +117,16 @@ class HazardWatch<P>(
         }
         failures = 0
 
+        // The look took a while: VISOR may have started speaking, or another
+        // feature started, since it began. Its answer comes first; this look
+        // is dropped, unremembered, and the next one says what is still there.
+        if (speaker.isSpeaking() || busy()) return
+
+        // Only what the detector is fairly sure of, at a distance that can be said.
+        val sure = hazards.filter { it.conf >= minConfidence && it.depth.isFinite() && it.depth >= 0f }
         val width = widthOf(picture)
-        val news = announcer.next(hazards, width, clockMs())
-        if (news.isNotEmpty()) speaker.say(SpokenPhrases.hazardsAhead(news, width, limit(), focus()))
+        val count = limit()
+        val news = announcer.next(sure, width, clockMs(), count)
+        if (news.isNotEmpty()) speaker.say(SpokenPhrases.hazardsAhead(news, width, count, focus()))
     }
 }

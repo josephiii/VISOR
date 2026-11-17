@@ -66,6 +66,8 @@ object ApiClient {
     suspend fun send(
         path: String,
         accessToken: String? = null,
+        // The whole call, connecting to the last byte, may take this long; null for the usual limits.
+        callTimeoutMs: Long? = null,
         configure: Request.Builder.() -> Request.Builder,
     ): ApiResult = withContext(Dispatchers.IO) {
         val built = Request.Builder()
@@ -75,7 +77,9 @@ object ApiClient {
             .build()
 
         try {
-            http.newCall(built).execute().use { response ->
+            val call = http.newCall(built)
+            if (callTimeoutMs != null) call.timeout().timeout(callTimeoutMs, TimeUnit.MILLISECONDS)
+            call.execute().use { response ->
                 val raw = response.body?.string().orEmpty()
                 if (response.isSuccessful) {
                     ApiResult.Success(raw)

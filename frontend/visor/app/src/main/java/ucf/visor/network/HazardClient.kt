@@ -24,13 +24,18 @@ class HazardClient(
      * can't be reached or doesn't answer with a list of them (logged).
      * [jpegQuality] is lower for hazard watch, which sends a picture every few seconds.
      */
-    suspend fun detect(bitmap: Bitmap, jpegQuality: Int = ApiClient.DEFAULT_JPEG_QUALITY): List<Hazard>? {
+    suspend fun detect(
+        bitmap: Bitmap,
+        jpegQuality: Int = ApiClient.DEFAULT_JPEG_QUALITY,
+        // Hazard watch gives up on a slow answer: a hazard said late is no use.
+        timeoutMs: Long? = null,
+    ): List<Hazard>? {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("image", "photo.jpg", ApiClient.jpeg(bitmap, jpegQuality))
             .build()
 
-        return when (val result = ApiClient.send("/yolo/runHazardDetection", accessToken()) { post(body) }) {
+        return when (val result = ApiClient.send("/yolo/runHazardDetection", accessToken(), timeoutMs) { post(body) }) {
             is ApiResult.Success -> try {
                 json.decodeFromString<List<Hazard>>(result.body)
             } catch (e: IllegalArgumentException) { // includes SerializationException

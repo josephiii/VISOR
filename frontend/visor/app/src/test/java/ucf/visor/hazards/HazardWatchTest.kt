@@ -58,6 +58,35 @@ class HazardWatchTest {
     }
 
     @Test
+    fun aGuessOrAnUnusableDistanceIsNotSpoken() = runTest {
+        val rig = Rig(answer = {
+            listOf(chair.copy(conf = 0.2f), chair.copy(name = "table", depth = Float.NaN), chair.copy(name = "bed", depth = -1f))
+        })
+        val job = launch { watch(rig) { currentTime }.run() }
+        runCurrent()
+        job.cancel()
+        assertTrue(rig.speaker.said.isEmpty())
+    }
+
+    @Test
+    fun aLookThatEndsWhileVisorSpeaksIsDroppedAndSaidAtTheNext() = runTest {
+        val rig = Rig()
+        rig.answer = {
+            delay(1000)
+            listOf(chair)
+        }
+        val job = launch { watch(rig) { currentTime }.run() }
+        runCurrent()
+        rig.speaker.speaking = true // something else started talking during the look
+        advanceTimeBy(1001)
+        assertTrue(rig.speaker.said.isEmpty())
+        rig.speaker.speaking = false
+        advanceTimeBy(HAZARD_WATCH_INTERVAL_MS + 1001)
+        job.cancel()
+        assertEquals(listOf("chair, 8 feet ahead on your left."), rig.speaker.said)
+    }
+
+    @Test
     fun checksNeverOverlap() = runTest {
         var running = 0
         var most = 0
