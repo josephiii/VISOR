@@ -20,11 +20,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import ucf.visor.wearables.GlassesConnectionNotice
+import ucf.visor.data.HistoryEntry
+import ucf.visor.data.HistoryStore
 import ucf.visor.data.ProfileStore
+import ucf.visor.data.ResponseHistory
 import ucf.visor.data.SessionStore
 import ucf.visor.data.UserProfile
+import ucf.visor.data.withoutPersonalAnswers
 import ucf.visor.network.Connectivity
 import ucf.visor.stt.CameraCommand
 import ucf.visor.stt.MicRoute
@@ -34,6 +39,7 @@ import ucf.visor.wearables.GlassesAppUpdate
 import ucf.visor.wearables.GlassesStatus
 import ucf.visor.wearables.rankForSession
 import ucf.visor.wearables.toGlassesStatus
+import java.time.ZoneId
 
 /**
  * What VISOR knows that outlives any one screen: the profile, whether someone
@@ -58,6 +64,24 @@ class VisorState(context: Context) {
     fun updateProfile(profile: UserProfile) {
         _profile.value = profile
         profileStore.save(profile)
+    }
+
+    /**
+     * An account has just signed up on this phone: setup is next, and is
+     * pending until [finishSetup], so leaving it part way (back, or closing
+     * VISOR) brings it back at the next login rather than going straight Home.
+     * Setup starts from the profile without the last user's answers about
+     * themselves (see [withoutPersonalAnswers]): not for a stranger to see.
+     */
+    fun startNewAccount() {
+        updateProfile(_profile.value.withoutPersonalAnswers())
+        profileStore.setSetupPending(true)
+    }
+
+    /** Setup's Start using VISOR: saves [profile], and setup is no longer pending. */
+    fun finishSetup(profile: UserProfile) {
+        updateProfile(profile)
+        profileStore.setSetupPending(false)
     }
 
     /** After the account is deleted: back to the defaults, saved nowhere. */
@@ -98,6 +122,18 @@ class VisorState(context: Context) {
      */
     val captures: StateFlow<Map<CameraCommand, CaptureStatus>> = _captures.asStateFlow()
 
+    private val _hazardWatchOn = MutableStateFlow(false)
+
+    /**
+     * Whether hazard watch is on: VisorEngine looks for hazards every few
+     * seconds and says what is new (hazards/HazardWatch). Off at every start.
+     */
+    val hazardWatchOn: StateFlow<Boolean> = _hazardWatchOn.asStateFlow()
+
+    fun setHazardWatch(on: Boolean) {
+        _hazardWatchOn.value = on
+    }
+
     private val _lastAnswer = MutableStateFlow<LastAnswer?>(null)
 
     /** What a camera feature last answered, for Home's Last answer card and the notification. */
@@ -113,6 +149,14 @@ class VisorState(context: Context) {
         _captures.update { it + (command to CaptureStatus.TAKING_PICTURE) }
     }
 
+    /**
+     * [command], already started ([onCaptureStarted]), is now at [status]:
+     * Look around's steps, which are not one picture and one answer.
+     */
+    fun setCaptureStatus(command: CameraCommand, status: CaptureStatus) {
+        _captures.update { if (command in it) it + (command to status) else it }
+    }
+
     /** The glasses have taken [command]'s picture: VISOR is working out what is in it. */
     fun onPictureTaken(command: CameraCommand) {
         _captures.update {
@@ -120,8 +164,11 @@ class VisorState(context: Context) {
         }
     }
 
-    /** [command] has answered with [text], which VISOR is now saying. */
-    fun onAnswered(command: CameraCommand, text: String) {
+    /**
+     * [command] has answered with [text], which VISOR is now saying. [question]
+     * is what was asked, for "Ask a question".
+     */
+    fun onAnswered(command: CameraCommand, text: String, question: String? = null) {
         val left = ((capturesInFlight[command] ?: 0) - 1).coerceAtLeast(0)
         if (left == 0) {
             capturesInFlight.remove(command)
@@ -129,17 +176,38 @@ class VisorState(context: Context) {
         } else {
             capturesInFlight[command] = left
         }
-        showAnswer(text, command)
+        showAnswer(text, command, question)
     }
 
-    /** Shows [text] on Home's Last answer card, as an answer [command] has just given. */
-    fun showAnswer(text: String, command: CameraCommand) {
-        _lastAnswer.value = LastAnswer(text, System.currentTimeMillis(), command)
+    /**
+     * Shows [text] on Home's Last answer card, as an answer [command] has just
+     * given, and adds it to today's [history].
+     */
+    fun showAnswer(text: String, command: CameraCommand, question: String? = null) {
+        val now = System.currentTimeMillis()
+        _lastAnswer.value = LastAnswer(text, now, command)
+        val entry = HistoryEntry(text, now, command, question?.trim()?.ifEmpty { null })
+        historyStore.save(_history.updateAndGet { ResponseHistory.add(it, entry, ZoneId.systemDefault()) })
     }
 
     /** It may be text read off someone's mail: not for the next person to log in. */
     fun clearLastAnswer() {
         _lastAnswer.value = null
+    }
+
+    private val historyStore = HistoryStore(context)
+    private val _history = MutableStateFlow(historyStore.load())
+
+    /**
+     * Today's answers, newest first, for Settings > History (see
+     * ResponseHistory). Saved on the phone only.
+     */
+    val history: StateFlow<List<HistoryEntry>> = _history.asStateFlow()
+
+    /** "Clear history", and logging out: like the last answer, not for the next person to log in. */
+    fun clearHistory() {
+        _history.value = emptyList()
+        historyStore.clear()
     }
 
     // ---------------------------------------------------------------------

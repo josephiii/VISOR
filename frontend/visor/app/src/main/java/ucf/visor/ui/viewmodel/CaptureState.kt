@@ -8,7 +8,17 @@ import ucf.visor.stt.CameraCommand
  * place of its label, so a user can see VISOR is working even with its sounds
  * turned off.
  */
-enum class CaptureStatus { IDLE, TAKING_PICTURE, THINKING }
+enum class CaptureStatus {
+    IDLE,
+    TAKING_PICTURE,
+    THINKING,
+
+    /** Look around: the wearer is turning their head, and VISOR takes a picture at each stop. */
+    LOOKING_AROUND,
+
+    /** Look around: VISOR is leading the head, by tone, to something it found. */
+    GUIDING,
+}
 
 /**
  * The last thing a camera feature said in answer, or why it could not, and

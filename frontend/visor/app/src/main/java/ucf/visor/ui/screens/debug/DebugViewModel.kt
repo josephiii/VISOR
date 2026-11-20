@@ -108,6 +108,21 @@ class DebugViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * A wearer doing Look around, on a loop (SyntheticMotion.lookAround): with
+     * it, and a camera feed or a selected photo, Look around runs end to end
+     * on mock glasses, tones, cues and all.
+     */
+    fun startSyntheticLookAround(deviceInfo: MockDeviceInfo) {
+        executeMockDeviceOperation(
+            deviceInfo,
+            "Loading a synthetic look-around",
+            deviceInfo.copy(hasMotionFeed = true)
+        ) { device ->
+            device.services.motion.setMotionFeed(SyntheticMotion.lookAround(), loop = true)
+        }
+    }
+
     /** MWDAT 1.0 device state simulation: battery level on the mock pair. */
     fun setBatteryLevel(deviceInfo: MockDeviceInfo, level: Int) {
         executeMockDeviceOperation(deviceInfo, "Setting battery to $level%", deviceInfo) { device ->

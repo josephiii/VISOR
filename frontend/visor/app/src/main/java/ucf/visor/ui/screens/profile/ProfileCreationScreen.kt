@@ -1,5 +1,6 @@
 package ucf.visor.ui.screens.profile
 
+import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -28,14 +30,17 @@ import androidx.compose.ui.unit.dp
 import ucf.visor.R
 import ucf.visor.data.Severity
 import ucf.visor.data.SpeechRates
+import ucf.visor.data.ThemeMode
 import ucf.visor.data.UserProfile
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VisionType
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.label
 import ucf.visor.ui.components.SelectableChip
 import ucf.visor.ui.components.StepIndicator
 import ucf.visor.ui.components.SwitchButton
+import ucf.visor.ui.components.SwitchChip
 import ucf.visor.ui.components.VisorSlider
 import ucf.visor.ui.components.scrollIndicator
 import ucf.visor.ui.theme.VisorShapes
@@ -65,6 +70,13 @@ private enum class Step(@StringRes val title: Int, @StringRes val spokenPrompt: 
     VOICE_NAV(R.string.step_voice_nav_title, R.string.step_voice_nav_spoken_prompt),
     VISION(R.string.step_vision_title, R.string.step_vision_spoken_prompt),
     DESCRIBE(R.string.step_describe_title, R.string.step_describe_spoken_prompt),
+
+    /**
+     * Only when their own words name an eye condition whose usual kind of
+     * vision loss they didn't pick (VisionPlan.suggestedTypes): offers to add
+     * it. Its spoken prompt is built from what they said (see [spokenPrompt]).
+     */
+    CONFIRM_TYPES(R.string.step_confirm_types_title, R.string.step_confirm_types_spoken_prompt),
     SEVERITY(R.string.step_severity_title, R.string.step_severity_spoken_prompt),
     SPEECH_RATE(R.string.step_speech_rate_title, R.string.step_speech_rate_spoken_prompt),
     VERBOSITY(R.string.step_verbosity_title, R.string.step_verbosity_spoken_prompt),
@@ -83,17 +95,57 @@ fun ProfileCreationScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
+    // What their own words suggest adding (CONFIRM_TYPES), worked out once as
+    // they leave DESCRIBE, so the step doesn't vanish as they answer it.
+    var suggestedTypes by remember { mutableStateOf<Map<VisionType, String>>(emptyMap()) }
+    val steps = Step.entries.filter { it != Step.CONFIRM_TYPES || suggestedTypes.isNotEmpty() }
+
+    // How VISOR will fit their vision, from the answers so far (data/VisionPlan).
+    val plan = VisionPlan.from(profile)
+
+    // The look VISOR suggests for contrast and light sensitivity, offered on
+    // the last step and on until they turn it off there.
+    var useSuggestedLook by remember { mutableStateOf(true) }
+    val offersLook = plan.suggestsDarkHighContrast
+
+    // Bumped to ask the last step's question again after a "no" to the look.
+    var reasked by remember { mutableIntStateOf(0) }
+
+    fun finish() {
+        onFinished(
+            if (offersLook && useSuggestedLook) profile.copy(themeMode = ThemeMode.DARK, appHighContrast = true, useCustomColors = false)
+            else profile
+        )
+    }
+
     fun next() {
         voiceNav?.cancelCapture() // on touch tap
-        val i = step.ordinal
-        if (i < Step.entries.lastIndex) step = Step.entries[i + 1] else onFinished(profile)
+        if (step == Step.DESCRIBE) {
+            suggestedTypes = VisionPlan.suggestedTypes(profile.visionDescription, profile.visionTypes)
+        }
+        val visible = Step.entries.filter { it != Step.CONFIRM_TYPES || suggestedTypes.isNotEmpty() }
+        val i = visible.indexOf(step)
+        if (i < visible.lastIndex) step = visible[i + 1] else finish()
+        // Detail starts at the level suggested for them, unless already changed
+        // from the default; Skip then keeps the suggestion.
+        if (step == Step.VERBOSITY && profile.verbosity == UserProfile().verbosity) {
+            profile = profile.copy(verbosity = VisionPlan.from(profile).recommendedVerbosity)
+        }
+    }
+
+    fun addSuggestedTypes() {
+        profile = profile.copy(visionTypes = profile.visionTypes - VisionType.NOT_SURE + suggestedTypes.keys)
     }
 
     // VOICE NAVIGATION
-    LaunchedEffect(step) {
+    LaunchedEffect(step, reasked) {
         if (!profile.voiceNavigationEnabled) return@LaunchedEffect
         // VISOR's half of a voice conversation, like its replies to commands.
-        speak(context.getString(step.spokenPrompt), VoiceCategory.VOICE_COMMANDS)
+        speak(
+            if (reasked > 0 && step == Step.DONE) context.getString(R.string.step_done_look_declined_spoken)
+            else spokenPrompt(context, step, profile, suggestedTypes, offersLook && useSuggestedLook),
+            VoiceCategory.VOICE_COMMANDS,
+        )
         val askedStep = step
         voiceNav?.captureUtterance { text ->
             val heard = text?.trim()
@@ -121,6 +173,11 @@ fun ProfileCreationScreen(
                     profile = profile.copy(visionDescription = heard); next()
                 }
 
+                Step.CONFIRM_TYPES -> OnboardingAnswers.yesNo(heard)?.let { add ->
+                    if (add) addSuggestedTypes()
+                    next()
+                }
+
                 Step.SEVERITY -> OnboardingAnswers.severity(heard)?.let {
                     profile = profile.copy(severity = it); next()
                 }
@@ -133,7 +190,17 @@ fun ProfileCreationScreen(
                     profile = profile.copy(verbosity = it); next()
                 }
 
-                Step.DONE -> if (OnboardingAnswers.isStart(heard)) next()
+                // "No" turns the suggested look off; "start" finishes. Both
+                // can come at once ("no, start"); a "no" alone asks again.
+                Step.DONE -> {
+                    val declinedLook =
+                        offersLook && useSuggestedLook && OnboardingAnswers.yesNo(heard) == false
+                    if (declinedLook) useSuggestedLook = false
+                    when {
+                        OnboardingAnswers.isStart(heard) -> next()
+                        declinedLook -> reasked++
+                    }
+                }
             }
         }
     }
@@ -147,7 +214,7 @@ fun ProfileCreationScreen(
             .padding(vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        StepIndicator(step = step.ordinal + 1, of = Step.entries.size)
+        StepIndicator(step = steps.indexOf(step) + 1, of = steps.size)
 
         Text(
             text = stringResource(step.title),
@@ -170,11 +237,39 @@ fun ProfileCreationScreen(
                 }
             }
 
-            Step.DESCRIBE -> BigTextField(
-                profile.visionDescription,
-                stringResource(R.string.settings_vision_description_label),
-            ) {
-                profile = profile.copy(visionDescription = it)
+            Step.DESCRIBE -> {
+                BigTextField(
+                    profile.visionDescription,
+                    stringResource(R.string.settings_vision_description_label),
+                ) {
+                    profile = profile.copy(visionDescription = it)
+                }
+                // Where their words go, said before they write them.
+                Text(
+                    stringResource(R.string.step_describe_sharing_note),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+
+            Step.CONFIRM_TYPES -> {
+                val condition = suggestedTypes.values.first()
+                Text(
+                    stringResource(R.string.step_confirm_types_reason, condition),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                suggestedTypes.keys.forEach { type ->
+                    Text(
+                        "• " + type.label(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                BigChoiceButton(stringResource(R.string.step_confirm_types_yes), selected = false) {
+                    addSuggestedTypes(); next()
+                }
+                BigChoiceButton(stringResource(R.string.step_confirm_types_no), selected = false) {
+                    next()
+                }
             }
 
             Step.VISION -> VisionType.entries.forEach { type ->
@@ -220,15 +315,37 @@ fun ProfileCreationScreen(
             }
 
             Step.VERBOSITY -> Verbosity.entries.forEach { v ->
-                BigChoiceButton(v.label(), profile.verbosity == v) {
+                val label =
+                    if (v == plan.recommendedVerbosity) stringResource(R.string.step_verbosity_recommended, v.label())
+                    else v.label()
+                BigChoiceButton(label, profile.verbosity == v) {
                     profile = profile.copy(verbosity = v); next()
                 }
             }
 
-            Step.DONE -> Text(
-                "You can change any of this later in Settings - or just ask.",
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Step.DONE -> {
+                if (!plan.isUntailored) {
+                    Text(
+                        stringResource(R.string.step_done_fits_you),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    VisionFitSummary(plan)
+                }
+                if (offersLook) {
+                    SwitchChip(
+                        title = stringResource(R.string.step_done_look),
+                        on = useSuggestedLook,
+                        onToggle = { useSuggestedLook = !useSuggestedLook },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                Text(
+                    "You can change any of this later in Settings - or just ask.",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -297,4 +414,46 @@ private fun BigChoiceButton(
 
 private fun Verbosity.label() = when (this) {
     Verbosity.BRIEF -> "Brief"; Verbosity.STANDARD -> "Standard"; Verbosity.DETAILED -> "Detailed"
+}
+/**
+ * What setup says as it asks [step]: the step's own prompt, made from what was
+ * said before it where it needs that. Their own words name a condition for
+ * CONFIRM_TYPES; Detail adds the level suggested for them; the last step first
+ * says how VISOR will fit them, and offers the suggested look when [offerLook].
+ */
+private fun spokenPrompt(
+    context: Context,
+    step: Step,
+    profile: UserProfile,
+    suggestedTypes: Map<VisionType, String>,
+    offerLook: Boolean,
+): String {
+    val prompt = context.getString(step.spokenPrompt)
+    return when (step) {
+        Step.CONFIRM_TYPES -> {
+            val kinds = suggestedTypes.keys.map { it.spokenLabel() }
+            val joined = if (kinds.size < 2) kinds.joinToString() else
+                kinds.dropLast(1).joinToString(", ") + " " +
+                    context.getString(R.string.step_confirm_types_and) + " " + kinds.last()
+            context.getString(R.string.step_confirm_types_spoken_prompt, suggestedTypes.values.first(), joined)
+        }
+
+        Step.VERBOSITY -> prompt + " " + context.getString(
+            R.string.step_verbosity_recommended_spoken,
+            VisionPlan.from(profile).recommendedVerbosity.label().lowercase(),
+        )
+
+        Step.DONE -> {
+            val plan = VisionPlan.from(profile)
+            if (plan.isUntailored) return prompt
+            buildList {
+                add(context.getString(R.string.step_done_fits_you_spoken))
+                addAll(visionFitLines(context, plan))
+                if (offerLook) add(context.getString(R.string.step_done_look_spoken))
+                add(prompt)
+            }.joinToString(" ")
+        }
+
+        else -> prompt
+    }
 }

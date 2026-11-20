@@ -2,6 +2,7 @@ package ucf.visor.tts
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import ucf.visor.data.VisionPlan
 import ucf.visor.network.Hazard
 
 /** What a wearer hears from hazard detection: the nearest first, in whole feet. */
@@ -78,5 +79,69 @@ class SpokenPhrasesTest {
             "cup, 1 foot ahead. chair, 3 feet ahead. person, 8 feet ahead.",
             SpokenPhrases.hazardsAhead(hazards, limit = SpokenPhrases.BRIEF_HAZARD_LIMIT),
         )
+    }
+
+    // How the user's vision (VisionPlan.hazardFocus) changes which come first.
+
+    private val around = listOf(
+        hazardAt("person", 1.2f, left = 120f, right = 180f), // ahead, 4 feet
+        hazardAt("chair", 2.4f, left = 0f, right = 60f), // left, 8 feet
+        hazardAt("bench", 3f, left = 250f, right = 300f), // right, 10 feet
+    )
+
+    @Test
+    fun withTroubleSeeingTheSidesTheSidesComeFirst() {
+        assertEquals(
+            "chair, 8 feet ahead on your left. bench, 10 feet ahead on your right. person, 4 feet ahead.",
+            SpokenPhrases.hazardsAhead(around, imageWidth = 300, focus = VisionPlan.HazardFocus.SIDES_FIRST),
+        )
+    }
+
+    @Test
+    fun withTroubleSeeingTheCenterWhatIsAheadComesFirst() {
+        val hazards = around + hazardAt("cup", 0.5f, left = 0f, right = 30f)
+        assertEquals(
+            "person, 4 feet ahead. cup, 2 feet ahead on your left. chair, 8 feet ahead on your left. " +
+                "bench, 10 feet ahead on your right.",
+            SpokenPhrases.hazardsAhead(hazards, imageWidth = 300, focus = VisionPlan.HazardFocus.AHEAD_FIRST),
+        )
+    }
+
+    @Test
+    fun aBriefLimitNeverDropsAFurtherHazardOnTheSideTheyCantSee() {
+        // Brief at 1: the nearest (the person ahead), and the nearest at the sides (the chair).
+        assertEquals(
+            "chair, 8 feet ahead on your left. person, 4 feet ahead.",
+            SpokenPhrases.hazardsAhead(around, imageWidth = 300, limit = 1, focus = VisionPlan.HazardFocus.SIDES_FIRST),
+        )
+        assertEquals(
+            "person, 4 feet ahead.",
+            SpokenPhrases.hazardsAhead(around, imageWidth = 300, limit = 1),
+        )
+    }
+
+    @Test
+    fun withoutKnowingTheSidesTheFocusLeavesNearestFirst() {
+        assertEquals(
+            SpokenPhrases.hazardsAhead(around),
+            SpokenPhrases.hazardsAhead(around, focus = VisionPlan.HazardFocus.SIDES_FIRST),
+        )
+    }
+
+    @Test
+    fun hazardWatchLinesAreShortAndDistinct() {
+        val lines = listOf(
+            SpokenPhrases.HAZARD_WATCH_ON,
+            SpokenPhrases.HAZARD_WATCH_OFF,
+            SpokenPhrases.HAZARD_WATCH_MUTED,
+            SpokenPhrases.HAZARD_WATCH_PAUSED_OFFLINE,
+            SpokenPhrases.HAZARD_WATCH_BACK,
+            SpokenPhrases.HAZARD_WATCH_CANT_SEE,
+        )
+        assertEquals(lines.size, lines.toSet().size)
+        assertEquals("Hazard watch on", SpokenPhrases.HAZARD_WATCH_ON)
+        assertEquals("Hazard watch off", SpokenPhrases.HAZARD_WATCH_OFF)
+        assertEquals("Hazard watch paused, no connection", SpokenPhrases.HAZARD_WATCH_PAUSED_OFFLINE)
+        assertEquals("Hazard watch can't see", SpokenPhrases.HAZARD_WATCH_CANT_SEE)
     }
 }

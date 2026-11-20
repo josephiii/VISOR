@@ -25,6 +25,7 @@ class ProfileStore(context: Context) {
             .putString(KEY_NAME, p.displayName)
             .putStringSet(KEY_VISION_TYPES, p.visionTypes.map { it.name }.toSet())
             .putString(KEY_DESCRIPTION, p.visionDescription)
+            .putBoolean(KEY_SHARE_DESCRIPTION, p.shareVisionDescription)
             .putString(KEY_SEVERITY, p.severity.name)
             .putFloat(KEY_SPEECH_RATE_MULTIPLIER, p.speechRate)
             // Null (the default voice) removes the key.
@@ -33,6 +34,8 @@ class ProfileStore(context: Context) {
             .putString(KEY_VERBOSITY, p.verbosity.name)
             .putBoolean(KEY_HIGH_CONTRAST, p.appHighContrast)
             .putString(KEY_THEME_MODE, p.themeMode.name)
+            .putBoolean(KEY_USE_CUSTOM_COLORS, p.useCustomColors)
+            .putString(KEY_CUSTOM_COLORS, p.customColors.encode())
             .putString(KEY_TEXT_SCALE, p.textScale.name)
             .putBoolean(KEY_VOICE_NAV, p.voiceNavigationEnabled)
             .putBoolean(KEY_GLASSES_TAP_NAV, p.glassesTapNavigationEnabled)
@@ -62,6 +65,7 @@ class ProfileStore(context: Context) {
                 ?: defaults.visionTypes,
             visionDescription = prefs.getString(KEY_DESCRIPTION, defaults.visionDescription)
                 ?: defaults.visionDescription,
+            shareVisionDescription = prefs.getBoolean(KEY_SHARE_DESCRIPTION, defaults.shareVisionDescription),
             severity = enumOrDefault(KEY_SEVERITY, defaults.severity),
             speechRate = speechRateOrDefault(defaults.speechRate),
             voiceName = prefs.getString(KEY_VOICE_NAME, null)?.ifBlank { null } ?: defaults.voiceName,
@@ -69,6 +73,8 @@ class ProfileStore(context: Context) {
             verbosity = enumOrDefault(KEY_VERBOSITY, defaults.verbosity),
             appHighContrast = prefs.getBoolean(KEY_HIGH_CONTRAST, defaults.appHighContrast),
             themeMode = enumOrDefault(KEY_THEME_MODE, defaults.themeMode),
+            useCustomColors = prefs.getBoolean(KEY_USE_CUSTOM_COLORS, defaults.useCustomColors),
+            customColors = CustomColors.decode(prefs.getString(KEY_CUSTOM_COLORS, null)),
             textScale = enumOrDefault(KEY_TEXT_SCALE, defaults.textScale),
             voiceNavigationEnabled = prefs.getBoolean(
                 KEY_VOICE_NAV,
@@ -95,8 +101,27 @@ class ProfileStore(context: Context) {
         )
     }
 
-    /** True once the user has completed (or skipped through) first-run setup. */
+    /**
+     * True once a profile has been saved on this phone, by setup or by any
+     * change to a setting (a "VISOR GO, faster" before logging in saves one
+     * too). So it doesn't say whether *this* account has been set up: see
+     * [needsSetup].
+     */
     fun hasProfile(): Boolean = prefs.contains(KEY_SEVERITY)
+
+    /**
+     * Whether logging in should go through setup before Home: nothing has been
+     * saved on this phone yet, or an account signed up here and its setup
+     * hasn't been finished (see [setSetupPending]).
+     */
+    fun needsSetup(): Boolean = setupNeeded(hasProfile(), isSetupPending())
+
+    /** A new account's setup has started here and not finished: set at sign-up, cleared at Start using VISOR. */
+    fun isSetupPending(): Boolean = prefs.getBoolean(KEY_SETUP_PENDING, false)
+
+    fun setSetupPending(pending: Boolean) {
+        prefs.edit().putBoolean(KEY_SETUP_PENDING, pending).apply()
+    }
 
     fun clear() = prefs.edit().clear().apply()   // for logout / delete account
 
@@ -150,6 +175,7 @@ class ProfileStore(context: Context) {
         const val KEY_NAME = "displayName"
         const val KEY_VISION_TYPES = "visionTypes"
         const val KEY_DESCRIPTION = "visionDescription"
+        const val KEY_SHARE_DESCRIPTION = "shareVisionDescription"
         const val KEY_SEVERITY = "severity"
 
         // Legacy key: the pre-slider enum name. Read for migration, never written.
@@ -170,6 +196,9 @@ class ProfileStore(context: Context) {
         const val KEY_VERBOSITY = "verbosity"
         const val KEY_HIGH_CONTRAST = "appHighContrast"
         const val KEY_THEME_MODE = "themeMode"
+        const val KEY_USE_CUSTOM_COLORS = "useCustomColors"
+        // CustomColors.encode(): the look they start from, and each color the user picked.
+        const val KEY_CUSTOM_COLORS = "customColors"
         const val KEY_TEXT_SCALE = "textScale"
         const val KEY_VOICE_NAV = "voiceNavigationEnabled"
         const val KEY_GLASSES_TAP_NAV = "glassesTapNavigationEnabled"
@@ -178,5 +207,11 @@ class ProfileStore(context: Context) {
         const val KEY_CAMERA = "camera"
         const val KEY_BACKGROUND_LISTENING = "backgroundListeningEnabled"
         const val KEY_LISTEN_THROUGH_GLASSES = "listenThroughGlasses"
+
+        // Not part of the profile: whether a new account's setup is under way.
+        const val KEY_SETUP_PENDING = "setupPending"
     }
 }
+
+/** [ProfileStore.needsSetup], apart from SharedPreferences so it can be unit tested. */
+internal fun setupNeeded(hasProfile: Boolean, setupPending: Boolean): Boolean = !hasProfile || setupPending

@@ -6,10 +6,12 @@ import android.Manifest.permission.CAMERA
 import android.Manifest.permission.INTERNET
 import android.Manifest.permission.RECORD_AUDIO
 import android.content.Intent
+import android.graphics.Color.TRANSPARENT
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
@@ -18,6 +20,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
@@ -40,9 +43,10 @@ import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.engine.VisorEngine
 import ucf.visor.tts.Chimes.Chime
+import ucf.visor.tts.SpokenText
 import ucf.visor.ui.VisorLayout
 import ucf.visor.ui.feedback.LocalHaptics
-import ucf.visor.ui.theme.AppTheme
+import ucf.visor.ui.theme.VisorColors
 import ucf.visor.ui.theme.VisorTheme
 import ucf.visor.ui.viewmodel.VisorViewModel
 import ucf.visor.wearables.VoiceLaunches
@@ -129,9 +133,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val profile by viewModel.userProfile.collectAsStateWithLifecycle()
-            val appTheme = AppTheme.forProfile(profile, isSystemInDarkTheme())
+            val colors = VisorColors.forProfile(profile, isSystemInDarkTheme())
 
-            VisorTheme(appTheme = appTheme, textScale = profile.textScale.multiplier) {
+            // The status bar's icons follow VISOR's page, not the phone's dark
+            // mode: VISOR can be dark on a light phone (Settings > Light or
+            // dark), and a user's own colors can be anything, so icons drawn
+            // for the phone's mode could be white on white.
+            LaunchedEffect(colors.isDark) {
+                val bars = if (colors.isDark) SystemBarStyle.dark(TRANSPARENT)
+                else SystemBarStyle.light(TRANSPARENT, TRANSPARENT)
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+            }
+
+            VisorTheme(colors = colors, textScale = profile.textScale.multiplier) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(LocalHaptics provides engine.haptics) {
                         VisorLayout(
@@ -146,6 +160,7 @@ class MainActivity : ComponentActivity() {
                             glassesNav = engine.glassesNav,
                             screenCommands = engine.screenCommands,
                             reading = engine.speaker,
+                            lookAround = engine.lookAround,
                             voices = engine.speaker,
                         )
                     }
@@ -162,7 +177,8 @@ class MainActivity : ComponentActivity() {
                 VoiceLaunches.get().pending.collect { launches ->
                     val launch = launches.firstOrNull() ?: return@collect
                     val result = performVoiceLaunch()
-                    VoiceLaunches.get().acknowledge(launch, result.success, result.spoken)
+                    // Said by the glasses: "Visor", not "V. I. S. O. R."
+                    VoiceLaunches.get().acknowledge(launch, result.success, SpokenText.forSpeech(result.spoken))
                 }
             }
         }
@@ -175,6 +191,7 @@ class MainActivity : ComponentActivity() {
     private fun playSample(category: SoundCategory) = when (category) {
         SoundCategory.THINKING_BEEPS -> engine.thinkingBeeper.beepOnce()
         SoundCategory.READY_CHIME -> engine.chimes.play(Chime.READY)
+        SoundCategory.GUIDANCE_TONES -> engine.playGuidanceSample()
     }
 
     override fun onStart() {

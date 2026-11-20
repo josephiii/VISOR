@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Smartphone
@@ -72,13 +74,19 @@ import ucf.visor.R
 import ucf.visor.capture.Availability
 import ucf.visor.capture.availability
 import ucf.visor.data.CameraChoice
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
+import ucf.visor.lookaround.LookAround
+import ucf.visor.lookaround.LookAroundControls
+import ucf.visor.lookaround.SceneMap
+import ucf.visor.lookaround.Sighting
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.ReadingState
 import ucf.visor.ui.components.ReadingButtons
 import ucf.visor.ui.components.ReadingControlHeight
 import ucf.visor.ui.components.ScreenTitle
+import ucf.visor.ui.components.SwitchChip
 import ucf.visor.ui.components.SwitchButton
 import ucf.visor.ui.components.VisorButton
 import ucf.visor.ui.components.iconSizeFor
@@ -92,6 +100,7 @@ import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.viewmodel.LastAnswer
 import ucf.visor.ui.viewmodel.VisorViewModel
 import java.util.Date
+import kotlin.math.roundToInt
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -114,15 +123,21 @@ fun HomeScreen(
     onCapture: (CameraCommand) -> Unit = {},
     // Pause, resume and stop for the last answer, while VISOR reads it (Speaker).
     reading: ReadingControls? = null,
+    // What Look around found, guiding to it, and stopping it (lookaround/LookAround).
+    lookAround: LookAroundControls? = null,
     modifier: Modifier = Modifier,
 ) {
     val captures by viewModel.captures.collectAsStateWithLifecycle()
+    val hazardWatchOn by viewModel.hazardWatchOn.collectAsStateWithLifecycle()
+    val found by (lookAround?.found ?: remember { MutableStateFlow<LookAround.Found?>(null) })
+        .collectAsStateWithLifecycle()
     val lastAnswer by viewModel.lastAnswer.collectAsStateWithLifecycle()
     val readingState by (reading?.reading ?: remember { MutableStateFlow(ReadingState.NONE) })
         .collectAsStateWithLifecycle()
     val readingText by (reading?.readingText ?: remember { MutableStateFlow<String?>(null) })
         .collectAsStateWithLifecycle()
     val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val featureOrder = remember(profile.visionTypes) { VisionPlan.from(profile).featureOrder }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -156,8 +171,10 @@ fun HomeScreen(
             }
 
             // What Home is for, first: a button for each camera feature, each
-            // always in the same place and always doing the same thing, hazards
-            // at the top. Full width, one to a row, so a long name wraps at a
+            // always in the same place and always doing the same thing, the
+            // one most useful to the user's vision at the top (VisionPlan:
+            // hazards, unless setup said otherwise). The order only changes
+            // when they change their answers in Settings > About you. Full width, one to a row, so a long name wraps at a
             // large text size rather than shrinking. Then what VISOR last found.
             //
             // Offline, each stays in its place, so nothing moves under a finger
@@ -167,7 +184,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(CaptureGap),
             ) {
-                CameraCommand.entries.forEach { command ->
+                featureOrder.forEach { command ->
                     val label = stringResource(command.labelRes)
                     val availability = command.availability(uiState.isOnline)
                     CaptureControl(
@@ -175,6 +192,8 @@ fun HomeScreen(
                         icon = command.icon,
                         status = captures[command] ?: CaptureStatus.IDLE,
                         availability = availability,
+                        // Look around runs until the wearer's head is done: it can be stopped.
+                        onStop = if (command == CameraCommand.LOOK_AROUND) ({ lookAround?.stop() }) else null,
                         onClick = {
                             if (availability != Availability.LOCKED) {
                                 onCapture(command)
@@ -187,6 +206,19 @@ fun HomeScreen(
                         },
                     )
                 }
+            }
+
+            // On or off, not a mode: looks for hazards every few seconds and says what is new.
+            SwitchChip(
+                title = stringResource(R.string.home_hazard_watch),
+                on = hazardWatchOn,
+                onToggle = { viewModel.setHazardWatch(!hazardWatchOn) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // What Look around found, while it can still be guided to.
+            found?.takeIf { it.sightings.isNotEmpty() }?.let { map ->
+                FoundCard(map, onGuide = { lookAround?.guideTo(it) })
             }
 
             LastAnswerCard(
@@ -202,6 +234,57 @@ fun HomeScreen(
         }
     }
 }
+
+/**
+ * What Look around found, one button each, from the wearer's left to their
+ * right as it was said: "Chair, 10 o'clock, 4 ft". Pressing one leads the head
+ * round to face it, by tone (LookAround.guideTo), so a user who would rather
+ * tap than say "VISOR GO, guide me to the chair" can. It is shown only while
+ * guidance still works: two minutes after the scan, with the glasses' motion
+ * still streaming. After that the directions would no longer be trusted, and
+ * the card goes.
+ */
+@Composable
+private fun FoundCard(found: LookAround.Found, onGuide: (Sighting) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val items = remember(found) { found.sightings.sortedByDescending { it.relativeTo(found.facingYawDeg) } }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surface, VisorShapes.Control)
+            .border(2.dp, colors.outline, VisorShapes.Control)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            stringResource(R.string.home_found_title),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            stringResource(R.string.home_found_description),
+            style = MaterialTheme.typography.bodyLarge,
+            color = colors.onSurfaceVariant,
+        )
+        items.forEach { sighting ->
+            val name = sighting.name.replaceFirstChar { it.uppercase() }
+            val hour = SceneMap.clockHour(sighting.relativeTo(found.facingYawDeg))
+            val feet = (sighting.distanceM * FeetPerMeter).roundToInt().coerceAtLeast(1)
+            val spoken = stringResource(R.string.home_found_item_spoken, sighting.name, hour, feet)
+            SwitchButton(
+                label = stringResource(R.string.home_found_item, name, hour, feet),
+                icon = Icons.Filled.NearMe,
+                onClick = { onGuide(sighting) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = spoken },
+            )
+        }
+    }
+}
+
+private const val FeetPerMeter = 3.28084f
 
 /**
  * Shown on Home while the phone's camera is chosen (on the Pair screen): the
@@ -257,6 +340,7 @@ private fun CaptureControl(
     status: CaptureStatus,
     availability: Availability,
     onClick: () -> Unit,
+    onStop: (() -> Unit)? = null,
 ) {
     val working = status != CaptureStatus.IDLE
     val style = MaterialTheme.typography.headlineSmall
@@ -283,14 +367,16 @@ private fun CaptureControl(
             },
             second = {
                 // A new node for each step, so a screen reader hears each one.
-                key(status) { CaptureStatusPanel(status, style) }
+                val stoppable = onStop != null &&
+                    (status == CaptureStatus.LOOKING_AROUND || status == CaptureStatus.GUIDING)
+                key(status) { CaptureStatusPanel(status, style, onStop = if (stoppable) onStop else null) }
             },
         )
     }
 }
 
 @Composable
-private fun CaptureStatusPanel(status: CaptureStatus, style: TextStyle) {
+private fun CaptureStatusPanel(status: CaptureStatus, style: TextStyle, onStop: (() -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     val sweep: State<Float>? = if (animationsEnabled()) {
         rememberInfiniteTransition(label = "working").animateFloat(
@@ -307,20 +393,30 @@ private fun CaptureStatusPanel(status: CaptureStatus, style: TextStyle) {
             .heightIn(min = CaptureMinHeight)
             .background(colors.surface, VisorShapes.Control)
             .sweepingRing(sweep, track = colors.outline, ring = colors.primary)
+            .then(if (onStop != null) Modifier.clickable(onClick = onStop) else Modifier)
             .padding(horizontal = 24.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = if (status == CaptureStatus.TAKING_PICTURE) Icons.Filled.PhotoCamera else Icons.Filled.HourglassTop,
+            imageVector = when (status) {
+                CaptureStatus.TAKING_PICTURE -> Icons.Filled.PhotoCamera
+                CaptureStatus.LOOKING_AROUND -> Icons.Filled.Explore
+                CaptureStatus.GUIDING -> Icons.Filled.NearMe
+                else -> Icons.Filled.HourglassTop
+            },
             contentDescription = null,
             tint = colors.primary,
             modifier = Modifier.size(iconSizeFor(style)),
         )
         Text(
             stringResource(
-                if (status == CaptureStatus.TAKING_PICTURE) R.string.home_capture_taking_picture
-                else R.string.home_capture_thinking
+                when (status) {
+                    CaptureStatus.TAKING_PICTURE -> R.string.home_capture_taking_picture
+                    CaptureStatus.LOOKING_AROUND -> R.string.home_capture_looking_around
+                    CaptureStatus.GUIDING -> R.string.home_capture_guiding
+                    else -> R.string.home_capture_thinking
+                }
             ),
             style = style,
             fontWeight = FontWeight.Bold,

@@ -3,6 +3,9 @@ package ucf.visor.stt
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
+import android.os.Looper
+import android.os.Handler
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -21,6 +24,11 @@ import android.util.Log
 class CommandRecognizer(private val context: Context) {
 
     private var recognizer: SpeechRecognizer? = null
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    /** Counts listens (and cancels): a callback from any but the current one is ignored. */
+    private var generation = 0
 
     fun isAvailable(): Boolean = SpeechRecognizer.isRecognitionAvailable(context)
 
@@ -45,29 +53,67 @@ class CommandRecognizer(private val context: Context) {
         }
 
         cancel()
+        start(onReady, onSpeechEnded, onResult, retried = false)
+    }
+
+    private fun start(
+        onReady: () -> Unit,
+        onSpeechEnded: () -> Unit,
+        onResult: (String?) -> Unit,
+        retried: Boolean,
+    ) {
+        val mine = ++generation
+        val startedAt = SystemClock.elapsedRealtime()
         val r = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = r
+
+        // This listen is over: nothing more is heard from its recognizer, which
+        // is let go (not from inside its own callback).
+        fun end(): Boolean {
+            if (mine != generation) return false
+            generation++
+            recognizer = null
+            handler.post { runCatching { r.destroy() } }
+            return true
+        }
 
         r.setRecognitionListener(object : RecognitionListener {
             override fun onResults(results: Bundle) {
                 val text = results
                     .getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()
-                onResult(text)
+                if (end()) onResult(text)
             }
 
             override fun onError(error: Int) {
                 Log.d("VISOR CommandRecognizer", "Recognition error: $error")
-                onResult(null)
+                // Android can report an error more than once, and a recognizer
+                // that was replaced reports one late: only the listen in
+                // progress counts, and only once. Before this, a second "Ask a
+                // question" got the first one's error, said "Sorry, I didn't
+                // catch that" over its own listening, and left the button and
+                // the wake phrases stuck (field log, 2026-11-15).
+                val early = SystemClock.elapsedRealtime() - startedAt < RETRY_WITHIN_MS
+                if (!retried && early && error in RETRY_ERRORS) {
+                    // The speech service wasn't ready (still letting go of the
+                    // last recognizer): once more, a moment later.
+                    if (!end()) return
+                    val retry = ++generation
+                    handler.postDelayed({
+                        if (retry == generation) start(onReady, onSpeechEnded, onResult, retried = true)
+                    }, RETRY_DELAY_MS)
+                    return
+                }
+                if (end()) onResult(null)
             }
 
             // Overridden functions to be updated as necessary...
             override fun onPartialResults(partialResults: Bundle) = Unit
-            override fun onReadyForSpeech(params: Bundle?) = onReady()
+            override fun onReadyForSpeech(params: Bundle?) { if (mine == generation) onReady() }
             override fun onBeginningOfSpeech() = Unit
             override fun onRmsChanged(rmsdB: Float) = Unit
             override fun onBufferReceived(buffer: ByteArray?) = Unit
-            override fun onEndOfSpeech() = onSpeechEnded()
+            override fun onEndOfSpeech() { if (mine == generation) onSpeechEnded() }
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
         })
 
@@ -84,6 +130,8 @@ class CommandRecognizer(private val context: Context) {
 
     /** Stops any in-flight recognition without delivering a result. */
     fun cancel() {
+        // Whatever the old recognizer (or a retry waiting its turn) says now is ignored.
+        generation++
         recognizer?.cancel()
         recognizer?.destroy()
         recognizer = null
@@ -91,5 +139,15 @@ class CommandRecognizer(private val context: Context) {
 
     fun shutdown() {
         cancel()
+    }
+
+    private companion object {
+        /** Errors worth one more try when they come at once: the speech service was busy or gone. */
+        val RETRY_ERRORS = setOf(SpeechRecognizer.ERROR_RECOGNIZER_BUSY, ERROR_SERVER_DISCONNECTED)
+
+        /** SpeechRecognizer.ERROR_SERVER_DISCONNECTED, which only has a name from Android 12. */
+        const val ERROR_SERVER_DISCONNECTED = 11
+        const val RETRY_WITHIN_MS = 1_500L
+        const val RETRY_DELAY_MS = 400L
     }
 }

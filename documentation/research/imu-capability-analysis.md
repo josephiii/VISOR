@@ -5,8 +5,7 @@
 > **Status: framework and decision criteria defined; measurements pending.**
 > Every viability judgement below is stated as a *gate* — the measurement that
 > would decide it — not as a conclusion. Measured values are written by
-> `analysis/analyze.py` into
-> [imu-characterization-report.md](../testing/imu-characterization-report.md).
+> `analysis/analyze.py` into its generated report.
 > Where this document records an observation, it is labelled as such with its
 > confidence. Nothing here is a result until the report carries the number.
 
@@ -64,9 +63,8 @@ against the gyroscope, it failed.
 
 > **Observation.** Source: `analysis/pose_analysis.py` →
 > `data/imu-analysis/pose-summary.json` (`heading_survey`,
-> `orientation.per_trial`); figure `pose_orientation.png` in the generated
-> [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md),
-> finding 2. Confidence: **high** that the discrepancy is real (in none of the
+> `orientation.per_trial`); figure `pose_orientation.png` in the report
+> `analysis/pose_analysis.py` generates, finding 2. Confidence: **high** that the discrepancy is real (in none of the
 > 6 yaw-dominant recordings, under 3 participant codes, does the heading track
 > the gyro); **none** as to its cause.
 
@@ -414,9 +412,6 @@ and extended:
 ## Related documents
 
 - [imu-test-protocol.md](../testing/imu-test-protocol.md) — trial battery and methodology
-- [imu-characterization-report.md](../testing/imu-characterization-report.md) — generated results
-- [imu-pose-tracking-report.md](../testing/imu-pose-tracking-report.md) — generated IMU-only orientation and heading analysis (`analysis/pose_analysis.py`), with the web-vs-native comparison
-- [imu-balance-report.md](../testing/imu-balance-report.md) — generated balance and vestibular task analysis (`analysis/balance_analysis.py`)
 - [meta-mrbd-capabilities.md](./meta-mrbd-capabilities.md) — platform capability research
 - [low-vision-research.md](./low-vision-research.md) — user population background
 - `analysis/` — the analysis toolkit that produces the report

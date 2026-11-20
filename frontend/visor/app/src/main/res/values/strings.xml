@@ -113,15 +113,21 @@
     <string name="settings_hub_sound" description="Settings hub tile and screen title: volumes and vibration">Sound</string>
     <string name="settings_hub_sound_description" description="Settings hub tile: what Sound holds">How loud each kind of sound is, and vibration</string>
     <string name="settings_hub_display" description="Settings hub tile and screen title: text size and display">Text &amp; display</string>
-    <string name="settings_hub_display_description" description="Settings hub tile: what Text and display holds">Text size, light or dark, and High contrast</string>
+    <string name="settings_hub_display_description" description="Settings hub tile: what Text and display holds">Text size, light or dark, High contrast, and your own colors</string>
     <string name="settings_hub_commands_description" description="Settings hub tile: what Commands holds">Camera commands, voice navigation and tap navigation</string>
     <string name="settings_hub_account_description" description="Settings hub tile: what Account holds">Log out, or delete your account</string>
+    <string name="settings_hub_history_description" description="Settings hub tile: what History holds">Today\'s answers, to read or hear again</string>
     <string name="settings_hub_help_description" description="Settings hub tile: what Help holds">What each part of VISOR does, and how</string>
     <string name="settings_hub_open" description="What tapping a Settings hub tile does, as a screen reader says it">open</string>
     <string name="settings_back_to_hub" description="Button at the top of each part of Settings">Back to Settings</string>
     <string name="settings_section_vision_description" description="Heading over the free-text vision description field">In your own words</string>
     <string name="settings_name_label" description="Label for the user's name field">Your name</string>
     <string name="settings_vision_description_label" description="Label for the free-text vision description field">Describe your vision, in your own words (optional)</string>
+    <string name="settings_section_fits_you" description="Settings > About you heading: what VISOR does differently for this user">How VISOR fits you</string>
+    <string name="settings_share_description" description="Name of the switch that sends the user's own description to VISOR's AI">Share my description with VISOR\'s AI</string>
+    <string name="settings_share_description_detail">On, VISOR\'s AI reads your description with each scene description and question, so its answers fit you. Off, it stays on this phone.</string>
+    <string name="settings_apply_suggested_look" description="Button: switch to the dark, high-contrast look VISOR suggests for contrast and light sensitivity">Use the suggested dark, high-contrast look</string>
+    <string name="settings_suggested_look_applied" description="Said after the suggested look is applied">Dark, high-contrast look on.</string>
     <!-- Settings → Speech → How VISOR sounds: which of the phone's voices VISOR speaks in (tts/VoiceCatalog) -->
     <string name="voice_choice_section" description="Settings section: which voice VISOR speaks in">How VISOR sounds</string>
     <string name="voice_choice_current" description="The voice the user has chosen, e.g. Your voice: US English voice 2">"Your voice: <xliff:g id="voice">%1$s</xliff:g>"</string>
@@ -170,6 +176,8 @@
     <string name="settings_volume_thinking_beeps_description" description="When the thinking beeps play">While VISOR works on an answer.</string>
     <string name="settings_volume_ready_chime_title" description="Volume slider: the chime as Hey Meta opens VISOR, ready for a question">Ready chime</string>
     <string name="settings_volume_ready_chime_description" description="When the ready chime plays">As \"Hey Meta, start VISOR\" opens VISOR, ready for your first question.</string>
+    <string name="settings_volume_guidance_tones_title" description="Volume slider: the beeps that lead your head while looking around">Guidance tones</string>
+    <string name="settings_volume_guidance_tones_description" description="When the guidance tones play">While Look around leads your head: faster and higher as you get closer.</string>
     <string name="settings_volume_off" description="Volume slider, silent end">Off</string>
     <string name="settings_volume_louder" description="Volume slider, loud end">Louder</string>
     <string name="settings_volume_down_button" description="Screen reader name of the minus button beside a volume slider. The placeholder is the slider's title">Turn <xliff:g id="title">%1$s</xliff:g> down</string>
@@ -188,6 +196,81 @@
     <string name="settings_vibration_description" description="What VISOR's vibrations mean">VISOR buzzes so you can feel what it is doing: two short pulses as \"Hey Meta, start VISOR\" opens it, a firm buzz when it starts listening for a command, a light tick when you press a button, and three short pulses when it can\'t do what you asked yet.</string>
     <string name="settings_vibration" description="Name of the Vibration on/off setting">Vibration</string>
     <string name="settings_high_contrast" description="Name of the High contrast on/off setting">High contrast</string>
+    <string name="settings_theme_custom" description="Light or dark option: the user's own colors">My colors</string>
+    <string name="settings_custom_colors_on_note" description="Under Contrast while the user's own colors are in use, in place of the High contrast switch">Your own colors are in use. High contrast is one of VISOR\'s own looks: to use it, go back to VISOR\'s colors.</string>
+    <string name="settings_edit_my_colors" description="Button in Text and display: opens the color editor">Pick my colors</string>
+    <string name="settings_use_visor_colors" description="Button: stop using the user's own colors and go back to VISOR's look">Use VISOR\'s colors</string>
+    <string name="settings_back_to_display" description="Button at the top of My colors">Back to Text &amp; display</string>
+    <string name="settings_colors_title" description="Screen title: the color editor">My colors</string>
+
+    <!-- Settings → Text & display → My colors: the color editor (ui/screens/profile/ThemeEditor) -->
+    <string name="colors_intro">Pick your own color for each part of VISOR. VISOR checks each color as you pick it, and tells you if something would be hard to read.</string>
+    <string name="colors_preview_heading" description="Heading over the preview of the colors being picked">How it will look</string>
+    <string name="colors_preview_description" description="What a screen reader says for the preview">Preview of the colors you are picking</string>
+    <string name="colors_preview_title" description="Sample heading in the preview">Good morning</string>
+    <string name="colors_preview_supporting" description="Sample secondary text in the preview">Smaller notes look like this.</string>
+    <string name="colors_preview_card" description="Sample text on a card in the preview">A card or Settings tile</string>
+    <string name="colors_preview_button" description="Sample filled button in the preview">Button</string>
+    <string name="colors_preview_selected" description="Sample chosen chip in the preview">Picked</string>
+    <string name="colors_preview_unselected" description="Sample chip that isn't chosen, in the preview">Not picked</string>
+    <string name="colors_preview_focused" description="Sample control with the focus ring, in the preview">Focus ring</string>
+    <string name="colors_preview_error" description="Sample error message in the preview">An error message</string>
+    <string name="colors_start_from" description="Heading: which of VISOR's looks the user's colors start from">Start from</string>
+    <string name="colors_start_from_description">Every color you don\'t change keeps this look\'s color.</string>
+    <string name="colors_base_clarity_light" description="VISOR look to start from">VISOR light</string>
+    <string name="colors_base_clarity_dark" description="VISOR look to start from">VISOR dark</string>
+    <string name="colors_base_high_contrast_light" description="VISOR look to start from">High contrast light</string>
+    <string name="colors_base_high_contrast_dark" description="VISOR look to start from">High contrast dark</string>
+    <string name="colors_start_again_title" description="Dialog title: start the user's colors again from another look">Start again from %1$s?</string>
+    <string name="colors_start_again_message" description="Dialog message">The colors you picked will be cleared.</string>
+    <string name="colors_start_again_confirm" description="Dialog button">Start again</string>
+    <string name="colors_parts" description="Heading over the list of parts the user can color">Your colors</string>
+    <string name="colors_part_background">Background</string>
+    <string name="colors_part_background_description">The page behind everything.</string>
+    <string name="colors_part_surface">Cards and tiles</string>
+    <string name="colors_part_surface_description">Settings\' tiles, cards, and choices that aren\'t picked.</string>
+    <string name="colors_part_text">Text</string>
+    <string name="colors_part_text_description">Words, and the icons beside them.</string>
+    <string name="colors_part_buttons">Buttons and headings</string>
+    <string name="colors_part_buttons_description">Filled buttons, headings, and the edge of a picked choice.</string>
+    <string name="colors_part_highlight">Picked choices</string>
+    <string name="colors_part_highlight_description">The fill of a picked choice, and of a switch that is on.</string>
+    <string name="colors_part_outline">Borders and focus ring</string>
+    <string name="colors_part_outline_description">Borders around buttons and fields, and the ring around the one that has focus.</string>
+    <string name="colors_part_changed" description="After a part's color name: the user picked this color">%1$s, your pick</string>
+    <string name="colors_readable" description="A part's colors all reach the WCAG contrast they need">Easy to read</string>
+    <string name="colors_hard_to_read_with" description="A part is too faint against another part. %1$s: the other part, %2$s: the contrast, such as 2.1:1, %3$s: what it needs, such as 4.5:1">Hard to read with %1$s: %2$s, needs %3$s</string>
+    <string name="colors_hard_to_read" description="A part is too faint against a color VISOR works out, such as an error message. %1$s: the contrast, %2$s: what it needs">Hard to read in places: %1$s, needs %2$s</string>
+    <string name="colors_some_hard_to_read">Some parts are hard to read. You can still use these colors, and go back at any time: say \"VISOR GO, use VISOR colors\".</string>
+    <string name="colors_use" description="Button: start using the colors picked">Use these colors</string>
+    <string name="colors_in_use" description="Said and shown once the user's colors are in use">Your colors are in use.</string>
+    <string name="colors_undo" description="Button: throw away changes not yet in use">Undo changes</string>
+    <string name="colors_back_to_parts" description="Button at the top of the color picker">Back to my colors</string>
+    <string name="colors_done" description="Button at the bottom of the color picker">Done</string>
+    <string name="colors_before" description="Label under the swatch of the color before this change">Before</string>
+    <string name="colors_now" description="Label under the swatch of the color now picked">Now</string>
+    <string name="colors_make_readable" description="Button: make the color just light or dark enough to read">Make readable</string>
+    <string name="colors_make_readable_working" description="While Make readable works">Finding a readable color…</string>
+    <string name="colors_make_readable_failed">No lighter or darker color reads well here. Try changing the other color instead.</string>
+    <string name="colors_made_readable" description="Said after Make readable. %1$s: the new color's name">Changed to %1$s.</string>
+    <string name="colors_quick" description="Heading over a grid of ready-made colors">Quick colors</string>
+    <string name="colors_fine_tune" description="Heading over the hue, colorfulness and lightness sliders">Fine-tune</string>
+    <string name="colors_hue">Hue</string>
+    <string name="colors_hue_value" description="Hue slider's value. %1$d: degrees, %2$s: the color's name">%1$d degrees, %2$s</string>
+    <string name="colors_hue_back">Shift hue back</string>
+    <string name="colors_hue_forward">Shift hue forward</string>
+    <string name="colors_colorfulness">Colorfulness</string>
+    <string name="colors_less_colorful">Less colorful</string>
+    <string name="colors_more_colorful">More colorful</string>
+    <string name="colors_gray" description="Colorfulness slider's low end">Gray</string>
+    <string name="colors_vivid" description="Colorfulness slider's high end">Vivid</string>
+    <string name="colors_lightness">Lightness</string>
+    <string name="colors_darker">Darker</string>
+    <string name="colors_lighter">Lighter</string>
+    <string name="colors_percent" description="A slider's value in percent">%1$d percent</string>
+    <string name="colors_hex_label" description="Label of the field for a hex color code">Color code, such as #1A4D98</string>
+    <string name="colors_hex_invalid" description="Under the hex field when what is typed isn't a color code">Type 6 digits or letters A to F, such as #1A4D98.</string>
+    <string name="colors_reset_part" description="Button: this part goes back to the color of the look the user started from">Reset to the starting color</string>
     <string name="settings_section_commands" description="Settings section: every command and how to turn each off">Commands</string>
     <string name="settings_commands_description" description="What the commands section is">Ways to ask VISOR for something without touching your phone. Each one is on until you turn it off.</string>
     <string name="settings_camera_commands_title" description="Commands heading: wake phrases that start a camera feature">Camera commands</string>
@@ -198,6 +281,7 @@
     <string name="camera_command_identify_objects" description="Camera feature: takes a picture and names the objects in it">Identify objects</string>
     <string name="camera_command_describe_scene" description="Camera feature: takes a picture and describes it">Describe the scene</string>
     <string name="camera_command_ask_question" description="Camera feature: asks what you want to know, takes a picture and answers your question">Ask a question</string>
+    <string name="camera_command_look_around" description="Camera feature: you turn your head, VISOR takes a picture at each stop and says what is around you by clock hour">Look around</string>
     <string name="settings_command_say" description="Before the phrases that start a command">Say:</string>
     <!-- Said and shown at the top of the screen when a camera command is said before logging in -->
     <string name="camera_command_needs_login" description="A camera command was said before logging in">Log in first to use camera commands.</string>
@@ -234,13 +318,28 @@
     <string name="settings_delete_account_confirm_title" description="Delete account confirmation title">Delete your account?</string>
     <string name="settings_delete_account_confirm_message" description="Delete account confirmation message">This permanently deletes your VISOR account and everything in it. This can\'t be undone.</string>
     <string name="settings_delete_account_confirm_button" description="Delete account confirm button">Delete</string>
-
+    <!-- Settings → History: today's answers (data/ResponseHistory) -->
+    <string name="history_title" description="Settings hub tile and screen title: today's answers">History</string>
+    <string name="history_description" description="Under the History title: what it shows, and where it is kept">What VISOR has answered today, newest first. Kept on this phone only, and cleared at midnight and when you log out.</string>
+    <plurals name="history_count" description="How many answers History holds">
+        <item quantity="one">1 answer today</item>
+        <item quantity="other"><xliff:g id="count">%d</xliff:g> answers today</item>
+    </plurals>
+    <string name="history_count_limit" description="Under the count, once History is full: the oldest answers make way">History keeps the latest <xliff:g id="limit">%d</xliff:g> answers. Older ones are removed as new ones arrive.</string>
+    <string name="history_empty" description="History before VISOR has answered anything today">No answers yet today. Each time VISOR answers, the answer is added here.</string>
+    <string name="history_question" description="Above an Ask a question answer: what was asked">"You asked: “<xliff:g id="question">%1$s</xliff:g>”"</string>
+    <string name="history_read_aloud" description="Button under an answer in History: says it again">Read aloud</string>
+    <string name="history_read_aloud_named" description="What a screen reader says for one answer's Read aloud button">"Read aloud: <xliff:g id="feature">%1$s</xliff:g> answer from <xliff:g id="time">%2$s</xliff:g>"</string>
+    <string name="history_clear" description="Button at the bottom of History: deletes today's answers">Clear history</string>
+    <string name="history_clear_confirm_title" description="Clear history confirmation title">Clear today\'s history?</string>
+    <string name="history_clear_confirm_message" description="Clear history confirmation message">This removes every answer from History on this phone. The last answer on Home stays.</string>
+    <string name="history_clear_confirm_button" description="Clear history confirm button">Clear</string>
     <!-- Help Screen: one title and body per topic -->
     <string name="help_title" description="Help screen heading">Help &amp; how VISOR works</string>
     <string name="help_read_aloud" description="Reads one help topic aloud">Read aloud</string>
     <string name="help_read_aloud_named" description="Screen reader name of each help topic's Read aloud button. The placeholder is the topic">Read aloud: <xliff:g id="topic">%1$s</xliff:g></string>
     <string name="help_capture_title" description="Help topic title">Taking a picture</string>
-    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
+    <string name="help_capture_body" description="Help topic">At the top of the Home screen are five large buttons. Each takes a picture with your glasses and tells you about it, as soon as you\'re logged in. The first time, VISOR asks for access to your glasses\' camera in the Meta AI app. Without your glasses, choose My phone on the Pair screen, and the same buttons use your phone\'s camera instead.\n\nFrom the top: Check for hazards says what\'s ahead, how far away, and on which side, Read text reads the text, Identify objects names what\'s in front of you, Describe the scene describes it, and Ask a question asks what you want to know, then answers it. Each is always in the same place.\n\nThe answer stays on Home, under Last answer, with the name of the button that gave it. Settings, History keeps every answer from today, newest first, to read or hear again: say \"VISOR GO, open history\" to go straight there. With your glasses connected, the first four buttons are on their display while your phone shows Home.</string>
     <string name="help_pairing_title" description="Help topic title">Pairing your glasses</string>
     <string name="help_pairing_body" description="Help topic">Use the Pair tab to connect your Meta glasses through the Meta AI app. VISOR can\'t use their camera until they\'re paired.\n\nOnce paired, the Pair tab shows your glasses\' battery, whether you\'re wearing them, and their temperature, and can read all of it aloud. If your glasses need an update, a button there opens it in the Meta AI app.\n\nNo glasses with you? Under Which camera VISOR uses, choose My phone. VISOR then takes every picture with the camera on the back of your phone: hold it up and point it at what you want to know about. You can also say \"VISOR GO, use my phone camera\", and \"VISOR GO, use my glasses camera\" to switch back. Home says when your phone\'s camera is in use.</string>
     <string name="help_voice_launch_title" description="Help topic title">Opening VISOR by voice</string>
@@ -284,7 +383,7 @@
     <string name="help_profile_title" description="Help topic title">Setting up your profile</string>
     <string name="help_profile_body" description="Help topic">The first time you open VISOR, a short set of questions about your vision, your name, and how you\'d like VISOR to talk builds your profile. Every question is skippable — you can always fill it in later.</string>
     <string name="help_personalize_title" description="Help topic title">Personalizing VISOR</string>
-    <string name="help_personalize_body" description="Help topic">Settings is in parts: About you, Speech, Sound, Text and display, Commands, and Account.\n\nIn them you can change VISOR\'s voice, how fast it talks and how much detail it gives, how loud each kind of sound is and whether VISOR vibrates, your text size, light or dark, and High contrast. Changes apply at once.</string>
+    <string name="help_personalize_body" description="Help topic">Settings is in parts: About you, Speech, Sound, Text and display, Commands, History, and Account.\n\nIn them you can change VISOR\'s voice, how fast it talks and how much detail it gives, how loud each kind of sound is and whether VISOR vibrates, your text size, light or dark, High contrast, and your own colors. Changes apply at once, except your own colors, which apply when you press Use these colors. If your colors ever turn out hard to see, say \"VISOR GO, use VISOR colors\" to go back.</string>
 
     <!-- Hardware Pairing Screen -->
     <string name="hardware_pairing_navbar_title" description="The title for navigating to the user profile screen">Pair</string>
@@ -295,8 +394,15 @@
     <!-- A camera button on Home turns into these while VISOR works on it, so it can be seen working -->
     <string name="home_capture_taking_picture" description="In place of a camera button on Home while the glasses take its picture">Taking picture…</string>
     <!-- Under Home's title while the phone's camera is chosen on the Pair screen -->
+    <string name="home_hazard_watch" description="Home: switch for hazard watch, which looks for hazards every few seconds">Hazard watch</string>
     <string name="home_using_phone_camera" description="Home: the camera buttons use the phone's camera, not the glasses">Using your phone\'s camera</string>
     <string name="home_capture_thinking" description="In place of a camera button on Home while VISOR works out what is in its picture">Thinking…</string>
+    <string name="home_capture_looking_around" description="In place of the Look around button while the wearer turns their head and VISOR takes its pictures">Looking around… Tap to stop</string>
+    <string name="home_capture_guiding" description="In place of the Look around button while VISOR leads the head to something it found">Guiding… Tap to stop</string>
+    <string name="home_found_title" description="Heading of the card on Home listing what Look around found">Around you</string>
+    <string name="home_found_description" description="Under the Around you heading">Clock hours from where you faced when Look around finished: 12 is straight ahead. Tap one to be led to it by tone.</string>
+    <string name="home_found_item" description="One thing Look around found, as a button that guides the head to it">"<xliff:g id="name">%1$s</xliff:g>, <xliff:g id="hour">%2$d</xliff:g> o'clock, <xliff:g id="feet">%3$d</xliff:g> ft"</string>
+    <string name="home_found_item_spoken" description="What a screen reader says for one thing Look around found">"Guide me to the <xliff:g id="name">%1$s</xliff:g>, at <xliff:g id="hour">%2$d</xliff:g> o'clock, <xliff:g id="feet">%3$d</xliff:g> feet away"</string>
     <string name="home_last_answer_title" description="Heading of the card on Home that shows VISOR's last answer">Last answer</string>
     <string name="home_last_answer_from" description="Above the last answer: which camera feature gave it, and when">"<xliff:g id="feature">%1$s</xliff:g> · <xliff:g id="time">%2$s</xliff:g>"</string>
     <string name="home_last_answer_from_spoken" description="What a screen reader says for which camera feature gave the last answer, and when">"<xliff:g id="feature">%1$s</xliff:g>, <xliff:g id="time">%2$s</xliff:g>"</string>
@@ -367,7 +473,16 @@
 
     <!-- DESCRIBE Step -->
     <string name="step_describe_title">Tell me about your vision, in your own words</string>
-    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. Or say skip.</string>
+    <string name="step_describe_spoken_prompt">If you\'d like, tell me about your vision in your own words. Anything that doesn\'t fit the boxes. I\'ll share it with VISOR\'s AI so its descriptions fit you; you can turn that off in Settings. Or say skip.</string>
+    <string name="step_describe_sharing_note" description="Under the setup field for the user's own description: where it goes">VISOR\'s AI uses what you write here to describe things the way that helps you. You can turn this off in Settings, About you.</string>
+
+    <!-- CONFIRM_TYPES Step: shown only when the user's own words name an eye condition (see data/VisionPlan) -->
+    <string name="step_confirm_types_title">Add this to your answers?</string>
+    <string name="step_confirm_types_reason" description="Why setup offers to add an answer, as in 'You mentioned glaucoma. That usually brings:'">You mentioned <xliff:g id="condition">%1$s</xliff:g>. That usually brings:</string>
+    <string name="step_confirm_types_spoken_prompt" description="Spoken offer, as in 'You mentioned glaucoma. That usually brings trouble seeing the sides. Should I add that to your answers? Say yes or no.'">You mentioned <xliff:g id="condition">%1$s</xliff:g>. That usually brings <xliff:g id="kinds">%2$s</xliff:g>. Should I add that to your answers? Say yes or no.</string>
+    <string name="step_confirm_types_and" description="Joins the last two kinds of vision loss in a spoken list">and</string>
+    <string name="step_confirm_types_yes">Yes, add it</string>
+    <string name="step_confirm_types_no">No, leave my answers as they are</string>
 
     <!-- SEVERITY Step -->
     <string name="step_severity_title">How much does it affect daily life?</string>
@@ -380,10 +495,29 @@
     <!-- VERBOSITY Step -->
     <string name="step_verbosity_title">How much detail do you want?</string>
     <string name="step_verbosity_spoken_prompt">When I describe things, how much detail do you want? Say: brief, standard, or detailed.</string>
+    <string name="step_verbosity_recommended" description="A Detail option setup suggests from how much the user's vision affects daily life, as in 'Detailed (recommended for you)'"><xliff:g id="option">%1$s</xliff:g> (recommended for you)</string>
+    <string name="step_verbosity_recommended_spoken" description="Said after the Detail question, as in 'For you, I would suggest detailed.'">For you, I\'d suggest <xliff:g id="option">%1$s</xliff:g>.</string>
 
     <!-- DONE Step -->
     <string name="step_done_title">You\'re all set!</string>
     <string name="step_done_spoken_prompt">You\'re all set. You can change any of this later in Settings, or just ask me. Say start to begin using VISOR.</string>
+    <string name="step_done_fits_you" description="Heading over what VISOR does differently for this user, on setup's last step">Here\'s how VISOR fits you</string>
+    <string name="step_done_fits_you_spoken">Here\'s how I\'ll fit VISOR to you.</string>
+    <string name="step_done_look" description="Switch on setup's last step, on unless the user turns it off">Use a dark, high-contrast look</string>
+    <string name="step_done_look_spoken">Because light and contrast are hard for you, I\'ll use a dark, high-contrast look. Say no to keep the usual look.</string>
+    <string name="step_done_look_declined_spoken">Okay, I\'ll keep the usual look. Say start to begin using VISOR.</string>
+
+    <!-- How VISOR fits the user's vision (data/VisionPlan): setup's last step and Settings > About you -->
+    <string name="tailoring_ahead_first">Because the center is hard for you to see, I describe what\'s straight ahead first, and tell you about hazards straight ahead first.</string>
+    <string name="tailoring_sides_first">Because the sides are hard for you to see, I tell you what\'s on your left and right first, even when it\'s further away.</string>
+    <string name="tailoring_wide_look_around">Because the sides are hard for you to see, Look around turns further to each side, so it covers almost everything beside you.</string>
+    <string name="tailoring_read_details">Because things look blurry to you, I read text and give exact numbers, like prices and times.</string>
+    <string name="tailoring_contrast_and_light">Because contrast and light are hard for you, I mention glare and dim light, things that blend into their background, and colors.</string>
+    <string name="tailoring_severe_more_safety">Because your vision affects daily life a lot, I mention more of what you could trip over or walk into, and a brief hazard check names up to five things.</string>
+    <string name="tailoring_mild_skip_obvious">Because your vision affects daily life a little, I skip what\'s obvious.</string>
+    <string name="tailoring_own_words">I also use your own words about your vision, so my descriptions fit you.</string>
+    <string name="tailoring_first_button" description="As in 'Read text is your first button on Home.'"><xliff:g id="feature">%1$s</xliff:g> is your first button on Home.</string>
+    <string name="tailoring_none">Tell VISOR about your vision here, and it will fit what it says, and the order of your buttons, to you.</string>
 
     <!-- Hardware Pairing Screen: updates the glasses need -->
     <string name="update_required_title" description="Update required warning title">Update required</string>
@@ -401,6 +535,7 @@
     <string name="pair_rayban_display" description="Pair a mock Meta Ray-Ban Display (MWDAT 1.0)">Pair Meta Ray-Ban Display</string>
     <string name="mock_motion_feed_start" description="Replay a synthetic IMU feed on the mock glasses">Replay synthetic head motion (1 Hz)</string>
     <string name="mock_motion_feed_running" description="Synthetic IMU feed is replaying; tap to restart it">Head motion replaying (tap to restart)</string>
+    <string name="mock_look_around_feed_start" description="Debug: replays a wearer doing Look around on the mock glasses' motion sensors">Replay a look-around head turn</string>
     <string name="mock_battery_low" description="Set mock glasses battery low">Battery 12%</string>
     <string name="mock_battery_full" description="Set mock glasses battery high">Battery 95%</string>
     <string name="mock_thermal_hot" description="Set mock glasses thermal level high">Make hot</string>
@@ -650,6 +785,14 @@
         <item>I see bottle, kitchen.</item>
     </string-array>
 
+    <string-array name="look_around_scripts">
+        <!-- L 01 — Living room -->
+        <item>"From left to right: Couch at 10 o'clock, 6 feet away. Dining table at 12 o'clock, 4 feet away. Person at 2 o'clock, 9 feet away."</item>
+        <!-- L 02 — Office -->
+        <item>"From left to right: Chair at 11 o'clock, 3 feet away. Laptop at 1 o'clock, 2 feet away. Potted plant at 3 o'clock, 5 feet away."</item>
+        <!-- L 03 — Guided -->
+        <item>Chair, straight ahead, 3 feet away.</item>
+    </string-array>
     <string-array name="question_scripts">
         <!-- Q 01 — Door -->
         <item>You asked: Is the door open? The door ahead is closed. A silver handle is on the right side.</item>

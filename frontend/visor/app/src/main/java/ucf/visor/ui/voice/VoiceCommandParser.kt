@@ -4,6 +4,7 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.TextScale
 import ucf.visor.data.Verbosity
+import ucf.visor.stt.CameraCommand
 import ucf.visor.ui.viewmodel.SettingsSection
 
 /**
@@ -44,7 +45,31 @@ object VoiceCommandParser {
                 "background listening on",
             ) -> VoiceCommand.KeepListening
 
+            // Hazard watch, on or off. Ahead of "stop" and the rest: "stop
+            // hazard watch" names the watch, not a reading. ("hazard mode" is
+            // not a command: VISOR has no modes.)
+            text.contains("hazard watch") ->
+                VoiceCommand.SetHazardWatch(on = !containsWord(text, "stop", "off", "end", "cancel"))
+
+            // Look around, and being led to what it found. Ahead of "go home"
+            // and the rest: "guide me to the table" names a thing, not a screen.
+            guideTarget(text) != null -> VoiceCommand.GuideTo(guideTarget(text).orEmpty())
+            containsAny(text, "look around", "what's around me", "what is around me", "whats around me") ->
+                VoiceCommand.RunCamera(CameraCommand.LOOK_AROUND)
+
             containsAny(text, "go home", "home screen", "home") -> VoiceCommand.GoHome
+            // Settings > History, with or without "settings". Ahead of "back"
+            // and "previous", for "go back to my previous answers".
+            containsAny(
+                text,
+                "history",
+                "past answers",
+                "earlier answers",
+                "previous answers",
+                "today's answers",
+                "todays answers",
+                "all my answers",
+            ) -> VoiceCommand.OpenSettingsSection(SettingsSection.HISTORY)
             containsAny(text, "settings", "setting") ->
                 settingsSectionIn(text)?.let(VoiceCommand::OpenSettingsSection) ?: VoiceCommand.OpenSettings
             containsAny(text, "help") -> VoiceCommand.OpenHelp
@@ -57,6 +82,23 @@ object VoiceCommandParser {
                 VoiceCommand.UseCamera(CameraChoice.PHONE)
             containsAny(text, "glasses camera", "glasses' camera", "use my glasses", "use the glasses") ->
                 VoiceCommand.UseCamera(CameraChoice.GLASSES)
+
+            // Whose colors VISOR is drawn in. Ahead of "back", for "switch
+            // back to VISOR colors", and of "high contrast".
+            containsAny(
+                text,
+                "visor colors", "visor colours", "visor's colors", "visor's colours", "visors colors",
+                "default colors", "default colours", "usual colors", "usual colours",
+                "normal colors", "normal colours", "reset colors", "reset colours",
+                "reset my colors", "reset my colours", "original colors", "original colours",
+            ) -> VoiceCommand.UseVisorColors
+            containsAny(
+                text,
+                "my colors", "my colours", "my own colors", "my own colours",
+                "custom colors", "custom colours", "custom theme", "my theme",
+            ) && !containsAny(text, "edit", "change", "pick", "choose") -> VoiceCommand.UseCustomColors
+            containsAny(text, "color", "colour", "theme") && containsAny(text, "edit", "change", "pick", "choose") ->
+                VoiceCommand.OpenSettingsSection(SettingsSection.COLORS)
 
             // VISOR's voice. Ahead of "back", for "switch back to my usual voice".
             containsAny(text, "default voice", "usual voice", "original voice", "normal voice", "reset voice", "reset your voice") ->
@@ -159,10 +201,27 @@ object VoiceCommandParser {
         }
     }
 
+    /**
+     * What "guide me to the chair", "where is the door" or "find my cup"
+     * names ("the chair"), or null when [text] asks for no guidance. Blank
+     * when it asks without naming anything ("guide me").
+     */
+    internal fun guideTarget(text: String): String? {
+        val prefix = GuidePrefixes.firstOrNull { text.startsWith(it) || text.contains(" $it") } ?: return null
+        return text.substringAfter(prefix).trim().trimEnd('?', '.', '!')
+    }
+
+    private val GuidePrefixes = listOf(
+        "guide me to", "lead me to", "point me to", "turn me to", "guide me",
+        "where is the", "where's the", "wheres the", "where is my", "where's my",
+        "find the", "find my",
+    )
+
     /** Which part of Settings "open … settings" names, if any. */
     private fun settingsSectionIn(text: String): SettingsSection? = when {
         containsAny(text, "sound", "volume", "loud", "vibration") -> SettingsSection.SOUND
         containsAny(text, "speech", "speed", "talk", "voice") -> SettingsSection.SPEECH
+        containsAny(text, "color", "colour", "theme") -> SettingsSection.COLORS
         containsAny(text, "display", "text", "contrast", "dark", "light") -> SettingsSection.DISPLAY
         containsAny(text, "command") -> SettingsSection.COMMANDS
         containsAny(text, "account") -> SettingsSection.ACCOUNT
@@ -188,12 +247,13 @@ object VoiceCommandParser {
  * Settings never suggests something VISOR won't act on.
  */
 enum class VoiceCommandKind(val examples: List<String>) {
-    GO_PLACES(listOf("go home", "open settings", "open sound settings", "help", "pair glasses", "go back")),
+    GO_PLACES(listOf("go home", "open settings", "open sound settings", "open history", "help", "pair glasses", "go back")),
     SETTINGS(
         listOf(
             "faster", "slower", "normal speed", "next voice", "previous voice", "default voice",
             "brief", "detailed", "standard detail",
             "large text", "extra large text", "normal text", "high contrast",
+            "use my colors", "use visor colors",
             "use my phone camera", "use my glasses camera",
             "keep listening", "stop listening",
         )

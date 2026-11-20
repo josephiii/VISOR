@@ -77,13 +77,17 @@ fun GlassesNavScreen.page(index: Int): GlassesNavPage {
  * for the phone. The screen's own buttons follow, behind More where they
  * don't fit, so nothing is out of reach while a reading is paused. Not over
  * an "Are you sure?", which is answered first.
+ *
+ * [featureOrder] is the order of Home's camera buttons, the user's
+ * VisionPlan.featureOrder, so the glasses list them as the phone does.
  */
 fun glassesNavScreenFor(
     route: String?,
     uiState: VisorUiState,
     reading: ReadingState = ReadingState.NONE,
+    featureOrder: List<CameraCommand> = CameraCommand.entries,
 ): GlassesNavScreen {
-    val screen = navScreenFor(route, uiState)
+    val screen = navScreenFor(route, uiState, featureOrder)
     val asking = uiState.isLogoutConfirmVisible || uiState.isDeleteAccountConfirmVisible
     if (reading == ReadingState.NONE || asking) return screen
     val paused = reading == ReadingState.PAUSED
@@ -100,7 +104,11 @@ fun glassesNavScreenFor(
 }
 
 /** The glasses' buttons for [route], with nothing being read aloud. */
-private fun navScreenFor(route: String?, uiState: VisorUiState): GlassesNavScreen {
+private fun navScreenFor(
+    route: String?,
+    uiState: VisorUiState,
+    featureOrder: List<CameraCommand>,
+): GlassesNavScreen {
     // Pre-login screens (title/login/sign-up/etc.) have no touch nav bar and no
     // voice-reachable destinations either — see VisorLayout's VoiceCommand.GoHome
     // handling — so the glasses fallback stays quiet there too.
@@ -151,10 +159,11 @@ private fun navScreenFor(route: String?, uiState: VisorUiState): GlassesNavScree
     // Offline, the same four stay in the same places, so a wearer's habits
     // still work; the ones that need the internet show a padlock and the
     // quieter style, and a tap on one says why it can't run (MainActivity).
+    // Their order is the phone's, fitted to the user's vision (VisionPlan).
     if (route == "home") {
         return GlassesNavScreen(
             title = "Home",
-            items = CameraCommand.entries.mapNotNull { cameraItem(it, uiState.isOnline) },
+            items = featureOrder.mapNotNull { cameraItem(it, uiState.isOnline) },
             subtitle = if (uiState.isOnline) null else OFFLINE_SUBTITLE,
         )
     }
@@ -217,6 +226,10 @@ private fun cameraItem(command: CameraCommand, isOnline: Boolean): GlassesNavIte
  * Null for Ask a question, which has no button here: a fifth would push
  * Describe the scene behind More, and asking means speaking anyway, where
  * "VISOR, I have a question" is as quick as a tap.
+ *
+ * Null for Look around too, for the same fifth-button reason: it is started
+ * by "VISOR, look around" or on the phone, and then needs no screen at all,
+ * only the wearer's head turning.
  */
 private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command) {
     CameraCommand.CHECK_HAZARDS ->
@@ -228,4 +241,5 @@ private fun cameraItem(command: CameraCommand): GlassesNavItem? = when (command)
     CameraCommand.DESCRIBE_SCENE ->
         GlassesNavItem("Describe the scene", IconName.MOUNTAIN_SQUARE, VoiceCommand.RunCamera(command))
     CameraCommand.ASK_QUESTION -> null
+    CameraCommand.LOOK_AROUND -> null
 }

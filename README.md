@@ -54,10 +54,12 @@ More on how we setup and use the Meta Wearables Device Access Toolkit:
 - Get started on frontend development with our [frontend-jumpstart](./documentation/developer/frontend-jumpstart.md).
 - See our [VLM](./documentation/developer/VLM.md) overview.
 - The [MWDAT 1.0 upgrade](./documentation/developer/mwdat-1.0-upgrade.md): what changed, the head-motion lab, "Hey Meta, start VISOR", and the Developer Center setup they need.
+- [Look around](./documentation/developer/look-around.md): the glasses' IMU and camera together. Turn your head and VISOR says what is around you by clock hour, then leads your head to any of it by tone ("VISOR, look around", "VISOR GO, guide me to the chair").
 - The [phone camera fallback](./documentation/research/phone-camera-fallback.md): why VISOR can use the phone's camera, how users choose it, and how to test without glasses.
 - [Offline features](./documentation/developer/offline-features.md): what works without the internet, how locked features are shown and said, and how to test it.
-- [Background listening](./documentation/developer/background-listening.md): listening with the screen off, its notification, hearing commands through the glasses' microphone, and what to check on hardware.
 - [Voice options](./documentation/developer/voice-options.md): choosing VISOR's voice, how voices that need the internet behave offline, and the bar any new voice model must clear (including its license).
+- [Tailored experience](./documentation/developer/tailored-experience.md): how setup's answers about a user's vision change what VISOR says, which hazards it names first, the order of its buttons, and the look it suggests (`data/VisionPlan`).
+- [My colors](./documentation/developer/theme-editor.md): the theme editor in Settings > Text & display, where users pick their own color for each part of VISOR. Covers how VISOR keeps every color readable (`ui/theme/ContrastAudit`, shared with the build's contrast test), and the way back ("VISOR GO, use VISOR colors").
 - Run the server with the [backend README](./backend/README.md), and change wake phrases with the [wake-phrase tooling](./tools/kws/README.md).
 
 ## Project Layout
@@ -83,14 +85,16 @@ VISOR/
 | --- | --- |
 | `MainActivity.kt` | Entry point: permissions, intents ("Hey Meta, start VISOR", registration) and the screen. It tells the engine when VISOR is on screen and lends it the phone's camera. |
 | `VisorApp.kt`, `engine/` | What outlives any screen. `VisorState` is the profile, login, glasses, and each camera feature's status and last answer. `VisorEngine` listens and speaks: wake phrases, "VISOR GO", routing each wake phrase and glasses button to its feature (`stt/CameraCommand`). Every feature works as soon as the user is logged in. |
-| `background/` | Background listening (see [Background listening](./documentation/developer/background-listening.md)): `ListeningService`, its notification (`ListeningNotification`, `ListeningNotificationText`), and `BackgroundPolicy`, which says which commands work with the screen off. |
-| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene, or answer a spoken question about it, via `ui/SceneQuestionController`), `HazardDetector` (what's ahead and how far away). Each takes one photo with the camera chosen on the Pair screen (`ChosenPhotoSource`): the glasses (`GlassesPhotoSource`) or the phone's back camera (`PhoneCameraSource`, which catches black photos with `BlackPhoto`). Without glasses, choose the phone (the emulator's camera works too), or pair mock glasses in the debug menu and choose the photo they take. |
+| `background/` | Background listening: `ListeningService`, its notification (`ListeningNotification`, `ListeningNotificationText`), and `BackgroundPolicy`, which says which commands work with the screen off. |
+| `capture/` | The camera features: `TextReader` (read text), `ObjectIdentifier` (name objects), `SceneDescriber` (describe the scene, or answer a spoken question about it, via `ui/SceneQuestionController`), `HazardDetector` (what's ahead and how far away). Look around (`lookaround/`) takes several glasses pictures as the head turns. Each takes one photo with the camera chosen on the Pair screen (`ChosenPhotoSource`): the glasses (`GlassesPhotoSource`) or the phone's back camera (`PhoneCameraSource`, which catches black photos with `BlackPhoto`). Without glasses, choose the phone (the emulator's camera works too), or pair mock glasses in the debug menu and choose the photo they take. |
 | `recognition/` | On-device ML Kit recognition: text (`TextReaderOCR`), object labels (`ObjectDetector`), custom labels (`CustomObjectDetector`, not wired up yet). |
 | `network/` | Every backend call: `ApiClient` (server address, shared HTTP client), `AuthApi`, `VlmClient`, `HazardClient`. Also `Connectivity`, which says whether the phone is online. Offline, `capture/Availability` locks the features that need the server (see [Offline features](./documentation/developer/offline-features.md)). |
-| `data/` | What is saved on the phone: the login session (`SessionStore`) and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). |
-| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`), spoken commands, and `MicRoute`, which hears them through the glasses' microphone when glasses are connected. |
+| `data/` | What is saved on the phone: the login session (`SessionStore`), today's answers for Settings > History (`HistoryStore`, `ResponseHistory`), and the accessibility profile (`ProfileStore`, `UserProfile`), including how loud each kind of sound is (`AudioMix`) and which camera takes the pictures (`CameraChoice`). `VisionPlan` turns the profile's answers about the user's vision into what VISOR does differently for them (see [Tailored experience](./documentation/developer/tailored-experience.md)). |
+| `stt/` | Listening: wake phrases (sherpa-onnx; the phrases themselves are in `WakePhrases`), spoken commands, `MicRoute`, which hears them through the glasses' microphone when glasses are connected, and `MicCheck`, which logs which microphone each recording really uses (logcat tag `VisorMicCheck`). |
 | `tts/` | Speaking: `Speaker`, which voice it speaks in (`VoiceCatalog`: the phone's voices, and an on-phone one in place of one that needs the internet while offline), the "thinking" beep, the ready chime (`Chimes`), and `SpokenPhrases` (everything the camera features say). `Readings` reads a long answer a sentence at a time, so it can be paused, resumed and stopped (Home's Last answer card, `ui/components/ReadingControlsBar` on other screens, "VISOR GO, stop", and the glasses). |
 | `wearables/` | Meta glasses helpers: `GlassesLease` (who holds the glasses' one session), device status, camera permission, spoken session errors, "Hey Meta" launches. |
+| `motion/` | The glasses' head movement, live: MWDAT Motion attached to VISOR's held glasses session (`HeadMotion`), turned into where the head points (`HeadingTracker`) and whether it is holding still (`SteadyGate`). |
+| `lookaround/` | Look around: the scan (`ScanSequencer`), where each found object is (`SceneMap`), leading the head to one (`GuideSequencer`, `GuideTonePlayer`), and what it says (`LookAroundPhrases`). See [Look around](./documentation/developer/look-around.md). |
 | `motionlab/` | Head-motion research lab: Motion and camera trials, recordings (debug menu → Test Suite). |
 | `ui/` | `VisorLayout` (watches state and navigates) and `VisorNavHost` (one route per screen). |
 | `ui/screens/` | One folder per screen, plus any ViewModel used only by that screen (e.g. `debug/DebugViewModel`): `title/`, `auth/`, `home/`, `hardware/` (Pair Glasses), `profile/` (setup wizard, Settings), `help/`, `motionlab/`, `debug/`, `phase1/`. |
@@ -99,7 +103,7 @@ VISOR/
 | `ui/feedback/` | How VISOR feels and moves: one vibration pattern per meaning (`Haptics`), the pressed and focused look every control shares (`ControlFeedback`), and the motion rules (`Motion`). |
 | `ui/glasses/` | Navigation rendered on the glasses' display and driven by taps. |
 | `ui/voice/` | "VISOR GO" voice navigation commands. |
-| `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. |
+| `ui/theme/` | Colors, Atkinson Hyperlegible type, high-contrast themes, text scaling. A user's own colors (`CustomTheme`), the contrast check every color pair goes through (`ContrastAudit`), and the color math behind the picker (`ColorMath`). |
 
 | Other app folders | What they hold |
 | --- | --- |

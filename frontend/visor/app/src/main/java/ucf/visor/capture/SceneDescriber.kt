@@ -5,6 +5,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 import ucf.visor.network.ApiResult
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
@@ -13,7 +14,8 @@ import ucf.visor.tts.SpokenPhrases
 // "VISOR, what do you see?": takes a photo and asks the backend's VLM to
 // describe it, falling back to on-device labels when the server can't answer.
 // ask() answers a spoken question about a fresh photo instead. How much either
-// says follows the user's Detail setting (see ScenePrompts).
+// says follows the user's Detail setting, and what it puts first follows their
+// vision (see ScenePrompts and data/VisionPlan).
 class SceneDescriber(
     private val photoSource: PhotoSource,
     private val vlm: VlmClient,
@@ -22,6 +24,8 @@ class SceneDescriber(
     private val fallback: ObjectDetector? = null,
     // Read at each capture, so a change in Settings applies to the very next one.
     private val verbosity: () -> Verbosity = { Verbosity.STANDARD },
+    // Read at each capture too: Settings > About you, as it is right now.
+    private val plan: () -> VisionPlan? = { null },
     // Read at each capture. Offline, a description goes straight to the
     // on-device labels rather than waiting for a server it can't reach.
     private val isOnline: () -> Boolean = { true },
@@ -35,16 +39,22 @@ class SceneDescriber(
         private const val MAX_IMAGE_SIDE = 1024
     }
 
-    override fun requestRead(onText: (String) -> Unit) =
-        run(ScenePrompts.describe(verbosity()), isQuestion = false, onText = onText)
+    override fun requestRead(onText: (String) -> Unit) {
+        val plan = plan()
+        run(ScenePrompts.describe(verbosity(), plan), plan?.ownWords, isQuestion = false, onText = onText)
+    }
 
     /** Takes a picture and answers a spoken question about it. */
-    fun ask(question: String, onText: (String) -> Unit) =
-        run(ScenePrompts.question(question, verbosity()), isQuestion = true, onText = onText)
+    fun ask(question: String, onText: (String) -> Unit) {
+        val plan = plan()
+        run(ScenePrompts.question(question, verbosity(), plan), plan?.ownWords, isQuestion = true, onText = onText)
+    }
 
-    private fun run(promptToUse: String, isQuestion: Boolean, onText: (String) -> Unit) {
+    // ownWords: the user's description as this prompt sent it, so an answer
+    // that opens by repeating it can have it taken out (see VisionEcho).
+    private fun run(promptToUse: String, ownWords: String?, isQuestion: Boolean, onText: (String) -> Unit) {
         photoSource.capturePhoto(
-            onPhoto = { bitmap -> describe(bitmap, promptToUse, isQuestion, onText) },
+            onPhoto = { bitmap -> describe(bitmap, promptToUse, ownWords, isQuestion, onText) },
             onError = { message -> onText(message) },
         )
     }
@@ -52,6 +62,7 @@ class SceneDescriber(
     private fun describe(
         bitmap: Bitmap,
         promptToUse: String,
+        ownWords: String?,
         isQuestion: Boolean,
         deliver: (String) -> Unit,
     ) {
@@ -64,7 +75,8 @@ class SceneDescriber(
             }
             when (val result = vlm.ask(downscale(bitmap, MAX_IMAGE_SIDE), promptToUse)) {
                 is ApiResult.Success -> deliver(
-                    result.body.ifBlank {
+                    // The model may open with the user's own words; they never need to hear them back.
+                    VisionEcho.strip(result.body, ownWords).ifBlank {
                         if (isQuestion) QUESTION_NO_ANSWER else SpokenPhrases.SCENE_NOT_DESCRIBED
                     }
                 )

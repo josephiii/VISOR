@@ -4,8 +4,7 @@
 
 > **Status: methodology defined, measurements not yet collected.**
 > This document specifies *how* the programme is run. Results are written by
-> `analysis/analyze.py` into
-> [imu-characterization-report.md](./imu-characterization-report.md), which does
+> `analysis/analyze.py` into a generated report, which does
 > not exist until the first real session is recorded and analyzed. Nothing in
 > this file should be cited as a finding.
 

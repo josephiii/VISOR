@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import ucf.visor.stt.CameraCommand
 
-/** Which camera features work offline: see documentation/research/phase1-offline-capabilities.md. */
+/** Which camera features work offline: see documentation/developer/offline-features.md. */
 class AvailabilityTest {
 
     @Test

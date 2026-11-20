@@ -30,6 +30,8 @@ object BackgroundPolicy {
     fun handler(command: VoiceCommand): Handler = when (command) {
         // Pictures and answers: what background listening is for.
         is VoiceCommand.RunCamera,
+        is VoiceCommand.SetHazardWatch,
+        is VoiceCommand.GuideTo,
         VoiceCommand.RepeatLast,
         VoiceCommand.StopReading,
         VoiceCommand.PauseReading,
@@ -56,6 +58,8 @@ object BackgroundPolicy {
         VoiceCommand.PairDevice,
         VoiceCommand.GoBack,
         VoiceCommand.ToggleHighContrast,
+        VoiceCommand.UseCustomColors,
+        VoiceCommand.UseVisorColors,
         is VoiceCommand.SetTextScale,
         // The account, and the "Are you sure?" dialogs that guard it: never
         // from a phone nobody is looking at, which may be locked.

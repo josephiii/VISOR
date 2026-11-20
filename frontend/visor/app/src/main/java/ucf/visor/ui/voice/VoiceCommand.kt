@@ -33,6 +33,20 @@ sealed class VoiceCommand {
      */
     data class RunCamera(val command: CameraCommand) : VoiceCommand()
 
+    /**
+     * "Start hazard watch" / "stop hazard watch": the camera feature that looks
+     * for hazards every few seconds and says what is new (hazards/HazardWatch).
+     * Not a mode: it is on or off, like Home's switch for it.
+     */
+    data class SetHazardWatch(val on: Boolean) : VoiceCommand()
+
+    /**
+     * "Guide me to the chair": after Look around, leads the head round to
+     * face [what] by tone (lookaround/LookAround). [what] is as said, "the
+     * chair"; blank when nothing was named.
+     */
+    data class GuideTo(val what: String) : VoiceCommand()
+
     object GoToLogin : VoiceCommand()
     object GoToSignUp : VoiceCommand()
     object GoToForgotPassword : VoiceCommand()
@@ -40,6 +54,15 @@ sealed class VoiceCommand {
     object LogOut : VoiceCommand()
     object DeleteAccount : VoiceCommand()
     object ToggleHighContrast : VoiceCommand()
+
+    /**
+     * "Use my colors": the user's own colors (Settings > Text and display >
+     * My colors), and "use VISOR colors", back to VISOR's own look as the
+     * user had it. The second is the way back from colors that turned out
+     * hard to see, for a user who can no longer read the screen to fix them.
+     */
+    object UseCustomColors : VoiceCommand()
+    object UseVisorColors : VoiceCommand()
 
     /** "Use my phone camera": the camera every camera feature uses, as on the Pair screen. */
     data class UseCamera(val camera: CameraChoice) : VoiceCommand()

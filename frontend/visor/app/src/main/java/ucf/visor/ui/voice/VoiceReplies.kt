@@ -34,11 +34,18 @@ object VoiceReplies {
         SettingsSection.SPEECH -> "Speech settings."
         SettingsSection.SOUND -> "Sound settings."
         SettingsSection.DISPLAY -> "Text and display settings."
+        SettingsSection.COLORS -> "My colors."
         SettingsSection.COMMANDS -> "Command settings."
+        SettingsSection.HISTORY -> "Today's answers."
         SettingsSection.ACCOUNT -> "Account settings."
     }
 
     fun highContrast(on: Boolean): String = if (on) "High contrast on." else "High contrast off."
+
+    const val CUSTOM_COLORS_ON = "Your colors on."
+    const val VISOR_COLORS_ON = "VISOR's colors on."
+    const val NO_CUSTOM_COLORS_YET =
+        "You haven't picked your own colors yet. Say VISOR GO, open color settings, to pick them."
 
     fun speechRate(rate: Float): String = "Speech rate set to ${SpeechRates.spokenLabel(rate)}."
 

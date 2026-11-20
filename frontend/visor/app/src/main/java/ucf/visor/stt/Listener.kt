@@ -100,6 +100,9 @@ class Listener(
         }
     }
 
+    /** The audio session of the recording now running, or null while stopped (for MicCheck). */
+    val audioSessionId: Int? get() = audioRecord?.audioSessionId
+
     /**
      * Records from [device] (the glasses' microphone), or from the phone's when
      * null. Takes effect at once, even mid-listening.

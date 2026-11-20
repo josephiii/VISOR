@@ -75,8 +75,19 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      */
     val captures = state.captures
 
+    /** Whether hazard watch is on, for its switch on Home. */
+    val hazardWatchOn = state.hazardWatchOn
+
+    fun setHazardWatch(on: Boolean) = state.setHazardWatch(on)
+
     /** What a camera feature last answered, for Home's Last answer card. */
     val lastAnswer = state.lastAnswer
+
+    /** Today's answers, newest first, for Settings > History. */
+    val history = state.history
+
+    /** Settings > History's "Clear history", once confirmed. */
+    fun clearHistory() = state.clearHistory()
 
     /** Which microphone VISOR hears commands through right now (Settings > Commands). */
     val listeningThrough = state.listeningThrough
@@ -209,18 +220,42 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      * does NOT log a user in (the backend returns only a user_id).
      *
      * The profile (speech rate, contrast, text size...) lives only on the
-     * phone, so a login with no saved profile (a new account, or a new phone)
-     * goes through the voice-first setup first, which ends in home() itself.
-     * While email verification is bypassed, this is also the only way a new
-     * account reaches setup (see the DISABLED notes below and in VisorNavHost).
+     * phone, so a login with no saved profile (a new phone), or one whose
+     * sign-up here never finished setup, goes through the voice-first setup
+     * first, which ends in home() itself (see ProfileStore.needsSetup).
+     * A brand-new account comes through [onSignUpSuccess] instead.
      */
     fun onLoginSuccess(accessToken: String, refreshToken: String) {
         sessionStore.saveTokens(accessToken, refreshToken)
-        if (profileStore.hasProfile()) {
-            home() // sets isAuthComplete + sessionStore.setLoggedIn(true), navigates home
-        } else {
+        if (profileStore.needsSetup()) {
             onboard()
+        } else {
+            home() // sets isAuthComplete + sessionStore.setLoggedIn(true), navigates home
         }
+    }
+
+    /**
+     * Called by SignUpScreen once the new account is registered and logged in.
+     * A new account has never been set up, so it always goes through setup,
+     * whatever this phone has saved: going by whether a profile was saved
+     * here sent a new account straight to Home, with only the navigation bar
+     * to show for it, on any phone that had been set up before (by a tester,
+     * or the last user, as logging out keeps the profile) or where a setting
+     * had been changed by voice before signing up.
+     */
+    fun onSignUpSuccess(accessToken: String, refreshToken: String) {
+        sessionStore.saveTokens(accessToken, refreshToken)
+        state.startNewAccount()
+        onboard()
+    }
+
+    /**
+     * Setup's Start using VISOR (the button, or "start" said aloud): keeps
+     * the answers, then goes Home as a logged-in user.
+     */
+    fun finishSetup(profile: UserProfile) {
+        state.finishSetup(profile)
+        home()
     }
 
     /** Explicit "log out" from Settings — returns all the way to TitleScreen
@@ -245,6 +280,7 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
         state.onSessionChanged()
         // It may be text read off someone's mail: not for the next person to log in.
         state.clearLastAnswer()
+        state.clearHistory()
     }
 
     /**
@@ -311,9 +347,9 @@ class VisorViewModel(application: Application) : AndroidViewModel(application) {
      * returns a session, so save it and send the new user through onboarding.
      */
     fun onEmailVerified(accessToken: String, refreshToken: String) {
-        sessionStore.saveTokens(accessToken, refreshToken)
         _uiState.update { it.copy(pendingEmail = "") }
-        onboard()
+        // A verified sign-up is a new account like any other.
+        onSignUpSuccess(accessToken, refreshToken)
     }
 
     fun resetPassword() {

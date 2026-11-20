@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -65,6 +66,10 @@ import kotlin.math.roundToInt
  *   buttons, such as "Talk slower".
  * @param onValueChangeFinished runs once a drag or a tap on the track ends,
  *   and after each press of − or +.
+ * @param trackColors paints the track with these colors, evenly spread from
+ *   one end to the other, in place of filled and hollow: the color picker's
+ *   sliders show the colors they pick. A slider with no notches worth
+ *   seeing (as here, where each is a few degrees of hue) has none drawn.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +84,7 @@ fun VisorSlider(
     increaseDescription: String,
     modifier: Modifier = Modifier,
     onValueChangeFinished: (() -> Unit)? = null,
+    trackColors: List<Color>? = null,
 ) {
     val sliderInteraction = remember { MutableInteractionSource() }
     val sliderState = sliderInteraction.controlState()
@@ -118,7 +124,7 @@ fun VisorSlider(
             onValueChangeFinished = onValueChangeFinished,
             interactionSource = sliderInteraction,
             thumb = { Thumb(focused = sliderState.focused) },
-            track = { state -> Track(state) },
+            track = { state -> if (trackColors != null) ColorTrack(trackColors) else Track(state) },
             modifier = Modifier
                 .weight(1f)
                 .semantics {
@@ -242,6 +248,44 @@ private fun Track(state: SliderState) {
 }
 
 /**
+ * A track painted with [colors], for the color picker: the colors themselves
+ * show where the slider is, so it has no filled part. Its outline sets it
+ * apart from the page whatever the colors are.
+ */
+@Composable
+private fun ColorTrack(colors: List<Color>) {
+    val outline = MaterialTheme.colorScheme.outline
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(ColorTrackHeight),
+    ) {
+        val overhang = size.height / 2
+        val border = TrackBorder.toPx()
+        val start = -overhang
+        val end = size.width + overhang
+        drawRoundRect(
+            brush = Brush.horizontalGradient(
+                colors = if (rtl) colors.reversed() else colors,
+                startX = start,
+                endX = end,
+            ),
+            topLeft = Offset(start, 0f),
+            size = Size(end - start, size.height),
+            cornerRadius = CornerRadius(size.height / 2),
+        )
+        drawRoundRect(
+            color = outline,
+            topLeft = Offset(start + border / 2, border / 2),
+            size = Size(end - start - border, size.height - border),
+            cornerRadius = CornerRadius(size.height / 2 - border / 2),
+            style = Stroke(width = border),
+        )
+    }
+}
+
+/**
  * The thumb: a large primary disc with a dot at its center, inside a ring of
  * the background color that parts it from the filled track it sits on. While
  * the slider has keyboard or switch-access focus, the focus ring circles it.
@@ -269,6 +313,7 @@ private fun Thumb(focused: Boolean) {
 
 private val NudgeButtonSize = 56.dp
 private val TrackHeight = 14.dp
+private val ColorTrackHeight = 24.dp
 private val TrackBorder = 2.dp
 private val NotchRadius = 3.dp
 private val ThumbSize = 34.dp

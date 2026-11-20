@@ -155,6 +155,12 @@ data class UserProfile(
     val displayName: String = "",
     val visionTypes: Set<VisionType> = setOf(VisionType.NOT_SURE),
     val visionDescription: String = "",
+    /**
+     * Send [visionDescription] to VISOR's AI with each scene description and
+     * question, so its answers fit how this user sees (see VisionPlan). On
+     * until turned off in Settings > About you; setup says so as it asks.
+     */
+    val shareVisionDescription: Boolean = true,
     val severity: Severity = Severity.MODERATE,
     val speechRate: Float = SpeechRates.Normal,
     /**
@@ -170,6 +176,16 @@ data class UserProfile(
     val verbosity: Verbosity = Verbosity.STANDARD,
     val appHighContrast: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    /**
+     * Draw VISOR in the user's own colors ([customColors], Settings > Text
+     * and display > My colors) rather than one of its four looks. Off until
+     * the user turns it on. Turning it off leaves [themeMode] and
+     * [appHighContrast] as they were, so VISOR's colors come back as the
+     * user had them.
+     */
+    val useCustomColors: Boolean = false,
+    /** The user's own colors: kept while not in use, so switching back finds them as they were. */
+    val customColors: CustomColors = CustomColors(),
     val textScale: TextScale = TextScale.EXTRA_LARGE,
 
     // Commands. Every one is on until the user turns it off.
@@ -212,6 +228,26 @@ data class UserProfile(
      */
     val listenThroughGlasses: Boolean = true,
 )
+
+/**
+ * This profile for a new account on the same phone: without the answers about
+ * the person who used it before (their name and account, and what setup and
+ * Settings > About you asked about their vision), which setup is about to ask
+ * the new user for. The rest is kept: how VISOR looks, sounds and listens may
+ * be what is letting them use the phone at all, such as the high contrast
+ * they turned on by voice to sign up.
+ */
+fun UserProfile.withoutPersonalAnswers(): UserProfile {
+    val blank = UserProfile()
+    return copy(
+        userId = blank.userId,
+        displayName = blank.displayName,
+        visionTypes = blank.visionTypes,
+        visionDescription = blank.visionDescription,
+        shareVisionDescription = blank.shareVisionDescription,
+        severity = blank.severity,
+    )
+}
 
 // Human-readable labels — shared by the onboarding wizard and Settings' "About
 // you" section so both ever say exactly the same thing for each option.

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.meta.wearable.dat.core.types.Permission
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import ucf.visor.BuildConfig
 import ucf.visor.R
+import ucf.visor.lookaround.LookAroundControls
 import ucf.visor.stt.CameraCommand
 import androidx.compose.ui.unit.dp
 import ucf.visor.ui.components.ConnectivityNotice
@@ -56,6 +58,7 @@ import ucf.visor.ui.glasses.glassesNavScreenFor
 import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
 import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.ReadingState
@@ -95,6 +98,7 @@ fun VisorLayout(
     glassesNav: GlassesNavigationController? = null,
     screenCommands: Flow<VoiceCommand> = emptyFlow(),
     reading: ReadingControls? = null,
+    lookAround: LookAroundControls? = null,
     voices: VoiceChooser? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -134,6 +138,8 @@ fun VisorLayout(
             navController.navigate("title") {
                 popUpTo(0) { inclusive = true }
             }
+            // The tabs' saved places belong to the session that just ended.
+            TabRoutes.forEach { navController.clearBackStack(it) }
             viewModel.onNavigationHandled()
         }
     }
@@ -186,14 +192,11 @@ fun VisorLayout(
         }
     }
 
-    // Observe HomeScreen
+    // Observe HomeScreen: the Home tab, and arriving after logging in or
+    // setup's Start using VISOR (see openTab).
     LaunchedEffect(uiState.goingHome) {
         if (uiState.goingHome) {
-            navController.navigate("home") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("home")
             viewModel.onNavigationHandled()
         }
     }
@@ -201,11 +204,7 @@ fun VisorLayout(
     // Observe HardwarePairingScreen
     LaunchedEffect(uiState.isPairingHardware) {
         if (uiState.isPairingHardware) {
-            navController.navigate("hardware_pairing") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("hardware_pairing")
             viewModel.onNavigationHandled()
         }
     }
@@ -213,19 +212,22 @@ fun VisorLayout(
     // Observe SettingsScreen
     LaunchedEffect(uiState.atSettings) {
         if (uiState.atSettings) {
-            navController.navigate("settings") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("settings")
             viewModel.onNavigationHandled()
         }
     }
 
     // Observe Onboarding Process
+    // The sign-up or login form it came from is done with: back from setup
+    // goes to the title screen, not to a filled-in sign-up form that would
+    // only say the account already exists if sent again. Setup is pending
+    // until finished (ProfileStore.needsSetup), so logging in brings it back.
     LaunchedEffect(uiState.isOnboarding) {
         if (uiState.isOnboarding) {
-            navController.navigate("onboarding") { launchSingleTop = true }
+            navController.navigate("onboarding") {
+                launchSingleTop = true
+                popUpTo("title")
+            }
             viewModel.onNavigationHandled()
         }
     }
@@ -233,11 +235,7 @@ fun VisorLayout(
     // Observe HelpScreen (reachable from Settings, or by voice, from anywhere post-login)
     LaunchedEffect(uiState.atHelp) {
         if (uiState.atHelp) {
-            navController.navigate("help") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("help")
             viewModel.onNavigationHandled()
         }
     }
@@ -245,11 +243,7 @@ fun VisorLayout(
     // Observe MotionLabScreen (Debug menu → Test Suite)
     LaunchedEffect(uiState.atMotionLab) {
         if (uiState.atMotionLab) {
-            navController.navigate("motion_lab") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("motion_lab")
             viewModel.onNavigationHandled()
         }
     }
@@ -259,19 +253,16 @@ fun VisorLayout(
     // the same navigation bar, so Home's Last answer card is a tap away.
     LaunchedEffect(uiState.atPhase1) {
         if (uiState.atPhase1) {
-            navController.navigate("p1_test_mode_config") {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                restoreState = true
-            }
+            navController.openTab("p1_test_mode_config")
             viewModel.onNavigationHandled()
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // On-Glasses Tap Navigation Observer
-    LaunchedEffect(glassesNav, currentRoute, uiState, readingState) {
-        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, readingState))
+    val featureOrder = remember(profile.visionTypes) { VisionPlan.from(profile).featureOrder }
+    LaunchedEffect(glassesNav, currentRoute, uiState, readingState, featureOrder) {
+        glassesNav?.showScreen(glassesNavScreenFor(currentRoute, uiState, readingState, featureOrder))
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -378,10 +369,25 @@ fun VisorLayout(
                     else -> viewModel.requestDeleteAccountConfirm()
                 }
 
+                // With the user's own colors in use, High contrast is VISOR's
+                // own look again, so "high contrast" turns it on.
                 VoiceCommand.ToggleHighContrast -> {
-                    val on = !profile.appHighContrast
-                    viewModel.updateProfile(profile.copy(appHighContrast = on))
+                    val on = profile.useCustomColors || !profile.appHighContrast
+                    viewModel.updateProfile(profile.copy(appHighContrast = on, useCustomColors = false))
                     reply(VoiceReplies.highContrast(on))
+                }
+
+                VoiceCommand.UseCustomColors ->
+                    if (profile.customColors.isUnchanged) {
+                        reply(VoiceReplies.NO_CUSTOM_COLORS_YET)
+                    } else {
+                        viewModel.updateProfile(profile.copy(useCustomColors = true))
+                        reply(VoiceReplies.CUSTOM_COLORS_ON)
+                    }
+
+                VoiceCommand.UseVisorColors -> {
+                    viewModel.updateProfile(profile.copy(useCustomColors = false))
+                    reply(VoiceReplies.VISOR_COLORS_ON)
                 }
 
                 is VoiceCommand.SetTextScale -> {
@@ -545,6 +551,7 @@ fun VisorLayout(
                             onRequestWearablesPermission = onRequestWearablesPermission,
                             onCapture = onCapture,
                             reading = reading,
+                            lookAround = lookAround,
                             voices = voices,
                         )
                     }
@@ -557,6 +564,38 @@ fun VisorLayout(
             // "Listening." itself, and a screen reader saying more as the
             // microphone opened could be heard as part of the command.
             VoiceListeningGlow(state = voiceState, modifier = Modifier.matchParentSize())
+        }
+    }
+}
+
+/** The screens [openTab] opens, whose places are kept while switching between them. */
+private val TabRoutes = listOf("home", "hardware_pairing", "settings", "help", "motion_lab", "p1_test_mode_config")
+
+/**
+ * Opens [route] the way the navigation bar's tabs are opened: on top of Home,
+ * the first of a logged-in user's screens, with each tab keeping its place
+ * (saveState / restoreState), and no stack of tabs to press back through.
+ *
+ * Measured from Home, not from the graph's start destination: that is Home
+ * only when VISOR started logged in, and Title otherwise. After logging out
+ * and in again (or signing up) in one sitting, the start destination wasn't
+ * on the back stack at all, so going Home popped nothing and restored a saved
+ * place that was no longer there: setup's Start using VISOR showed the
+ * navigation bar under setup, and only a second press of Home went there.
+ *
+ * Arriving at Home from the title screen, logging in, or setup, nothing
+ * before it is kept: back from Home leaves VISOR, as it does for a user who
+ * started logged in, rather than going back to a login form while logged in.
+ */
+private fun NavController.openTab(route: String) {
+    val homeOnStack = runCatching { getBackStackEntry("home") }.isSuccess
+    navigate(route) {
+        launchSingleTop = true
+        if (homeOnStack) {
+            popUpTo("home") { saveState = true }
+            restoreState = true
+        } else if (route == "home") {
+            popUpTo(0) { inclusive = true }
         }
     }
 }

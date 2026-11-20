@@ -18,8 +18,24 @@ class SettingsCommandTest {
             "command settings" to SettingsSection.COMMANDS,
             "account settings" to SettingsSection.ACCOUNT,
             "open settings about me" to SettingsSection.ABOUT_YOU,
+            "open color settings" to SettingsSection.COLORS,
+            "theme settings" to SettingsSection.COLORS,
         ).forEach { (said, section) ->
             assertEquals(said, VoiceCommand.OpenSettingsSection(section), VoiceCommandParser.parse(said))
+        }
+    }
+
+    @Test
+    fun historyOpensWithOrWithoutSettings() {
+        listOf(
+            "open history",
+            "history",
+            "open history settings",
+            "show my past answers",
+            "today's answers",
+            "go back to my previous answers",
+        ).forEach { said ->
+            assertEquals(said, VoiceCommand.OpenSettingsSection(SettingsSection.HISTORY), VoiceCommandParser.parse(said))
         }
     }
 

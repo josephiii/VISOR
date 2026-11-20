@@ -29,7 +29,9 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import kotlinx.coroutines.withTimeoutOrNull
 import ucf.visor.R
 import ucf.visor.background.BackgroundPolicy
@@ -41,10 +43,20 @@ import ucf.visor.capture.Availability
 import ucf.visor.capture.ChosenPhotoSource
 import ucf.visor.capture.GlassesPhotoSource
 import ucf.visor.capture.HazardDetector
+import ucf.visor.capture.scaledDownToWidth
+import ucf.visor.hazards.HAZARD_WATCH_DETECT_TIMEOUT_MS
+import ucf.visor.hazards.HAZARD_WATCH_FRAME_WIDTH
+import ucf.visor.hazards.HAZARD_WATCH_JPEG_QUALITY
+import ucf.visor.hazards.HazardAnnouncer
+import ucf.visor.hazards.HazardWatch
+import ucf.visor.hazards.HazardWatchSpeaker
 import ucf.visor.capture.NotifyingPhotoSource
 import ucf.visor.capture.ObjectIdentifier
 import ucf.visor.capture.PhoneCameraSlot
 import ucf.visor.capture.PhotoSource
+import android.graphics.Bitmap
+import java.io.File
+import ucf.visor.BuildConfig
 import ucf.visor.capture.ReadRequester
 import ucf.visor.capture.SceneDescriber
 import ucf.visor.capture.TextReader
@@ -54,7 +66,13 @@ import ucf.visor.data.CameraChoice
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.SpeechRates
 import ucf.visor.data.Verbosity
+import ucf.visor.data.VisionPlan
 import ucf.visor.data.VoiceCategory
+import ucf.visor.data.Volumes
+import ucf.visor.lookaround.GuideTonePlayer
+import ucf.visor.lookaround.LookAround
+import ucf.visor.lookaround.LookAroundPhrases
+import ucf.visor.motion.HeadMotion
 import ucf.visor.network.HazardClient
 import ucf.visor.network.VlmClient
 import ucf.visor.recognition.ObjectDetector
@@ -62,6 +80,7 @@ import ucf.visor.recognition.TextReaderOCR
 import ucf.visor.stt.CameraCommand
 import ucf.visor.stt.CommandRecognizer
 import ucf.visor.stt.Listener
+import ucf.visor.stt.MicCheck
 import ucf.visor.stt.MicRoute
 import ucf.visor.stt.WakePhrases
 import ucf.visor.tts.Chimes
@@ -73,6 +92,7 @@ import ucf.visor.tts.VoiceCatalog
 import ucf.visor.ui.feedback.Haptics
 import ucf.visor.ui.glasses.GlassesNavigationController
 import ucf.visor.ui.labelRes
+import ucf.visor.ui.viewmodel.CaptureStatus
 import ucf.visor.ui.voice.SceneQuestionController
 import ucf.visor.ui.voice.VoiceCommand
 import ucf.visor.ui.voice.VoiceNavState
@@ -178,8 +198,12 @@ class VisorEngine(
     private val textReaderOCR = TextReaderOCR()
     private val objectDetector = ObjectDetector()
 
-    /** The glasses session held while VISOR is in use; every glasses picture is taken in it. */
-    private val heldSession = HeldGlassesSession(scope)
+    /**
+     * The glasses session held while VISOR is in use; every glasses picture is
+     * taken in it. Internal for the MockDeviceKit tests, which run Look around
+     * in it with a stand-in for the server.
+     */
+    internal val heldSession = HeldGlassesSession(scope)
 
     val glassesCamera = GlassesPhotoSource(
         session = heldSession,
@@ -187,6 +211,7 @@ class VisorEngine(
             glassesPermissionRequester?.invoke(permission) ?: PermissionStatus.Denied
         },
         recoverLink = { recoverGlassesLink() },
+        skipStills = { state.glassesStatus.value?.displayCapable == true },
     )
 
     /** The camera chosen on the Pair screen (or by voice), as of right now. */
@@ -194,6 +219,9 @@ class VisorEngine(
 
     /** How much the camera features say: Settings > Speech > Detail. */
     private fun verbosity(): Verbosity = state.profile.value.verbosity
+
+    /** How VISOR fits the user's vision: Settings > About you, as of right now. */
+    private fun visionPlan(): VisionPlan = VisionPlan.from(state.profile.value)
 
     private fun isOnline(): Boolean = state.isOnline.value
 
@@ -213,6 +241,9 @@ class VisorEngine(
     // phone (the emulator's camera works too), or pair mock glasses in the
     // debug menu and pick the photo they should "take" (Select image).
     private val chosenCamera = ChosenPhotoSource(glassesCamera, phoneCamera, ::cameraChoice)
+    // Hazard watch takes a picture every few seconds: video frames from the
+    // glasses (no shutter sound), and no link recovery from inside the loop.
+    private val chosenWatchCamera = ChosenPhotoSource(glassesCamera.forWatch, phoneCamera.forWatch, ::cameraChoice)
     private val chosenReadingCamera =
         ChosenPhotoSource(glassesCamera.forReading, phoneCamera.forReading, ::cameraChoice)
 
@@ -222,7 +253,29 @@ class VisorEngine(
         NotifyingPhotoSource(source) { state.onPictureTaken(command) }
 
     private val textReader: ReadRequester =
-        TextReader(cameraFor(CameraCommand.READ_TEXT, chosenReadingCamera), textReaderOCR)
+        TextReader(cameraFor(CameraCommand.READ_TEXT, keepingLastPicture(chosenReadingCamera)), textReaderOCR)
+
+    /**
+     * In debug builds only, keeps the last picture Read Text was given in
+     * VISOR's own cache (last_reading.jpg, replaced each time), so what the
+     * text reader saw can be looked at: `adb exec-out run-as edu.ucf.visor cat cache/last_reading.jpg`.
+     */
+    private fun keepingLastPicture(source: PhotoSource): PhotoSource =
+        if (!BuildConfig.DEBUG) source
+        else object : PhotoSource {
+            override fun capturePhoto(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit) =
+                source.capturePhoto(
+                    onPhoto = { bitmap ->
+                        runCatching {
+                            File(app.cacheDir, "last_reading.jpg").outputStream().use {
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)
+                            }
+                        }
+                        onPhoto(bitmap)
+                    },
+                    onError = onError,
+                )
+        }
 
     private val objectIdentifier: ReadRequester =
         ObjectIdentifier(cameraFor(CameraCommand.IDENTIFY_OBJECTS), objectDetector)
@@ -238,15 +291,153 @@ class VisorEngine(
         scope = scope,
         fallback = objectDetector,
         verbosity = ::verbosity,
+        plan = ::visionPlan,
         isOnline = ::isOnline,
     )
 
+    private val hazardClient = HazardClient(accessToken = state.sessionStore::accessToken)
+
     private val hazardDetector: ReadRequester = HazardDetector(
         photoSource = cameraFor(CameraCommand.CHECK_HAZARDS),
-        client = HazardClient(accessToken = state.sessionStore::accessToken),
+        client = hazardClient,
         scope = scope,
         verbosity = ::verbosity,
+        plan = ::visionPlan,
     )
+
+    // ---------------------------------------------------------------------
+    // Hazard watch: looks every few seconds, says only what is new
+
+    private val hazardAnnouncer = HazardAnnouncer()
+
+    private val hazardWatch = HazardWatch<Bitmap>(
+        speaker = object : HazardWatchSpeaker {
+            override fun say(text: String) = speaker.speak(text, VoiceCategory.ANSWERS)
+            override fun isSpeaking() = speaker.isSpeaking()
+        },
+        announcer = hazardAnnouncer,
+        capture = ::captureForHazardWatch,
+        detect = { bitmap ->
+            hazardClient.detect(
+                bitmap,
+                jpegQuality = HAZARD_WATCH_JPEG_QUALITY,
+                timeoutMs = HAZARD_WATCH_DETECT_TIMEOUT_MS,
+            )
+        },
+        widthOf = { it.width },
+        isOnline = ::isOnline,
+        // Any camera feature at work (Look around too) goes first, and the
+        // watch never talks into an open microphone: not while "VISOR GO" is
+        // listening or being answered, nor while a question is being asked.
+        busy = {
+            state.captures.value.isNotEmpty() || voiceNav.state.value != VoiceNavState.IDLE || commandMicOpen
+        },
+        clockMs = SystemClock::elapsedRealtime,
+        // As the one-shot check says them (HazardDetector).
+        limit = { if (verbosity() == Verbosity.BRIEF) visionPlan().briefHazardLimit else Int.MAX_VALUE },
+        focus = { visionPlan().hazardFocus },
+    )
+
+    private var hazardWatchJob: Job? = null
+    private var hazardWatchWasOn = false
+
+    /** A picture from the camera chosen on the Pair screen, scaled down for the watch; null if none could be taken. */
+    private suspend fun captureForHazardWatch(): Bitmap? {
+        if (cameraChoice() == CameraChoice.GLASSES) {
+            // The SDK has lost the glasses, or VISOR is getting them back
+            // (watchGlassesLink): asking for a session every few seconds on
+            // top of that only gets in the way of the reconnect. A failed
+            // look, with nothing sent to the glasses.
+            if (!sdkSeesGlasses()) return null
+            // As before any glasses stream: after a change of microphone has settled.
+            micRoute.awaitSettled()
+        }
+        val photo = suspendCancellableCoroutine<Bitmap?> { cont ->
+            chosenWatchCamera.capturePhoto(
+                onPhoto = { if (cont.isActive) cont.resume(it) },
+                onError = { if (cont.isActive) cont.resume(null) },
+            )
+        }
+        return photo?.let { withContext(Dispatchers.Default) { it.scaledDownToWidth(HAZARD_WATCH_FRAME_WIDTH) } }
+    }
+
+    /** Starts or stops the watch's loop to match [VisorState.hazardWatchOn]. */
+    private fun onHazardWatchChanged(on: Boolean) {
+        hazardWatchJob?.cancel()
+        hazardWatchJob = null
+        hazardAnnouncer.reset()
+        // One glasses session for as long as the watch is on. On display
+        // glasses with tap navigation VISOR otherwise closes its session after
+        // every picture, to give the display its own back; a session closed
+        // and another opened every few seconds lost the SDK's link to the
+        // glasses within two pictures (field log, 2026-11-16), and VISOR
+        // restarted itself each time. The glasses' own display is blank
+        // meanwhile; it comes back when the watch is turned off.
+        if (on) heldSession.pin(HAZARD_WATCH_PIN) else heldSession.unpin(HAZARD_WATCH_PIN)
+        updateHeldSession()
+        if (on) {
+            reply(SpokenPhrases.HAZARD_WATCH_ON)
+            if (Volumes.isOff(audio().loudness(VoiceCategory.ANSWERS))) reply(SpokenPhrases.HAZARD_WATCH_MUTED)
+            hazardWatchJob = scope.launch { hazardWatch.run() }
+        } else if (hazardWatchWasOn) {
+            reply(SpokenPhrases.HAZARD_WATCH_OFF)
+        }
+        hazardWatchWasOn = on
+    }
+
+    // ---------------------------------------------------------------------
+    // Look around: the glasses camera and their motion sensors, in one session
+
+    /** The glasses' head movement (MWDAT Motion), attached to the held session while Look around needs it. */
+    private val headMotion = HeadMotion()
+
+    private val guideTones = GuideTonePlayer(loudness = { audio().loudness(SoundCategory.GUIDANCE_TONES) })
+
+    /** Settings' preview of the guidance tones' volume: two beeps, near and far. */
+    fun playGuidanceSample() = guideTones.sample(scope)
+
+    val lookAround = LookAround(
+        scope = scope,
+        session = heldSession,
+        camera = glassesCamera,
+        motion = headMotion,
+        detect = { bitmap -> hazardClient.detect(bitmap) },
+        tones = guideTones,
+        say = object : LookAround.Say {
+            override fun step(text: String) = speaker.speak(text, VoiceCategory.VOICE_COMMANDS)
+            override fun answer(text: String) = speaker.speak(text, VoiceCategory.ANSWERS)
+        },
+        plan = { visionPlan().lookAroundPlan },
+        limit = {
+            if (verbosity() == Verbosity.BRIEF) visionPlan().briefHazardLimit else Int.MAX_VALUE
+        },
+        guideHint = { verbosity() != Verbosity.BRIEF },
+        isSpeaking = { speaker.isSpeaking() },
+        events = object : LookAround.Events {
+            override fun onScanStarted() {
+                state.onCaptureStarted(CameraCommand.LOOK_AROUND)
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.LOOKING_AROUND)
+            }
+
+            override fun onScanThinking() {
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.THINKING)
+                thinkingBeeper.start()
+            }
+
+            override fun onAnswered(text: String) {
+                state.onAnswered(CameraCommand.LOOK_AROUND, text)
+                if (state.captures.value.isEmpty()) thinkingBeeper.stop()
+            }
+
+            override fun onGuideStarted() {
+                state.onCaptureStarted(CameraCommand.LOOK_AROUND)
+                state.setCaptureStatus(CameraCommand.LOOK_AROUND, CaptureStatus.GUIDING)
+            }
+        },
+    )
+
+    /** "Guide me to [what]", from "VISOR GO". */
+    private fun guideTo(what: String) = lookAround.guideTo(what)
 
     // ---------------------------------------------------------------------
     // Listening
@@ -271,13 +462,36 @@ class VisorEngine(
 
     private val commandRecognizer = CommandRecognizer(app)
 
+    /**
+     * Whether a spoken command or question has the microphone (voice
+     * navigation or a scene question paused wake listening for it), so
+     * [micCheck] can tell the speech recognizer's recording apart.
+     */
+    @Volatile
+    private var commandMicOpen = false
+
+    /** Logs which microphone each recording really uses, for field tests (see MicCheck). */
+    private val micCheck = MicCheck(
+        app,
+        route = { micRoute.source.value },
+        wakeSessionId = { listener.audioSessionId },
+        commandListening = { commandMicOpen },
+        glassesName = { state.glassesStatus.value?.name },
+    )
+
     val voiceNav = VoiceNavigationController(
         context = app,
         speak = { speaker.speak(it, VoiceCategory.VOICE_COMMANDS) },
-        pauseWakeListening = { listener.stop() },
+        pauseWakeListening = {
+            commandMicOpen = true
+            listener.stop()
+        },
         // Not updateWakeListening(): this runs while voice navigation still
         // holds the microphone, which that waits out.
-        resumeWakeListening = { if (canListenNow()) listener.start() },
+        resumeWakeListening = {
+            commandMicOpen = false
+            if (canListenNow()) listener.start()
+        },
         isSpeaking = { speaker.isSpeaking() },
     )
 
@@ -288,15 +502,22 @@ class VisorEngine(
             vlm = VlmClient(accessToken = state.sessionStore::accessToken),
             scope = scope,
             verbosity = ::verbosity,
+            plan = ::visionPlan,
         ),
         beeper = thinkingBeeper,
         speak = { text -> speaker.speak(text, VoiceCategory.VOICE_COMMANDS) },
         sayAnswer = { text -> speaker.speak(text, VoiceCategory.ANSWERS) },
         isSpeaking = { speaker.isSpeaking() },
-        pauseWakeListening = { listener.stop() },
-        resumeWakeListening = { if (canListenNow()) listener.start() },
+        pauseWakeListening = {
+            commandMicOpen = true
+            listener.stop()
+        },
+        resumeWakeListening = {
+            commandMicOpen = false
+            if (canListenNow()) listener.start()
+        },
         onAsked = { state.onCaptureStarted(CameraCommand.ASK_QUESTION) },
-        onAnswered = { answer -> state.onAnswered(CameraCommand.ASK_QUESTION, answer) },
+        onAnswered = { question, answer -> state.onAnswered(CameraCommand.ASK_QUESTION, answer, question) },
         takingPicture = ::takingPicturePhrase,
     )
 
@@ -368,7 +589,12 @@ class VisorEngine(
                 .drop(1)
                 .collect { gone -> if (gone) updateHeldSession() }
         }
-        scope.launch { micRoute.source.collect { state.setListeningThrough(it) } }
+        scope.launch {
+            micRoute.source.collect {
+                state.setListeningThrough(it)
+                micCheck.reportNow()
+            }
+        }
         // Turning "Listen through my glasses" back on is a request to try now.
         scope.launch {
             state.profile
@@ -424,6 +650,10 @@ class VisorEngine(
                 .distinctUntilChanged()
                 .collect { idle -> if (idle) updateWakeListening() }
         }
+
+        scope.launch { state.hazardWatchOn.collect(::onHazardWatchChanged) }
+        // Nobody to watch for: turned off at logout.
+        scope.launch { state.loggedIn.collect { if (!it) state.setHazardWatch(false) } }
 
         // Commands said after "VISOR GO", and taps on the glasses' own display.
         scope.launch { merge(voiceNav.commands, glassesNav.commands).collect(::dispatch) }
@@ -521,7 +751,7 @@ class VisorEngine(
         val profile = state.profile.value
         val glasses = state.glassesStatus.value
         return wearablesReady && state.isLoggedIn() && profile.camera == CameraChoice.GLASSES &&
-            (isScreenShown || serviceRunning) &&
+            (isScreenShown || serviceRunning || state.hazardWatchOn.value) &&
             !(glasses?.displayCapable == true && profile.glassesTapNavigationEnabled)
     }
 
@@ -538,9 +768,16 @@ class VisorEngine(
     private fun updateHeldSession() {
         val want = wantsHeldSession()
         val glasses = state.glassesStatus.value
+        // Display glasses with tap navigation: the display wants its session
+        // back, but not after every picture. Closing at once lost the SDK's
+        // link within two pictures (field log, 2026-11-16), so a run of
+        // commands shares one session, and the display is blank that long.
         heldSession.lingerMs =
-            if (glasses?.displayCapable == true && state.profile.value.glassesTapNavigationEnabled) 0L
-            else HeldGlassesSession.LINGER_MS
+            if (glasses?.displayCapable == true && state.profile.value.glassesTapNavigationEnabled) {
+                HeldGlassesSession.DISPLAY_LINGER_MS
+            } else {
+                HeldGlassesSession.LINGER_MS
+            }
         heldSession.setKeep(want)
         if (!want || heldSession.state.value != null || openingJob?.isActive == true) return
         if (!sdkSeesGlasses()) return
@@ -986,6 +1223,18 @@ class VisorEngine(
                 sceneQuestion.activate()
                 return
             }
+            // The head's movement is the glasses': with the phone's camera
+            // chosen there is none to follow. Its own steps, like a question's.
+            CameraCommand.LOOK_AROUND -> {
+                if (cameraChoice() != CameraChoice.GLASSES) {
+                    haptics.rejected()
+                    speaker.speak(LookAroundPhrases.NEEDS_GLASSES, VoiceCategory.ANSWERS)
+                    state.showAnswer(LookAroundPhrases.NEEDS_GLASSES, command)
+                } else {
+                    lookAround.start()
+                }
+                return
+            }
         }
         state.onCaptureStarted(command)
         takingPicturePhrase()?.let { speaker.speak(it, VoiceCategory.STATUS_UPDATES) }
@@ -1056,6 +1305,14 @@ class VisorEngine(
                 if (loggedIn) runCameraFeature(command.command)
                 else reply("Log in first to take a picture.")
 
+            is VoiceCommand.SetHazardWatch ->
+                if (loggedIn) state.setHazardWatch(command.on)
+                else reply("Log in first to start hazard watch.")
+
+            is VoiceCommand.GuideTo ->
+                if (loggedIn) guideTo(command.what)
+                else reply("Log in first to take a picture.")
+
             // As the Pair screen's choice is, so post-login like it; said
             // back, with how to hold the phone when that is the camera.
             is VoiceCommand.UseCamera ->
@@ -1120,8 +1377,11 @@ class VisorEngine(
             // "VISOR GO" itself paused the reading ("Listening." was said
             // over it), so by now a reading being read is a paused one.
             // Resuming says nothing first: the reading carrying on is the reply.
+            // "Stop" also stops Look around turning the head, or leading it.
             VoiceCommand.StopReading ->
-                if (speaker.reading.value != ReadingState.NONE) {
+                if (lookAround.stop()) {
+                    Unit
+                } else if (speaker.reading.value != ReadingState.NONE) {
                     speaker.stop()
                     reply(VoiceReplies.READING_STOPPED)
                 } else {
@@ -1162,6 +1422,7 @@ class VisorEngine(
 
     private companion object {
         const val TAG = "VISOR"
+        const val HAZARD_WATCH_PIN = "hazard_watch"
         val NAV_WAKE_PHRASE = WakePhrases.keyword(WakePhrases.VOICE_NAVIGATION)
         const val COMMAND_WAKE_LOCK_MS = 60_000L
 

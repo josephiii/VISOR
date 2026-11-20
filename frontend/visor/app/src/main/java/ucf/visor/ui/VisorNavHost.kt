@@ -21,6 +21,7 @@ import ucf.visor.R
 import ucf.visor.data.SoundCategory
 import ucf.visor.data.VoiceCategory
 import ucf.visor.data.Volumes
+import ucf.visor.lookaround.LookAroundControls
 import ucf.visor.stt.CameraCommand
 import ucf.visor.tts.ReadingControls
 import ucf.visor.tts.VoiceChooser
@@ -52,6 +53,7 @@ fun VisorNavHost(
     onRequestWearablesPermission: suspend (Permission) -> PermissionStatus = { PermissionStatus.Denied },
     onCapture: (CameraCommand) -> Unit = {},
     reading: ReadingControls? = null,
+    lookAround: LookAroundControls? = null,
     voices: VoiceChooser? = null,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -90,8 +92,9 @@ fun VisorNavHost(
                 talk = talk,
                 // DISABLED (email verification):
                 // onSignUpClick = { email -> viewModel.verifyAccount(email) },
-                // Sign-up logs the new user in; no saved profile -> onboarding.
-                onSignUpClick = { access, refresh -> viewModel.onLoginSuccess(access, refresh) },
+                // Sign-up logs the new user in, and a new account always goes
+                // through setup (onboarding), whatever this phone has saved.
+                onSignUpClick = { access, refresh -> viewModel.onSignUpSuccess(access, refresh) },
                 onLoginClick = { viewModel.login() }
             )
         }
@@ -141,6 +144,7 @@ fun VisorNavHost(
                 talk = talk,
                 onCapture = onCapture,
                 reading = reading,
+                lookAround = lookAround,
             )
         }
 
@@ -194,7 +198,8 @@ fun VisorNavHost(
                 viewModel = viewModel,
                 speak = talk,
                 voiceNav = voiceNav,
-                onSetupComplete = { viewModel.home() }
+                // Start using VISOR: saves the answers and goes Home.
+                onSetupComplete = { viewModel.finishSetup(it) }
             );
         }
 

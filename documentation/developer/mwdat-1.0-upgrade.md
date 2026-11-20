@@ -2,6 +2,8 @@
 
 *Meta Wearables Device Access Toolkit 0.9.0 → 1.0.0 (released 2026-09-24): the plan, what changed, what VISOR gained, and how it was verified.*
 
+> **Since then:** VISOR builds against **1.0.1** (2026-10-09), a fix release for camera-stream stutter and HEVC frame freezes, with no API changes. The SDK internals `GlassesLinkNudge` relies on are unchanged. The lab's IMU work now also serves users directly: [Look around](./look-around.md) runs the camera stream and Motion in VISOR's own glasses session.
+
 ---
 
 ## In one paragraph

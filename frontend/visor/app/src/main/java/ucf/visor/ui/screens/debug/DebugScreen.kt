@@ -617,6 +617,11 @@ private fun MockDeviceCard(
                         ),
                         onClick = { viewModel.startSyntheticHeadMotion(deviceInfo) },
                     )
+                    ActionButton(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = stringResource(R.string.mock_look_around_feed_start),
+                        onClick = { viewModel.startSyntheticLookAround(deviceInfo) },
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),

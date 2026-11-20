@@ -28,8 +28,8 @@ def main():
     if not objects:
         print("No objects found.")
     else:
-        depth.getObjectdepths(objects, depth.runModel(image))
-        for obj in sorted(objects, key=lambda o: o["depth"]):
+        measured = depth.getObjectdepths(objects, depth.runModel(image))
+        for obj in sorted(measured, key=lambda o: o["depth"]):
             print(f'{obj["object"]}: {obj["depth"]:.2f} m (confidence {obj["conf"]:.2f})')
 
     yolo.model(image, verbose=False)[0].save(filename="yolo_out.jpg")

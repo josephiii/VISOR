@@ -104,6 +104,9 @@ class LargeTextTest {
     fun settingsCommands() = settingsPart(SettingsSection.COMMANDS)
 
     @Test
+    fun settingsHistory() = settingsPart(SettingsSection.HISTORY)
+
+    @Test
     fun settingsAccount() = settingsPart(SettingsSection.ACCOUNT)
 
     private fun settingsPart(section: SettingsSection) {
